@@ -7,9 +7,12 @@ from kaggle.representation_learning.Transformer.Mapper.all.HashingMapper import 
 from kaggle.representation_learning.Transformer.Mapper.categorical.FrequencyMapper import FrequencyMapper
 from kaggle.representation_learning.Transformer.Mapper.categorical.OrdinalMapper import OrdinalMapper
 from kaggle.representation_learning.Transformer.Mapper.numeric.LogMapper import LogMapper
+from kaggle.representation_learning.Transformer.Mapper.numeric.SinMapper import SinMapper
+from kaggle.representation_learning.Transformer.Mapper.numeric.CosMapper import CosMapper
 from kaggle.representation_learning.Transformer.Mapper.numeric.SquareMapper import SquareMapper
 from kaggle.representation_learning.Transformer.Mapper.numeric.ScaleMapper import ScaleMapper
 from kaggle.representation_learning.Transformer.Mapper.numeric.ClusterMapper import ClusterMapper
+
 
 
 from sklearn.model_selection import train_test_split
@@ -31,6 +34,8 @@ class Transformer:
 
                         IdentityMapper(),
                         LogMapper(),
+                        SinMapper(),
+                        CosMapper(),
                         SquareMapper(),
                         ScaleMapper(),
                         ClusterMapper(),

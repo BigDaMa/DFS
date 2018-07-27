@@ -55,7 +55,7 @@ def explain_prediction_me(x, model, feature_name_list):
         for feature_weight in target_explanation.feature_weights.neg:
             print str(feature_weight.feature) + ": weight: " + str(feature_weight.weight) + " actual value: " + str(feature_weight.value)
 
-
+log_file = open('/tmp/log_features.csv', 'w+')
 
 with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 #with open('/home/felix/FastFeatures/kaggle/schema_imdb.csv') as f: #housing
@@ -146,7 +146,7 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 
                     most_important_attribute = int(show_features[0].split("#")[0])
 
-                    transformer.next_transformation_for_attribute(most_important_attribute)
+
 
                     print "##############"
 
@@ -157,6 +157,12 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     y_pred = regr.predict(datasets[1])
 
                     print "F1: " + str(f1_score(targets[1], y_pred, average='micro'))
+
+                    log_file.write(str(col_rep) + ": " + str(pandas_table.columns[col_rep]) + ": " + str(transformer.transformers[0].__class__.__name__) + ": " + str(f1_score(targets[1], y_pred, average='micro')) + "\n")
+                    log_file.flush()
+
+                    transformer.next_transformation_for_attribute(most_important_attribute)
+
 
 
         #print explain_prediction_me(X_test[0, :], regr, feature_names)
@@ -178,3 +184,5 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 
 
         break
+
+log_file.close()

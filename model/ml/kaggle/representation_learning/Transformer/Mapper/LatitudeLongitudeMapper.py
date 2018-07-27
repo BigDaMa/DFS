@@ -1,4 +1,4 @@
-from kaggle.representation_learning.Transformer.TransformerImplementations.LatitudeLongitudeTransformer import LatitudeLongitudeTransformer
+from kaggle.representation_learning.Transformer.TransformerImplementations.parser.LatitudeLongitudeTransformer import LatitudeLongitudeTransformer
 
 class LatitudeLongitudeMapper():
 

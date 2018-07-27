@@ -1,4 +1,4 @@
-from kaggle.representation_learning.Transformer.TransformerImplementations.DateTransformer import DateTransformer
+from kaggle.representation_learning.Transformer.TransformerImplementations.parser.DateTransformer import DateTransformer
 import dateutil.parser
 
 
