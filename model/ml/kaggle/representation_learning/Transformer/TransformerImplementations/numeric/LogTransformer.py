@@ -9,5 +9,12 @@ class LogTransformer(NumericTransformer):
 
 
     def transform(self, dataset, ids):
-        column_data = np.matrix(dataset.values[ids, self.column_id]).A1
-        return np.log(column_data)
+        column_data = np.array(dataset.values[ids, self.column_id], dtype=np.float64)
+
+        where_are_NaNs = np.isnan(column_data)
+        column_data[where_are_NaNs] = 0.000001
+
+        column_data[column_data <= 0] = 0.000001
+
+
+        return np.matrix(np.log(column_data)).T

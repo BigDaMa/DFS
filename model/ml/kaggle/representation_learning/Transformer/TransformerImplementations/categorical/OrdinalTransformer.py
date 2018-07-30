@@ -16,7 +16,7 @@ class OrdinalTransformer():
         column_data = np.matrix(dataset.values[ids, self.column_id], dtype='str').A1
         transformed = self.encoder.transform(column_data)
         #self.transformed_size = transformed.shape[1]
-        return transformed
+        return np.matrix(transformed.values)
 
     def get_feature_names(self, dataset):
         internal_names = []

@@ -70,6 +70,9 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 
         mypath = "/home/felix/.kaggle/datasets/" + str(user) + "/" + str(project) + "/" + csv_file
 
+        print mypath
+        print target_column
+
         pandas_table = pd.read_csv(mypath, encoding="utf-8", parse_dates=True)
         #pandas_table = pandas_table.fillna('0.0')
 
@@ -92,7 +95,7 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 
                     print str(type(datasets[0]))
 
-                    regr = xgb.XGBClassifier(objective='multi:softprob', nthread=4)
+
 
                     print str(datasets[0].shape)
 
@@ -100,14 +103,27 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                         for data_i in range(3):
                             datasets[data_i] = np.matrix(datasets[data_i]).T
 
+                    #regr = xgb.XGBClassifier(objective='multi:softprob', nthread=4)
+                    #regr.fit(datasets[0], targets[0])
+
+                    from sklearn import svm
+                    #regr = svm.SVC()
+                    #regr.fit(datasets[0], targets[0])
+
+                    from sklearn.naive_bayes import MultinomialNB
+                    #regr = MultinomialNB()
+                    #regr.fit(np.abs(datasets[0]), targets[0])
+
+                    from sklearn.linear_model import LogisticRegression
+                    #regr = LogisticRegression()
+                    #regr.fit(datasets[0], targets[0])
+
+                    from sklearn.neighbors import KNeighborsClassifier
+                    regr = KNeighborsClassifier()
                     regr.fit(datasets[0], targets[0])
 
-                    #from sklearn import svm
-                    #regr = svm.SVC()
-                    #regr.fit(X_train, y_train)
 
-
-
+                    '''  
                     #get feature importance
                     b = regr.get_booster()
                     fs = b.get_score('', importance_type='gain')
@@ -123,7 +139,7 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 
                     number_of_features = 10
                     show_features = np.array(feature_names)[sorted][0:number_of_features]
-                    '''
+                    
                     # Visualize model                    
                     fig, ax = plt.subplots()
                     y_pos = np.arange(len(show_features))
@@ -134,7 +150,7 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     ax.invert_yaxis()  # labels read top-to-bottom
                     ax.set_xlabel('Gain')
                     plt.show()
-                    '''
+                    
 
 
                     transformer.print_config()
@@ -145,7 +161,7 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     print show_features[0].split("#")[0]
 
                     most_important_attribute = int(show_features[0].split("#")[0])
-
+                    ''' 
 
 
                     print "##############"
@@ -161,7 +177,7 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     log_file.write(str(col_rep) + ": " + str(pandas_table.columns[col_rep]) + ": " + str(transformer.transformers[0].__class__.__name__) + ": " + str(f1_score(targets[1], y_pred, average='micro')) + "\n")
                     log_file.flush()
 
-                    transformer.next_transformation_for_attribute(most_important_attribute)
+                    transformer.next_transformation_for_attribute(0)
 
 
 

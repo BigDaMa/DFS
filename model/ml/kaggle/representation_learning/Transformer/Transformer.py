@@ -18,11 +18,12 @@ from kaggle.representation_learning.Transformer.Mapper.numeric.ClusterMapper imp
 from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.cluster import KMeans
+from scipy.sparse import hstack
 
 
 
 class Transformer:
-    def __init__(self, dataset, target_column_id, number_clusters_for_target=30, seed=42):
+    def __init__(self, dataset, target_column_id, number_clusters_for_target=30, seed=42, map=True):
         self.dataset = dataset
         self.transformers = []
         self.ids_parts = [[], [], []]
@@ -49,10 +50,11 @@ class Transformer:
         self.attribute_position = np.zeros(dataset.shape[1], dtype=int)
 
         #mapping
-        position_i = 0
-        for mapper in self.mappers:
-            self.processed_columns, self.attribute_position, self.transformers = mapper.map(self.dataset, self.processed_columns, self.attribute_position, position_i, self.transformers)
-            position_i += 1
+        if map:
+            position_i = 0
+            for mapper in self.mappers:
+                self.processed_columns, self.attribute_position, self.transformers = mapper.map(self.dataset, self.processed_columns, self.attribute_position, position_i, self.transformers)
+                position_i += 1
 
         self.y = np.array(dataset[dataset.columns[target_column_id]])
 
@@ -86,9 +88,16 @@ class Transformer:
                 transform_result = transformer_x.transform(self.dataset, self.ids_parts[part_dataset])
                 if type(transform_result) != type(None): #check for empty transformation
                     if type(transformed_data[part_dataset]) == type(None):
+                        print str(transformer_x.__class__.__name__)
                         transformed_data[part_dataset] = transform_result
                     else:
-                        transformed_data[part_dataset] = np.hstack((transformed_data[part_dataset], transform_result))
+                        print str(transformer_x.__class__.__name__)
+                        print str(type(transformed_data[part_dataset])) + " : " + str(type(transform_result))
+                        print str(transformed_data[part_dataset].shape) + " : " + str(transform_result.shape)
+                        if "numpy" in str(type(transformed_data[part_dataset])) and "numpy" in str(type(transform_result)):
+                            transformed_data[part_dataset] = np.hstack((transformed_data[part_dataset], transform_result))
+                        else:
+                            transformed_data[part_dataset] = hstack((transformed_data[part_dataset], transform_result)).tocsr()
 
         for part_dataset in range(3):
             target_data[part_dataset] = self.y[self.ids_parts[part_dataset]]

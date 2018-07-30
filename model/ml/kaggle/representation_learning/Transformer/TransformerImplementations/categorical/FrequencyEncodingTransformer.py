@@ -25,7 +25,7 @@ class FrequencyEncodingTransformer():
         for record_i in range(len(data)):
             if data[record_i] in self.count_dict:
                 transformed[record_i, 0] = self.count_dict[data[record_i]] / self.total_size
-        return transformed
+        return np.matrix(transformed)
 
     def get_feature_names(self, dataset):
         return [(str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + "frequency")]

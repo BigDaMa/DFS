@@ -16,3 +16,11 @@ print test_t.shape
 
 import numpy as np
 print np.square([2,3])
+
+print np.log(0)
+print "test"
+
+
+list = [7, 6, 5, 7, 6, 7, 6, 6, 6, 4, 5, 6]
+winner = np.argmax(list)
+print winner
