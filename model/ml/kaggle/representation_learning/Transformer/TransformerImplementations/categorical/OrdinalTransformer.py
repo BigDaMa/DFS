@@ -5,6 +5,7 @@ class OrdinalTransformer():
 
     def __init__(self, column_id):
         self.column_id = column_id
+        self.applicable = True
 
 
     def fit(self, dataset, ids):

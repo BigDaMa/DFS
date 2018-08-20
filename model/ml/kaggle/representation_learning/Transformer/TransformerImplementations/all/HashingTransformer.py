@@ -4,9 +4,10 @@ from sklearn.feature_extraction.text import HashingVectorizer
 
 class HashingTransformer():
 
-    def __init__(self, column_id):
+    def __init__(self, column_id, number_features=100):
         self.column_id = column_id
-        self.number_features = 100
+        self.number_features = number_features
+        self.applicable = True
 
 
     def fit(self, dataset, ids):

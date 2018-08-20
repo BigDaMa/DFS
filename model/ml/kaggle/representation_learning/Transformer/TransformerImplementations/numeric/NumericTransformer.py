@@ -4,6 +4,7 @@ class NumericTransformer():
     def __init__(self, column_id, name):
         self.column_id = column_id
         self.name = name
+        self.applicable = True
 
 
     def fit(self, dataset, ids):

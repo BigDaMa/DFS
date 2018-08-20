@@ -3,5 +3,5 @@ from kaggle.representation_learning.Transformer.TransformerImplementations.all.H
 
 class HashingMapper(AllMapper):
 
-    def __init__(self):
-        AllMapper.__init__(self, HashingTransformer)
+    def __init__(self, number_features=100):
+        AllMapper.__init__(self, HashingTransformer, {'number_features': number_features})

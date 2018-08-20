@@ -1,25 +1,24 @@
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.preprocessing import Binarizer
 from ml.kaggle.representation_learning.Transformer.TransformerImplementations.numeric.NumericTransformer import NumericTransformer
 
 
 class BinarizerTransformer(NumericTransformer):
 
-    def __init__(self, column_id):
+    def __init__(self, column_id, threshold=0.0):
         NumericTransformer.__init__(self, column_id, "binary")
         self.number_clusters = 10
         self.seed = 42
+        self.threshold = threshold
+        self.model = Binarizer(self.threshold)
 
     def fit(self, dataset, ids):
-        ''''
-        column_data = np.matrix(dataset.values[ids, self.column_id]).A1
-        newy = column_data.reshape(-1, 1)
-        self.kmeans = KMeans(n_clusters=self.number_clusters, random_state=self.seed).fit(newy)
-        '''
+        pass
 
     def transform(self, dataset, ids):
-        '''
-        column_data = np.matrix(dataset.values[ids, self.column_id]).A1
-        newy = column_data.reshape(-1, 1)
-        return self.kmeans.predict(newy)
-        '''
+        column_data = np.array(dataset.values[ids, self.column_id], dtype=np.float64)
+
+        where_are_NaNs = np.isnan(column_data)
+        column_data[where_are_NaNs] = -1
+
+        return np.matrix(self.model.transform(column_data.reshape(1, -1))).T

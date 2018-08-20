@@ -10,7 +10,7 @@ class CategoricalMapper():
                 count = len(dataset[dataset.columns[column_i]].unique())
                 fraction = count / float(len(dataset))
 
-                if fraction < 0.05:
+                if fraction < self.threshold_unique_values:
                     transformers.append(self.transformer(column_i))
                     processed_columns.append(column_i)
                     attribute_position[column_i] = position_i

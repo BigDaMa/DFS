@@ -41,7 +41,7 @@ transformer = Transformer(pandas_table, 4)
 
 fscore = []
 
-for runs in range(20):
+while True:
 
         transformers = []
         skip_columns = []
@@ -113,6 +113,8 @@ for runs in range(20):
 
         current_score = f1_score(targets[1], y_pred, average='micro')
         fscore.append(current_score)
+
+        print transformer.print_config()
 
         print "F1: " + str(current_score)
         print "max: " + str(np.max(fscore))

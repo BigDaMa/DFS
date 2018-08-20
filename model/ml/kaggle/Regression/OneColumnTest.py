@@ -93,6 +93,8 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     if type(datasets[0]) == type(None):
                         break
 
+                        transformer.next_transformation_for_attribute(0)
+
                     print str(type(datasets[0]))
 
 
@@ -103,8 +105,8 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                         for data_i in range(3):
                             datasets[data_i] = np.matrix(datasets[data_i]).T
 
-                    #regr = xgb.XGBClassifier(objective='multi:softprob', nthread=4)
-                    #regr.fit(datasets[0], targets[0])
+                    regr = xgb.XGBClassifier(objective='multi:softprob', nthread=4)
+                    regr.fit(datasets[0], targets[0])
 
                     from sklearn import svm
                     #regr = svm.SVC()
@@ -119,8 +121,8 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     #regr.fit(datasets[0], targets[0])
 
                     from sklearn.neighbors import KNeighborsClassifier
-                    regr = KNeighborsClassifier()
-                    regr.fit(datasets[0], targets[0])
+                    #regr = KNeighborsClassifier()
+                    #regr.fit(datasets[0], targets[0])
 
 
                     '''  

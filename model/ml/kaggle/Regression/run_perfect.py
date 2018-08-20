@@ -39,12 +39,12 @@ with open('/home/felix/FastFeatures/log/log_features_xgboost.csv') as f:
 pandas_table = pd.read_csv("/home/felix/.kaggle/datasets/dansbecker/melbourne-housing-snapshot/melb_data.csv", encoding="utf-8", parse_dates=True)
 transformer = Transformer(pandas_table, 4)
 
-for column_i in [0]:#range(len(results)):
-    for best_i in range(len(results[column_i].transformers)):
+for column_i in range(len(results)):
+    for best_i in [0]:#range(len(results[column_i].transformers)):
 
         transformers = []
 
-        skip_columns = [7, 11]
+        skip_columns = []#[7, 11]
 
         for result in results:
             if not result.column_id in skip_columns:
@@ -68,9 +68,12 @@ for column_i in [0]:#range(len(results)):
         all_features = np.array(all_features, dtype=np.float32)
         sorted = np.argsort(-all_features)
 
-        #print len(all_features)
-        #print len(feature_names)
-        #print list(feature_names)
+        print "-----"
+        for f_i in range(len(all_features)):
+            print str(feature_names[sorted[f_i]]) + ": " + str(all_features[sorted[f_i]])
+        print "-----"
+
+
         assert len(all_features) == len(feature_names), "Oh no! This assertion failed!"
 
         number_of_features = 10

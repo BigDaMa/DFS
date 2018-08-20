@@ -1,18 +1,8 @@
-from kaggle.representation_learning.Transformer.Mapper.numeric.IdentityMapper import IdentityMapper
-from kaggle.representation_learning.Transformer.Mapper.categorical.StringOneHotMapper import StringOneHotMapper
 from ml.kaggle.representation_learning.Transformer.Mapper.DateMapper import DateMapper
 from ml.kaggle.representation_learning.Transformer.Mapper.LatitudeLongitudeMapper import LatitudeLongitudeMapper
-from kaggle.representation_learning.Transformer.Mapper.all.SkipMapper import SkipMapper
-from kaggle.representation_learning.Transformer.Mapper.all.HashingMapper import HashingMapper
-from kaggle.representation_learning.Transformer.Mapper.categorical.FrequencyMapper import FrequencyMapper
-from kaggle.representation_learning.Transformer.Mapper.categorical.OrdinalMapper import OrdinalMapper
-from kaggle.representation_learning.Transformer.Mapper.numeric.LogMapper import LogMapper
-from kaggle.representation_learning.Transformer.Mapper.numeric.SinMapper import SinMapper
-from kaggle.representation_learning.Transformer.Mapper.numeric.CosMapper import CosMapper
-from kaggle.representation_learning.Transformer.Mapper.numeric.SquareMapper import SquareMapper
-from kaggle.representation_learning.Transformer.Mapper.numeric.ScaleMapper import ScaleMapper
-from kaggle.representation_learning.Transformer.Mapper.numeric.ClusterMapper import ClusterMapper
-
+import  kaggle.representation_learning.Transformer.Mapper.all as allmapper
+import kaggle.representation_learning.Transformer.Mapper.categorical as catmapper
+import kaggle.representation_learning.Transformer.Mapper.numeric as nummapper
 
 
 from sklearn.model_selection import train_test_split
@@ -30,23 +20,49 @@ class Transformer:
         self.target_column_id = target_column_id
         self.seed = seed
         self.processed_columns = [target_column_id]
-        self.mappers = [LatitudeLongitudeMapper(),
+        self.mappers = [#LatitudeLongitudeMapper(),
+
                         DateMapper(),
+                        #
+                        nummapper.BinarizeMapper(),
+                        nummapper.BucketMapper(),
+                        nummapper.ClusterDistMapper(),
+                        nummapper.ClusterMapper(),
+                        nummapper.CosMapper(),
+                        nummapper.DegreesMapper(),
+                        nummapper.DummyMapper(),
+                        nummapper.IdentityMapper(),
+                        nummapper.ImputerMapper(),
+                        nummapper.LogMapper(),
+                        nummapper.PlottingPositionMapper(),
+                        nummapper.PolynomialMapper(),
+                        nummapper.QuantileMapper(),
+                        nummapper.RadiansMapper(),
+                        nummapper.RankMapper(),
+                        nummapper.RSHMapper(),
+                        nummapper.ScaleMapper(),
+                        nummapper.SigmoidMapper(),
+                        nummapper.SinMapper(),
+                        nummapper.SqrtMapper(),
+                        nummapper.SquareMapper(),
+                        nummapper.TanMapper(),
+                        nummapper.ToIntMapper(),
+                        nummapper.TrimTailMapper(),
+                        nummapper.WinsorizeMapper(),
+                        nummapper.ZscoreMapper(),
 
-                        IdentityMapper(),
-                        LogMapper(),
-                        SinMapper(),
-                        CosMapper(),
-                        SquareMapper(),
-                        ScaleMapper(),
-                        ClusterMapper(),
+                        catmapper.StringOneHotMapper(),
+                        catmapper.FrequencyMapper(),
+                        catmapper.OrdinalMapper(),
 
-                        StringOneHotMapper(),
-                        FrequencyMapper(),
-                        OrdinalMapper(),
+                        allmapper.AvgWord2VecMapper(),
+                        allmapper.HashingMapper(),
+                        allmapper.LengthCountMapper(),
+                        allmapper.NgramMapper(analyzer='char'),
+                        allmapper.NgramMapper(analyzer='word'),
+                        allmapper.ParseNumbersMapper(),
 
-                        HashingMapper(),
-                        SkipMapper()]
+                        allmapper.SkipMapper()]
         self.attribute_position = np.zeros(dataset.shape[1], dtype=int)
 
         #mapping
@@ -85,19 +101,20 @@ class Transformer:
 
         for transformer_x in self.transformers:
             for part_dataset in range(3):
-                transform_result = transformer_x.transform(self.dataset, self.ids_parts[part_dataset])
-                if type(transform_result) != type(None): #check for empty transformation
-                    if type(transformed_data[part_dataset]) == type(None):
-                        print str(transformer_x.__class__.__name__)
-                        transformed_data[part_dataset] = transform_result
-                    else:
-                        print str(transformer_x.__class__.__name__)
-                        print str(type(transformed_data[part_dataset])) + " : " + str(type(transform_result))
-                        print str(transformed_data[part_dataset].shape) + " : " + str(transform_result.shape)
-                        if "numpy" in str(type(transformed_data[part_dataset])) and "numpy" in str(type(transform_result)):
-                            transformed_data[part_dataset] = np.hstack((transformed_data[part_dataset], transform_result))
+                if transformer_x.applicable:
+                    transform_result = transformer_x.transform(self.dataset, self.ids_parts[part_dataset])
+                    if type(transform_result) != type(None): #check for empty transformation
+                        if type(transformed_data[part_dataset]) == type(None):
+                            print str(transformer_x.__class__.__name__)
+                            transformed_data[part_dataset] = transform_result
                         else:
-                            transformed_data[part_dataset] = hstack((transformed_data[part_dataset], transform_result)).tocsr()
+                            print str(transformer_x.__class__.__name__)
+                            print str(type(transformed_data[part_dataset])) + " : " + str(type(transform_result))
+                            print str(transformed_data[part_dataset].shape) + " : " + str(transform_result.shape)
+                            if "numpy" in str(type(transformed_data[part_dataset])) and "numpy" in str(type(transform_result)):
+                                transformed_data[part_dataset] = np.hstack((transformed_data[part_dataset], transform_result))
+                            else:
+                                transformed_data[part_dataset] = hstack((transformed_data[part_dataset], transform_result)).tocsr()
 
         for part_dataset in range(3):
             target_data[part_dataset] = self.y[self.ids_parts[part_dataset]]

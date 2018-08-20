@@ -3,5 +3,5 @@ from kaggle.representation_learning.Transformer.Mapper.numeric.NumericMapper imp
 
 class ClusterMapper(NumericMapper):
 
-    def __init__(self):
-        NumericMapper.__init__(self, ClusterTransformer)
+    def __init__(self, number_clusters=10):
+        NumericMapper.__init__(self, ClusterTransformer, {'number_clusters': number_clusters})
