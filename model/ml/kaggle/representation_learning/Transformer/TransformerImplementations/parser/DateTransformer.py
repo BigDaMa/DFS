@@ -1,30 +1,20 @@
 import numpy as np
-
+from ml.kaggle.representation_learning.Transformer.TransformerImplementations.all.AllTransformer import AllTransformer
 import dateutil.parser
 import time
-import datetime
 
-
-class DateTransformer():
+class DateTransformer(AllTransformer):
 
     def __init__(self, column_id):
-        self.column_id = column_id
-
-
-    def fit(self, dataset, ids):
-        #nothing
-        return
+        AllTransformer.__init__(self, column_id, "timestamp")
 
     def transform(self, dataset, ids):
-        column_data = dataset[dataset.columns[self.column_id]].copy()
+        try:
+            column_data = dataset[dataset.columns[self.column_id]].copy()
+            as_timestamp = column_data.apply(lambda x: time.mktime((dateutil.parser.parse(x)).timetuple())).values[ids]
 
-        as_timestamp = column_data.apply(lambda x: time.mktime((dateutil.parser.parse(x)).timetuple())).values[ids]
-        #print as_timestamp
-
-        return np.matrix(as_timestamp).T
-
-    def get_feature_names(self, dataset):
-        return [(str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + "timestamp")]
-
-    def get_involved_columns(self):
-        return [self.column_id]
+            return np.matrix(as_timestamp).T
+        except ValueError:
+            return None
+        except TypeError:
+            return None

@@ -7,13 +7,8 @@ class BinarizerTransformer(NumericTransformer):
 
     def __init__(self, column_id, threshold=0.0):
         NumericTransformer.__init__(self, column_id, "binary")
-        self.number_clusters = 10
-        self.seed = 42
         self.threshold = threshold
         self.model = Binarizer(self.threshold)
-
-    def fit(self, dataset, ids):
-        pass
 
     def transform(self, dataset, ids):
         column_data = np.array(dataset.values[ids, self.column_id], dtype=np.float64)

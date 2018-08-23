@@ -1,5 +1,6 @@
 
-class NumericTransformer():
+
+class CategoricalTransformer():
 
     def __init__(self, column_id, name):
         self.column_id = column_id

@@ -3,16 +3,16 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.pipeline import Pipeline
 import operator
+from ml.kaggle.representation_learning.Transformer.TransformerImplementations.all.AllTransformer import AllTransformer
 
-class NgramTransformer():
+class NgramTransformer(AllTransformer):
 
     def __init__(self, column_id, analyzer='word', lowercase=False, ngrams=1, use_tf_idf=True):
-        self.column_id = column_id
+        AllTransformer.__init__(self, column_id, "ngram")
         self.analyzer = analyzer
         self.lowercase = lowercase
-        self.ngrams= ngrams
-        self.use_tf_idf =use_tf_idf
-        self.applicable = True
+        self.ngrams = ngrams
+        self.use_tf_idf = use_tf_idf
 
         if use_tf_idf:
             self.pipeline = Pipeline([('vect', CountVectorizer(analyzer=analyzer, lowercase=lowercase, ngram_range=(1, ngrams), stop_words=None)),
@@ -45,5 +45,5 @@ class NgramTransformer():
 
         return feature_names
 
-    def get_involved_columns(self):
-        return [self.column_id]
+    def __str__(self):
+        return self.__class__.__name__ + "_analyzer_" + str(self.analyzer) + "_ngrams_" + str(self.ngrams) + "_use_tfidf_" + str(self.use_tf_idf) + "_lowercase_" + str(self.lowercase)

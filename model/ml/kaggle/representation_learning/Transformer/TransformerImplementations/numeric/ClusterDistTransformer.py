@@ -13,10 +13,20 @@ class ClusterDistTransformer(NumericTransformer):
     def fit(self, dataset, ids):
         column_data = np.matrix(dataset.values[ids, self.column_id]).A1
 
+        where_are_NaNs = np.isnan(column_data)
+        column_data[where_are_NaNs] = -1
+
         newy = column_data.reshape(-1, 1)
         self.kmeans = KMeans(n_clusters=self.number_clusters, random_state=self.seed).fit(newy)
 
     def transform(self, dataset, ids):
         column_data = np.matrix(dataset.values[ids, self.column_id]).A1
+
+        where_are_NaNs = np.isnan(column_data)
+        column_data[where_are_NaNs] = -1
+
         newy = column_data.reshape(-1, 1)
         return self.kmeans.transform(newy)
+
+    def __str__(self):
+        return self.__class__.__name__ + "_nr_clusters_" + str(self.number_clusters)

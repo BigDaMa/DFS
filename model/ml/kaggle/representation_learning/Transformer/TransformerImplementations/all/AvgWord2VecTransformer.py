@@ -1,13 +1,14 @@
 import numpy as np
 import gensim
 import re
+from ml.kaggle.representation_learning.Transformer.TransformerImplementations.all.AllTransformer import AllTransformer
 
-class AvgWord2VecTransformer():
+class AvgWord2VecTransformer(AllTransformer):
 
     def __init__(self, column_id, word2vec_model=None):
-        self.column_id = column_id
+        AllTransformer.__init__(self, column_id, "word2vec")
+
         self.word2vec_model = word2vec_model
-        self.applicable = True
 
         if word2vec_model == None:
             self.word2vec_model = gensim.models.KeyedVectors.load_word2vec_format(
@@ -34,10 +35,6 @@ class AvgWord2VecTransformer():
         self.word2vec = np.vectorize(word2vec, otypes=[np.ndarray])
 
 
-
-    def fit(self, dataset, ids):
-        pass
-
     def transform(self, dataset, ids):
         column_data = np.matrix(dataset.values[ids, self.column_id], dtype='str').A1
 
@@ -51,6 +48,3 @@ class AvgWord2VecTransformer():
                 str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + "word2vec_" + str(class_i))
 
         return internal_names
-
-    def get_involved_columns(self):
-        return [self.column_id]

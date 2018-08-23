@@ -65,44 +65,44 @@ def explain_prediction_me(x, model, feature_name_list):
 
 
 
-numerical_transformers = [numtransform.BinarizerTransformer(),
-                        numtransform.BucketTransformer(),
-                        numtransform.ClusterDistTransformer(),
-                        numtransform.ClusterTransformer(),
-                        numtransform.CosTransformer(),
-                        numtransform.DegreesTransformer(),
-                        numtransform.DummyTransformer(),
-                        numtransform.IdentityTransformer(),
-                        numtransform.ImputerTransformer(),
-                        numtransform.LogTransformer(),
-                        numtransform.PlottingPositionTransformer(),
-                        numtransform.PolynomialTransformer(),
-                        numtransform.QuantileTransformer(),
-                        numtransform.RadiansTransformer(),
-                        numtransform.RankTransformer(),
-                        numtransform.RSHTransformer(),
-                        numtransform.ScaleTransformer(),
-                        numtransform.SigmoidTransformer(),
-                        numtransform.SinTransformer(),
-                        numtransform.SqrtTransformer(),
-                        numtransform.SquareTransformer(),
-                        numtransform.TanTransformer(),
-                        numtransform.ToIntTransformer(),
-                        numtransform.TrimtailTransformer(),
-                        numtransform.WinsorizeTransformer(),
-                        numtransform.ZScoreTransformer()]
-categorical_transformers = [cattransform.OneHotTransformer(),
-                        cattransform.FrequencyEncodingTransformer(),
-                        cattransform.OrdinalTransformer()]
-all_transformers = [alltransform.AvgWord2VecTransformer(),
-                        alltransform.HashingTransformer(),
-                        alltransform.LengthCountTransformer(),
-                        alltransform.NgramTransformer(analyzer='char'),
-                        alltransform.NgramTransformer(analyzer='word'),
+numerical_transformers = [numtransform.BinarizerTransformer(0),
+                        numtransform.BucketTransformer(0),
+                        numtransform.ClusterDistTransformer(0),
+                        numtransform.ClusterTransformer(0),
+                        numtransform.CosTransformer(0),
+                        numtransform.DegreesTransformer(0),
+                        numtransform.DummyTransformer(0),
+                        numtransform.IdentityTransformer(0),
+                        numtransform.ImputerTransformer(0),
+                        numtransform.LogTransformer(0),
+                        numtransform.PlottingPositionTransformer(0),
+                        numtransform.PolynomialTransformer(0),
+                        numtransform.QuantileTransformer(0),
+                        numtransform.RadiansTransformer(0),
+                        numtransform.RankTransformer(0),
+                        numtransform.RSHTransformer(0),
+                        numtransform.ScaleTransformer(0),
+                        numtransform.SigmoidTransformer(0),
+                        numtransform.SinTransformer(0),
+                        numtransform.SqrtTransformer(0),
+                        numtransform.SquareTransformer(0),
+                        numtransform.TanTransformer(0),
+                        numtransform.ToIntTransformer(0),
+                        numtransform.TrimtailTransformer(0),
+                        numtransform.WinsorizeTransformer(0),
+                        numtransform.ZScoreTransformer(0)]
+categorical_transformers = [cattransform.OneHotTransformer(0),
+                        cattransform.FrequencyEncodingTransformer(0),
+                        cattransform.OrdinalTransformer(0)]
+all_transformers = [alltransform.AvgWord2VecTransformer(0),
+                        alltransform.HashingTransformer(0),
+                        alltransform.LengthCountTransformer(0),
+                        alltransform.NgramTransformer(0, analyzer='char'),
+                        alltransform.NgramTransformer(0, analyzer='word'),
 
 
-                        alltransform.ParseNumbersTransformer(),
-                        DateTransformer()
+                        alltransform.ParseNumbersTransformer(0),
+                        DateTransformer(0)
                    ]
 
 
@@ -128,26 +128,39 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
         pandas_table = pd.read_csv(mypath, encoding="utf-8", parse_dates=True)
         #pandas_table = pandas_table.fillna('0.0')
 
-
-
-
-
         for col_rep in range(pandas_table.shape[1]):
+
             if col_rep != target_column:
+
+                transformers = []
+                transformers.extend(all_transformers)
+
+                # check if numerical
+                if pandas_table.dtypes[col_rep] == 'int64' or pandas_table.dtypes[col_rep] == 'float64':
+                    transformers.extend(numerical_transformers)
+
+                # check if categorical
+                count = len(pandas_table[pandas_table.columns[col_rep]].unique())
+                fraction = count / float(len(pandas_table))
+                if fraction < 0.05:
+                    transformers.extend(categorical_transformers)
 
                 new_dataframe = pandas_table[[pandas_table.columns[col_rep], pandas_table.columns[target_column]]]
 
-                while True:
+                new_dataframe = new_dataframe.sample(n=1500)
+                new_dataframe.reset_index(inplace=True, drop=True)
 
+                for current_transformer in transformers:
+
+                    transformer = Transformer(new_dataframe, 1, map=False)
+                    transformer.transformers = [current_transformer]
                     transformer.fit()
 
                     datasets, targets, feature_names = transformer.transform()
 
 
                     if type(datasets[0]) == type(None):
-                        break
-
-                        transformer.next_transformation_for_attribute(0)
+                        continue
 
                     print str(type(datasets[0]))
 
@@ -186,13 +199,13 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     all_features = [fs.get(f, 0.) for f in b.feature_names]
                     all_features = np.array(all_features, dtype=np.float32)
                     sorted = np.argsort(-all_features)
-
-
+    
+    
                     print len(all_features)
                     print len(feature_names)
                     print list(feature_names)
                     assert len(all_features) == len(feature_names), "Oh no! This assertion failed!"
-
+    
                     number_of_features = 10
                     show_features = np.array(feature_names)[sorted][0:number_of_features]
                     
@@ -207,17 +220,17 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     ax.set_xlabel('Gain')
                     plt.show()
                     
-
-
+    
+    
                     transformer.print_config()
                     print transformer.attribute_position
-
-
+    
+    
                     print show_features[0]
                     print show_features[0].split("#")[0]
-
+    
                     most_important_attribute = int(show_features[0].split("#")[0])
-                    ''' 
+                    '''
 
 
                     print "##############"
@@ -230,7 +243,7 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 
                     print "F1: " + str(f1_score(targets[1], y_pred, average='micro'))
 
-                    log_file.write(str(col_rep) + ": " + str(pandas_table.columns[col_rep]) + ": " + str(transformer.transformers[0].__class__.__name__) + ": " + str(f1_score(targets[1], y_pred, average='micro')) + "\n")
+                    log_file.write(str(col_rep) + ": " + str(pandas_table.columns[col_rep]) + ": " + str(transformer.transformers[0]) + ": " + str(f1_score(targets[1], y_pred, average='micro')) + "\n")
                     log_file.flush()
 
 

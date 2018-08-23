@@ -19,10 +19,25 @@ class Transformer:
         self.ids_parts = [[], [], []]
         self.target_column_id = target_column_id
         self.seed = seed
-        self.processed_columns = [target_column_id]
-        self.mappers = [#LatitudeLongitudeMapper(),
 
-                        DateMapper(),
+        self.y = np.array(dataset[dataset.columns[target_column_id]])
+
+        # transform to classification problem
+        if number_clusters_for_target > 1:
+            newy = self.y.reshape(-1, 1)
+            kmeans_labels = KMeans(n_clusters=number_clusters_for_target, random_state=self.seed).fit(newy)
+            self.y = kmeans_labels.predict(newy)
+
+
+        if map:
+            self.map()
+
+
+
+
+    def map(self):
+        self.processed_columns = [self.target_column_id]
+        self.mappers = [DateMapper(),
                         #
                         nummapper.BinarizeMapper(),
                         nummapper.BucketMapper(),
@@ -63,26 +78,22 @@ class Transformer:
                         allmapper.ParseNumbersMapper(),
 
                         allmapper.SkipMapper()]
-        self.attribute_position = np.zeros(dataset.shape[1], dtype=int)
+        self.attribute_position = np.zeros(self.dataset.shape[1], dtype=int)
 
         #mapping
-        if map:
-            position_i = 0
-            for mapper in self.mappers:
-                self.processed_columns, self.attribute_position, self.transformers = mapper.map(self.dataset, self.processed_columns, self.attribute_position, position_i, self.transformers)
-                position_i += 1
+        position_i = 0
+        for mapper in self.mappers:
+            self.processed_columns, self.attribute_position, self.transformers = mapper.map(self.dataset, self.processed_columns, self.attribute_position, position_i, self.transformers)
+            position_i += 1
 
-        self.y = np.array(dataset[dataset.columns[target_column_id]])
 
-        # transform to classification problem
-        if number_clusters_for_target > 1:
-            newy = self.y.reshape(-1, 1)
-            kmeans_labels = KMeans(n_clusters=number_clusters_for_target, random_state=self.seed).fit(newy)
-            self.y = kmeans_labels.predict(newy)
 
     def create_train_test(self, test_fraction=0.2):
-        X_train, X_test, y_train, y_test = train_test_split(self.dataset, self.y, test_size=test_fraction, random_state=self.seed, stratify=self.y)
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_fraction, random_state=self.seed, stratify=y_train)
+        #X_train, X_test, y_train, y_test = train_test_split(self.dataset, self.y, test_size=test_fraction, random_state=self.seed, stratify=self.y)
+        #X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_fraction, random_state=self.seed, stratify=y_train)
+
+        X_train, X_test, y_train, y_test = train_test_split(self.dataset, self.y, test_size=test_fraction, random_state=self.seed)
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_fraction, random_state=self.seed)
 
         self.ids_parts[0] = X_train.index.values
         self.ids_parts[1] = X_val.index.values

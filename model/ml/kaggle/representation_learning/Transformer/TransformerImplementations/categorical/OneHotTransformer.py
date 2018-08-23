@@ -1,13 +1,11 @@
 import numpy as np
 from sklearn import preprocessing
+from ml.kaggle.representation_learning.Transformer.TransformerImplementations.categorical.CategoricalTransformer import CategoricalTransformer
 
-
-class OneHotTransformer():
+class OneHotTransformer(CategoricalTransformer):
 
     def __init__(self, column_id):
-        self.column_id = column_id
-        self.applicable = True
-
+        CategoricalTransformer.__init__(self, column_id, "onehot")
 
     def fit(self, dataset, ids):
         self.one_hot_model = preprocessing.LabelBinarizer()
@@ -27,6 +25,3 @@ class OneHotTransformer():
             internal_names = [str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + "onehot"]
 
         return internal_names
-
-    def get_involved_columns(self):
-        return [self.column_id]

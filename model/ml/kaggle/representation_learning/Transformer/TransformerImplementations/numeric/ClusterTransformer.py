@@ -23,3 +23,6 @@ class ClusterTransformer(NumericTransformer):
         column_data[where_are_NaNs] = -1
         newy = column_data.reshape(-1, 1)
         return np.matrix(self.kmeans.predict(newy)).T
+
+    def __str__(self):
+        return self.__class__.__name__ + "_nr_clusters_" + str(self.number_clusters)

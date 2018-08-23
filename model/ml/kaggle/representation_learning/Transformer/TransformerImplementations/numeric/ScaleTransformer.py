@@ -15,8 +15,6 @@ class ScaleTransformer(NumericTransformer):
 
         newy = column_data.reshape(-1, 1)
 
-
-
         self.scaler = StandardScaler()
         self.scaler.fit(newy)
 

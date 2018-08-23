@@ -1,17 +1,15 @@
 import numpy as np
 from sklearn.feature_extraction.text import HashingVectorizer
+from ml.kaggle.representation_learning.Transformer.TransformerImplementations.all.AllTransformer import AllTransformer
 
 
-class HashingTransformer():
+class HashingTransformer(AllTransformer):
 
     def __init__(self, column_id, number_features=100):
-        self.column_id = column_id
+        AllTransformer.__init__(self, column_id, "hash")
         self.number_features = number_features
-        self.applicable = True
-
-
-    def fit(self, dataset, ids):
         self.hashing_model = HashingVectorizer(n_features=self.number_features)
+
 
     def transform(self, dataset, ids):
         column_data = np.matrix(dataset.values[ids, self.column_id], dtype='str').A1
@@ -25,5 +23,5 @@ class HashingTransformer():
 
         return internal_names
 
-    def get_involved_columns(self):
-        return [self.column_id]
+    def __str__(self):
+        return self.__class__.__name__ + "_dimensionality_" + str(self.number_features)

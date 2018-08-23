@@ -1,11 +1,10 @@
 import numpy as np
+from ml.kaggle.representation_learning.Transformer.TransformerImplementations.categorical.CategoricalTransformer import CategoricalTransformer
 
-
-class FrequencyEncodingTransformer():
+class FrequencyEncodingTransformer(CategoricalTransformer):
 
     def __init__(self, column_id):
-        self.column_id = column_id
-        self.applicable = True
+        CategoricalTransformer.__init__(self, column_id, "frequency")
 
 
     def fit(self, dataset, ids):
@@ -27,9 +26,3 @@ class FrequencyEncodingTransformer():
             if data[record_i] in self.count_dict:
                 transformed[record_i, 0] = self.count_dict[data[record_i]] / self.total_size
         return np.matrix(transformed)
-
-    def get_feature_names(self, dataset):
-        return [(str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + "frequency")]
-
-    def get_involved_columns(self):
-        return [self.column_id]

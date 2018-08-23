@@ -1,5 +1,6 @@
 
-class NumericTransformer():
+
+class AllTransformer():
 
     def __init__(self, column_id, name):
         self.column_id = column_id
@@ -8,7 +9,7 @@ class NumericTransformer():
 
 
     def fit(self, dataset, ids):
-        return
+        pass
 
     def get_feature_names(self, dataset):
         return [(str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + self.name)]

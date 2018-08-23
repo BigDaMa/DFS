@@ -1,14 +1,13 @@
 import numpy as np
 import re
+from ml.kaggle.representation_learning.Transformer.TransformerImplementations.all.AllTransformer import AllTransformer
 
 
-
-class ParseNumbersTransformer():
+class ParseNumbersTransformer(AllTransformer):
 
     def __init__(self, column_id, max_numbers=5):
-        self.column_id = column_id
+        AllTransformer.__init__(self, column_id, "parse_numbers")
         self.max_numbers = max_numbers
-        self.applicable = True
 
         def parse_numbers(mystring):
             my_list = [int(s) for s in re.findall(r'\d+', mystring)]
@@ -21,9 +20,6 @@ class ParseNumbersTransformer():
 
         self.parse_numbers = np.vectorize(parse_numbers, otypes=[np.ndarray])
 
-
-    def fit(self, dataset, ids):
-        return
 
     def transform(self, dataset, ids):
         column_data = np.matrix(dataset.values[ids, self.column_id], dtype='str').A1
@@ -40,5 +36,5 @@ class ParseNumbersTransformer():
 
         return internal_names
 
-    def get_involved_columns(self):
-        return [self.column_id]
+    def __str__(self):
+        return self.__class__.__name__ + "_dimensionality_" + str(self.max_numbers)

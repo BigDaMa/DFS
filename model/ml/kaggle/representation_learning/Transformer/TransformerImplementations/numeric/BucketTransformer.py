@@ -41,3 +41,6 @@ class BucketTransformer(NumericTransformer):
                 internal_names.append(str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + self.name + "_" + str(class_i))
 
         return internal_names
+
+    def __str__(self):
+        return self.__class__.__name__ + "_dimensionality_" + str(self.number_bins) + "_qbuckets_" + str(self.qbucket)

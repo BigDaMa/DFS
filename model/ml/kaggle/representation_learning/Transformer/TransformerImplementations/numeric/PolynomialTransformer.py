@@ -36,3 +36,6 @@ class PolynomialTransformer(NumericTransformer):
                 internal_names.append(str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + self.name + "_" + str(class_i))
 
         return internal_names
+
+    def __str__(self):
+        return self.__class__.__name__ + "_degree_" + str(self.degree)
