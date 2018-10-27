@@ -15,4 +15,4 @@ class OrdinalTransformer(CategoricalTransformer):
     def transform(self, dataset, ids):
         column_data = np.matrix(dataset.values[ids, self.column_id], dtype='str').A1
         transformed = self.encoder.transform(column_data)
-        return np.matrix(transformed.values)
+        return np.matrix(transformed.values, dtype=float)

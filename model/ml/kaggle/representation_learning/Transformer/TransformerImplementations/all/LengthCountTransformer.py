@@ -14,4 +14,6 @@ class LengthCountTransformer(AllTransformer):
 
 
     def transform(self, dataset, ids):
-        return self.str_length(dataset.values[ids, self.column_id])
+        data = np.array(self.str_length(dataset.values[ids, self.column_id]))
+
+        return data.reshape(-1, 1)

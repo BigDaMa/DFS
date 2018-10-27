@@ -34,13 +34,5 @@ class BucketTransformer(NumericTransformer):
 
         return np.matrix(bucket_labels).T
 
-    def get_feature_names(self, dataset):
-        internal_names = []
-
-        for class_i in range(self.number_bins):
-                internal_names.append(str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + self.name + "_" + str(class_i))
-
-        return internal_names
-
     def __str__(self):
         return self.__class__.__name__ + "_dimensionality_" + str(self.number_bins) + "_qbuckets_" + str(self.qbucket)

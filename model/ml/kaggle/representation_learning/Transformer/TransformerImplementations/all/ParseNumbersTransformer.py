@@ -5,20 +5,21 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.al
 
 class ParseNumbersTransformer(AllTransformer):
 
+
     def __init__(self, column_id, max_numbers=5):
         AllTransformer.__init__(self, column_id, "parse_numbers")
         self.max_numbers = max_numbers
 
-        def parse_numbers(mystring):
-            my_list = [int(s) for s in re.findall(r'\d+', mystring)]
-            my_array = np.zeros(self.max_numbers, dtype=np.int)
+        self.parse_numbers = np.vectorize(self.parse_numbers_method, otypes=[np.ndarray])
 
-            for list_i in range(len(my_list)):
-                my_array[list_i] = my_list[list_i]
+    def parse_numbers_method(self, mystring):
+        my_list = [int(s) for s in re.findall(r'\d+', mystring)]
+        my_array = np.zeros(self.max_numbers, dtype=np.int)
 
-            return my_array
+        for list_i in range(len(my_list)):
+            my_array[list_i] = my_list[list_i]
 
-        self.parse_numbers = np.vectorize(parse_numbers, otypes=[np.ndarray])
+        return my_array
 
 
     def transform(self, dataset, ids):

@@ -15,6 +15,8 @@ class DateTransformer(AllTransformer):
 
             return np.matrix(as_timestamp).T
         except ValueError:
+            self.applicable = False
             return None
         except TypeError:
+            self.applicable = False
             return None

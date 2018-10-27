@@ -10,3 +10,4 @@ print df
 t = PolynomialTransformer(0)
 print t.fit(df, range(len(d)))
 print t.transform(df, range(len(d)))
+print t.transform(df, range(len(d)))

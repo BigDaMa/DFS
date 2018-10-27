@@ -10,6 +10,8 @@ import numpy as np
 from sklearn.cluster import KMeans
 from scipy.sparse import hstack
 
+from sklearn import preprocessing
+
 
 
 class Transformer:
@@ -27,6 +29,13 @@ class Transformer:
             newy = self.y.reshape(-1, 1)
             kmeans_labels = KMeans(n_clusters=number_clusters_for_target, random_state=self.seed).fit(newy)
             self.y = kmeans_labels.predict(newy)
+
+        distinct_classes = np.unique(self.y)
+        self.number_classes = len(np.unique(self.y))
+
+        le = preprocessing.LabelEncoder()
+        le.fit(self.y)
+        self.y = le.transform(self.y)
 
 
         if map:
@@ -88,44 +97,65 @@ class Transformer:
 
 
 
-    def create_train_test(self, test_fraction=0.2):
+    def create_train_test(self, train_rows=100, test_size=100, seed=None):
+        if type(seed) == type(None):
+            seed = self.seed
+
         #X_train, X_test, y_train, y_test = train_test_split(self.dataset, self.y, test_size=test_fraction, random_state=self.seed, stratify=self.y)
         #X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_fraction, random_state=self.seed, stratify=y_train)
 
-        X_train, X_test, y_train, y_test = train_test_split(self.dataset, self.y, test_size=test_fraction, random_state=self.seed)
-        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_fraction, random_state=self.seed)
+        #X_train, X_test, y_train, y_test = train_test_split(self.dataset, self.y, test_size=test_fraction, random_state=seed)
+        #X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=test_fraction, random_state=seed)
+
+        X_rest, X_test, y_rest, y_test = train_test_split(self.dataset, self.y, test_size=test_size, random_state=seed)
+        X_train, X_val, y_train, y_val = train_test_split(X_rest, y_rest, train_size=train_rows, random_state=seed)
+
 
         self.ids_parts[0] = X_train.index.values
-        self.ids_parts[1] = X_val.index.values
-        self.ids_parts[2] = X_test.index.values
+        self.ids_parts[1] = X_test.index.values
+        self.ids_parts[2] = X_val.index.values
 
     def fit(self):
         if len(self.ids_parts[0]) == 0:
             self.create_train_test()
 
         for transformer_x in self.transformers:
-            transformer_x.fit(self.dataset, self.ids_parts[0])
+            if transformer_x != None:
+                transformer_x.fit(self.dataset, self.ids_parts[0])
 
     def transform(self):
         transformed_data = [None] * 3
         target_data = [None] * 3
 
+        print "--------------------------------"
+
         for transformer_x in self.transformers:
+            print "here: " + str(transformer_x.__class__.__name__ ) + " -> " + str(transformer_x.column_id)
+
             for part_dataset in range(3):
-                if transformer_x.applicable:
+                if transformer_x!=None and transformer_x.applicable:
                     transform_result = transformer_x.transform(self.dataset, self.ids_parts[part_dataset])
                     if type(transform_result) != type(None): #check for empty transformation
+                        print str(transform_result.shape)
                         if type(transformed_data[part_dataset]) == type(None):
                             print str(transformer_x.__class__.__name__)
                             transformed_data[part_dataset] = transform_result
                         else:
+
                             print str(transformer_x.__class__.__name__)
                             print str(type(transformed_data[part_dataset])) + " : " + str(type(transform_result))
                             print str(transformed_data[part_dataset].shape) + " : " + str(transform_result.shape)
-                            if "numpy" in str(type(transformed_data[part_dataset])) and "numpy" in str(type(transform_result)):
-                                transformed_data[part_dataset] = np.hstack((transformed_data[part_dataset], transform_result))
-                            else:
-                                transformed_data[part_dataset] = hstack((transformed_data[part_dataset], transform_result)).tocsr()
+                            #print "transformed_data:" + str(transformed_data[part_dataset])
+                            #print "transform result: " + str(transform_result)
+
+                            try:
+                                transformed_data[part_dataset] = hstack(
+                                    (transformed_data[part_dataset], transform_result)).tocsr()
+                            except:
+                                transformed_data[part_dataset] = np.hstack(
+                                    (transformed_data[part_dataset], transform_result))
+
+
 
         for part_dataset in range(3):
             target_data[part_dataset] = self.y[self.ids_parts[part_dataset]]
@@ -134,9 +164,10 @@ class Transformer:
         feature_names = []
 
         for transformer_x in self.transformers:
-            names = transformer_x.get_feature_names(self.dataset)
-            if type(names) != type(None):
-                feature_names.extend(names)
+            if transformer_x.applicable:
+                names = transformer_x.get_feature_names(self.dataset)
+                if type(names) != type(None):
+                    feature_names.extend(names)
 
         return transformed_data, target_data, feature_names
 

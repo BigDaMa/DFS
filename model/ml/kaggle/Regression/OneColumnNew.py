@@ -94,7 +94,7 @@ numerical_transformers = [numtransform.BinarizerTransformer(0),
 categorical_transformers = [cattransform.OneHotTransformer(0),
                         cattransform.FrequencyEncodingTransformer(0),
                         cattransform.OrdinalTransformer(0)]
-all_transformers = [alltransform.AvgWord2VecTransformer(0),
+all_transformers = [#alltransform.AvgWord2VecTransformer(0),
                         alltransform.HashingTransformer(0),
                         alltransform.LengthCountTransformer(0),
                         alltransform.NgramTransformer(0, analyzer='char'),
@@ -128,6 +128,10 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
         pandas_table = pd.read_csv(mypath, encoding="utf-8", parse_dates=True)
         #pandas_table = pandas_table.fillna('0.0')
 
+        import time
+
+        start = time.time()
+
         for col_rep in range(pandas_table.shape[1]):
 
             if col_rep != target_column:
@@ -147,12 +151,17 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 
                 new_dataframe = pandas_table[[pandas_table.columns[col_rep], pandas_table.columns[target_column]]]
 
-                new_dataframe = new_dataframe.sample(n=1500)
-                new_dataframe.reset_index(inplace=True, drop=True)
+                print new_dataframe.shape
+
+                #new_dataframe = new_dataframe.sample(n=1500)
+                #new_dataframe.reset_index(inplace=True, drop=True)
 
                 for current_transformer in transformers:
 
                     transformer = Transformer(new_dataframe, 1, map=False)
+                    transformer.create_train_test(25, 2000)
+
+
                     transformer.transformers = [current_transformer]
                     transformer.fit()
 
@@ -160,7 +169,13 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
 
 
                     if type(datasets[0]) == type(None):
+                        log_file.write(str(col_rep) + ": " + str(pandas_table.columns[col_rep]) + ": " + str(
+                            transformer.transformers[0]) + ": " + str(0.0) + "\n")
+                        log_file.flush()
+
                         continue
+
+                    assert datasets[0].shape[1] == datasets[1].shape[1] and datasets[1].shape[1] == datasets[2].shape[1]
 
                     print str(type(datasets[0]))
 
@@ -246,7 +261,8 @@ with open('/home/felix/FastFeatures/kaggle/schema_2.csv') as f: #housing
                     log_file.write(str(col_rep) + ": " + str(pandas_table.columns[col_rep]) + ": " + str(transformer.transformers[0]) + ": " + str(f1_score(targets[1], y_pred, average='micro')) + "\n")
                     log_file.flush()
 
-
+        end = time.time()
+        print("time: " + str(end - start))
 
         #print explain_prediction_me(X_test[0, :], regr, feature_names)
 

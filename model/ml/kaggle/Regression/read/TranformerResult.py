@@ -36,7 +36,7 @@ class TransformerResult():
                         CosTransformer,
                         SquareTransformer,
                         ScaleTransformer,
-                        ClusterTransformer,
+                        ClusterTransformer, #todo
 
                         OneHotTransformer,
                         FrequencyEncodingTransformer,
