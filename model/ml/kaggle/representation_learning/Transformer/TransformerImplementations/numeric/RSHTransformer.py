@@ -5,7 +5,7 @@ from scipy import stats
 class RSHTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "rsh")
+        NumericTransformer.__init__(self, column_id, "rsh", 1)
 
 
     def transform(self, dataset, ids):

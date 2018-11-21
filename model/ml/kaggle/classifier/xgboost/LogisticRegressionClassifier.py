@@ -17,6 +17,10 @@ class LogisticRegressionClassifier:
         return model
 
 
+    def get_classifier(self):
+        return LogisticRegression()
+
+
     def run_cross_validation(self, train, train_target, folds):
         cv_params = {'penalty': ['l1', 'l2'], 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
         scorer = self.score.get_scorer()

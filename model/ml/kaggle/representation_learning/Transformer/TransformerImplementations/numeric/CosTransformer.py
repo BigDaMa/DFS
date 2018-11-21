@@ -5,7 +5,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class CosTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "cos")
+        NumericTransformer.__init__(self, column_id, "cos", 1)
 
 
     def transform(self, dataset, ids):

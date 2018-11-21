@@ -5,7 +5,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.ca
 class OrdinalTransformer(CategoricalTransformer):
 
     def __init__(self, column_id):
-        CategoricalTransformer.__init__(self, column_id, "ordinal")
+        CategoricalTransformer.__init__(self, column_id, "ordinal", 1)
 
     def fit(self, dataset, ids):
         self.encoder = ce.OrdinalEncoder()

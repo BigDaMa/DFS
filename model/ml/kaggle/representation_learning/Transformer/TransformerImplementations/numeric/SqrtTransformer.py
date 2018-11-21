@@ -5,7 +5,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class SqrtTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "sqrt")
+        NumericTransformer.__init__(self, column_id, "sqrt", 1)
 
     def transform(self, dataset, ids):
         column_data = np.array(dataset.values[ids, self.column_id], dtype=np.float64)

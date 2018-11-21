@@ -5,7 +5,7 @@ from scipy import stats
 class WinsorizeTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "winsorize")
+        NumericTransformer.__init__(self, column_id, "winsorize", 1)
 
 
     def transform(self, dataset, ids):

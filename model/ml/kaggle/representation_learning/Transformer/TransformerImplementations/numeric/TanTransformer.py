@@ -5,7 +5,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class TanTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "tan")
+        NumericTransformer.__init__(self, column_id, "tan", 1)
 
 
     def transform(self, dataset, ids):

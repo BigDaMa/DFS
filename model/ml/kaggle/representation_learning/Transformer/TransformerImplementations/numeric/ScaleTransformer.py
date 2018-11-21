@@ -6,7 +6,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class ScaleTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "scale")
+        NumericTransformer.__init__(self, column_id, "scale", 1)
 
     def fit(self, dataset, ids):
         column_data = np.array(dataset.values[ids, self.column_id], dtype=np.float64)

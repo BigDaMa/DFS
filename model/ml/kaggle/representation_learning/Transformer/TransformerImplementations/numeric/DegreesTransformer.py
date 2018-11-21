@@ -8,7 +8,7 @@ import math
 class DegreesTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "degrees")
+        NumericTransformer.__init__(self, column_id, "degrees", 1)
 
 
     def transform(self, dataset, ids):

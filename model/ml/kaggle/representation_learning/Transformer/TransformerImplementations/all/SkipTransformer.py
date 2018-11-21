@@ -4,7 +4,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.al
 class SkipTransformer(AllTransformer):
 
     def __init__(self, column_id):
-        AllTransformer.__init__(self, column_id, "skip")
+        AllTransformer.__init__(self, column_id, "skip", 0)
 
     def transform(self, dataset, ids):
         return None

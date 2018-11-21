@@ -5,7 +5,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class SinTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "sin")
+        NumericTransformer.__init__(self, column_id, "sin", 1)
 
 
     def transform(self, dataset, ids):

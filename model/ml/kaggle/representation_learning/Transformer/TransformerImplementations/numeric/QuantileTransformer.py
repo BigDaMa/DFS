@@ -6,7 +6,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class QuantileTransformer(NumericTransformer):
 
     def __init__(self, column_id, output_distribution='normal'):
-        NumericTransformer.__init__(self, column_id, "quantile")
+        NumericTransformer.__init__(self, column_id, "quantile", 1)
         self.seed = 42
         self.output_distribution = output_distribution #'uniform'
 

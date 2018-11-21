@@ -6,7 +6,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class ClusterTransformer(NumericTransformer):
 
     def __init__(self, column_id, number_clusters=10):
-        NumericTransformer.__init__(self, column_id, "cluster")
+        NumericTransformer.__init__(self, column_id, "cluster", 1)
         self.number_clusters = number_clusters
         self.seed = 42
 

@@ -6,7 +6,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.al
 class AvgWord2VecTransformer(AllTransformer):
 
     def __init__(self, column_id, word2vec_model=None):
-        AllTransformer.__init__(self, column_id, "word2vec")
+        AllTransformer.__init__(self, column_id, "word2vec", 300)
 
         self.word2vec_model = word2vec_model
 

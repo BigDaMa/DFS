@@ -5,7 +5,7 @@ from scipy import stats
 class TrimtailTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "trimtail")
+        NumericTransformer.__init__(self, column_id, "trimtail", 1)
 
 
     def transform(self, dataset, ids):

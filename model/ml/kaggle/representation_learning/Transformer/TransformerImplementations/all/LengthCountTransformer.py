@@ -5,7 +5,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.al
 class LengthCountTransformer(AllTransformer):
 
     def __init__(self, column_id):
-        AllTransformer.__init__(self, column_id, "str_length")
+        AllTransformer.__init__(self, column_id, "str_length", 1)
 
         def str_length(mystring):
             return len(str(mystring))

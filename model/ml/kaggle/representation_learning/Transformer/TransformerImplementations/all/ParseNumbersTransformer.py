@@ -7,7 +7,7 @@ class ParseNumbersTransformer(AllTransformer):
 
 
     def __init__(self, column_id, max_numbers=5):
-        AllTransformer.__init__(self, column_id, "parse_numbers")
+        AllTransformer.__init__(self, column_id, "parse_numbers", max_numbers)
         self.max_numbers = max_numbers
 
         self.parse_numbers = np.vectorize(self.parse_numbers_method, otypes=[np.ndarray])

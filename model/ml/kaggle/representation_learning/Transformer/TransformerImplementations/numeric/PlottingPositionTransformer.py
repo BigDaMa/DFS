@@ -5,7 +5,7 @@ from scipy import stats
 class PlottingPositionTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "plot_pos")
+        NumericTransformer.__init__(self, column_id, "plot_pos", 1)
 
 
     def transform(self, dataset, ids):

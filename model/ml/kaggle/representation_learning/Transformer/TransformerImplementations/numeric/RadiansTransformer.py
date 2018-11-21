@@ -8,7 +8,7 @@ import math
 class RadiansTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "radians")
+        NumericTransformer.__init__(self, column_id, "radians", 1)
 
 
     def transform(self, dataset, ids):

@@ -5,7 +5,7 @@ from scipy import stats
 class ZScoreTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "zscore")
+        NumericTransformer.__init__(self, column_id, "zscore", 1)
 
 
     def transform(self, dataset, ids):

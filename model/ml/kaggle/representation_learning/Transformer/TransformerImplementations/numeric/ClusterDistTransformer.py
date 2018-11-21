@@ -6,7 +6,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class ClusterDistTransformer(NumericTransformer):
 
     def __init__(self, column_id, number_clusters=10):
-        NumericTransformer.__init__(self, column_id, "cluster_dist")
+        NumericTransformer.__init__(self, column_id, "cluster_dist", number_clusters)
         self.number_clusters = number_clusters
         self.seed = 42
 
@@ -30,3 +30,10 @@ class ClusterDistTransformer(NumericTransformer):
 
     def __str__(self):
         return self.__class__.__name__ + "_nr_clusters_" + str(self.number_clusters)
+
+    def get_feature_names(self, dataset):
+        internal_names = []
+        for cluster_i in range(self.number_clusters):
+            internal_names.append(str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + "clusterdistance_" + str(cluster_i))
+
+        return internal_names

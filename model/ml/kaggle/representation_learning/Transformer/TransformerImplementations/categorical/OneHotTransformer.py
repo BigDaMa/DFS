@@ -15,6 +15,8 @@ class OneHotTransformer(CategoricalTransformer):
             if not column_data[row_i] in self.value_to_id:
                 self.value_to_id[column_data[row_i]] = len(self.value_to_id)
 
+        self.output_space_size = len(self.value_to_id)
+
 
 
 

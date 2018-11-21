@@ -8,7 +8,7 @@ import math
 class SigmoidTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "sigmoid")
+        NumericTransformer.__init__(self, column_id, "sigmoid", 1)
 
         def sigmoid(x):
             return 1 / (1 + math.exp(-x))

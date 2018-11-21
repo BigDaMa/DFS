@@ -27,8 +27,12 @@ class NgramTransformer(AllTransformer):
         column_data = np.matrix(dataset.values[ids, self.column_id], dtype='str').A1
         try:
             self.pipeline.fit(column_data)
+            self.output_space_size = len(self.pipeline.named_steps['vect'].vocabulary_)
+
         except ValueError:
             self.applicable = False
+            self.output_space_size = 0
+
 
     def transform(self, dataset, ids):
         if self.applicable:
@@ -38,7 +42,6 @@ class NgramTransformer(AllTransformer):
             return None
 
     def get_feature_names(self, dataset):
-
         listed_tuples = sorted(self.pipeline.named_steps['vect'].vocabulary_.items(), key=operator.itemgetter(1))
         feature_names = [str(self.column_id) + '#' + str(dataset.columns[self.column_id]) + "#" + str(self.analyzer) + "_ngram_"+ str(self.ngrams) + "#" + tuple_dict_sorted[0] + "#" for tuple_dict_sorted in
              listed_tuples]

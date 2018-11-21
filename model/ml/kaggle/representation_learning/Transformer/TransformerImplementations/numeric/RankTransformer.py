@@ -5,7 +5,7 @@ from scipy import stats
 class RankTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "rank")
+        NumericTransformer.__init__(self, column_id, "rank", 1)
 
 
     def transform(self, dataset, ids):

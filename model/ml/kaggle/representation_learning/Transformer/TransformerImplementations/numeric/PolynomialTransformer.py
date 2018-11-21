@@ -6,7 +6,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class PolynomialTransformer(NumericTransformer):
 
     def __init__(self, column_id, degree=2):
-        NumericTransformer.__init__(self, column_id, "polynomial")
+        NumericTransformer.__init__(self, column_id, "polynomial", degree+1)
         self.seed = 42
         self.degree = degree
         self.model = PolynomialFeatures(self.degree)
@@ -24,8 +24,6 @@ class PolynomialTransformer(NumericTransformer):
 
         where_are_NaNs = np.isnan(column_data)
         column_data[where_are_NaNs] = -1
-
-        print column_data.shape
 
         return np.matrix(self.model.transform(column_data))
 

@@ -6,7 +6,7 @@ import time
 class DateTransformer(AllTransformer):
 
     def __init__(self, column_id):
-        AllTransformer.__init__(self, column_id, "timestamp")
+        AllTransformer.__init__(self, column_id, "timestamp", 1)
 
     def transform(self, dataset, ids):
         try:
@@ -16,7 +16,9 @@ class DateTransformer(AllTransformer):
             return np.matrix(as_timestamp).T
         except ValueError:
             self.applicable = False
+            self.output_space_size = 0
             return None
         except TypeError:
             self.applicable = False
+            self.output_space_size = 0
             return None

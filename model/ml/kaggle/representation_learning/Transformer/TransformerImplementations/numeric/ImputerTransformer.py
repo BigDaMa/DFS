@@ -6,7 +6,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.nu
 class ImputerTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "imputer")
+        NumericTransformer.__init__(self, column_id, "imputer", 1)
         self.seed = 42
         self.model = Imputer()
 

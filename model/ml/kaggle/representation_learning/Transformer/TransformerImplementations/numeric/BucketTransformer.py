@@ -11,7 +11,7 @@ class BucketTransformer(NumericTransformer):
             name += 'q'
         name += "bucket"
 
-        NumericTransformer.__init__(self, column_id, name)
+        NumericTransformer.__init__(self, column_id, name, 1)
         self.number_bins = number_bins
         self.qbucket = qbucket
 

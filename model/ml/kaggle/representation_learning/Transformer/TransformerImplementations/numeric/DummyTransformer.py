@@ -5,7 +5,7 @@ from sklearn.preprocessing import add_dummy_feature
 class DummyTransformer(NumericTransformer):
 
     def __init__(self, column_id):
-        NumericTransformer.__init__(self, column_id, "dummy")
+        NumericTransformer.__init__(self, column_id, "dummy", 2)
 
 
     def transform(self, dataset, ids):

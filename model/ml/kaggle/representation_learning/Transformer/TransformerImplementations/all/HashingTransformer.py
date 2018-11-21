@@ -6,7 +6,7 @@ from ml.kaggle.representation_learning.Transformer.TransformerImplementations.al
 class HashingTransformer(AllTransformer):
 
     def __init__(self, column_id, number_features=100):
-        AllTransformer.__init__(self, column_id, "hash")
+        AllTransformer.__init__(self, column_id, "hash", number_features)
         self.number_features = number_features
         self.hashing_model = HashingVectorizer(n_features=self.number_features)
 

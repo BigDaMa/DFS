@@ -2,13 +2,16 @@
 
 class CategoricalTransformer():
 
-    def __init__(self, column_id, name):
+    def __init__(self, column_id, name, output_space_size=None):
         self.column_id = column_id
         self.name = name
         self.applicable = True
+        self.output_space_size = output_space_size
 
 
     def fit(self, dataset, ids):
+        if type(self.output_space_size) == type(None):
+            self.output_space_size = 1
         return
 
     def get_feature_names(self, dataset):
