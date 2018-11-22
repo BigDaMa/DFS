@@ -47,3 +47,9 @@ class Splitter:
         for k,v in self.ids.items():
             values[k] = dataset[dataset.columns[column_id]].values[v]
         return values
+
+    def materialize_target(self, y):
+        values = {}
+        for k,v in self.ids.items():
+            values[k] = y[v]
+        return values

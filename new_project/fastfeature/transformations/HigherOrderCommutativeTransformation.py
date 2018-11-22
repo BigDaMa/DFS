@@ -12,4 +12,4 @@ class HigherOrderCommutativeTransformation(Transformation):
         try:
             return self.method(data, axis=1)
         except Exception as e:
-            print(e)
+            print('HigherOrderCommutativeTransformation' + str(e))

@@ -41,6 +41,8 @@ class Reader:
         # get split of the data
         self.splitter.get_splitted_ids(self.dataframe, self.target_values)
 
+        self.splitted_target = self.splitter.materialize_target(self.target_values)
+
         for attribute_i in range(self.dataframe.shape[1]):
             properties = self.derive_properties(attribute_i, self.dataframe[self.dataframe.columns[attribute_i]].values) #maybe apply this only for training??
 
