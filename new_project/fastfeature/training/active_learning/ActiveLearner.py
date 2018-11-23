@@ -44,10 +44,10 @@ class ActiveLearner:
         self.batch_size = batch_size
         self.classifier = classifier
 
-        self.xGBoostMatrix = xgb.DMatrix(metadata_feature_matrix)
+        self.xGBoostMatrix = xgb.DMatrix(metadata_feature_matrix, feature_names=self.feature_names)
 
 
-    def create_initial_training_set(self):
+    def create_initial_training_set(self, N=50):
         #sample N random candidates
         arr = np.arange(self.metadata_feature_matrix.shape[0])
         np.random.shuffle(arr)
@@ -56,7 +56,7 @@ class ActiveLearner:
         selected_ids = []
 
         #randomly sample a new instance until we have both classes in the training
-        while np.sum(np.array(y)) >= 2 and np.sum(np.array(y)) <= len(y) - 2:
+        while not (np.sum(np.array(y)) >= 5 and np.sum(np.array(y)) <= len(y) - 5 and len(selected_ids) >=N):
             new_selected_id = arr[0]
             selected_ids.append(new_selected_id)
             arr = arr[1:len(arr)]
@@ -74,6 +74,9 @@ class ActiveLearner:
     def run(self):
         start = time.time()
         y, selected_ids = self.create_initial_training_set()
+
+        print("Selected ids: " + str(len(selected_ids)))
+
         while time.time() - start <= 60 * self.runtimeMinutes:
             X = self.metadata_feature_matrix[selected_ids, :]
             self.model = self.train(X, y)

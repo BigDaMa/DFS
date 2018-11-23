@@ -30,9 +30,16 @@ class XGBoostClassifier:
 
         print("all_results: " + str(optimized_GBM.cv_results_['mean_test_score']))
         print("best config: " + str(optimized_GBM.best_params_))
+        print("best score: " + str(optimized_GBM.best_score_))
 
         our_params = ind_params.copy()
         our_params.update(optimized_GBM.best_params_)
+
+        print("train shape: " + str(train.shape))
+        print("featurenames shape: " + str(len(feature_names)))
+
+        print("label fraction: " + str(np.sum(train_target)/ float(len(train_target))))
+
 
         xgdmat = xgb.DMatrix(train, train_target, feature_names=feature_names)
         self.model = xgb.train(our_params, xgdmat, verbose_eval=False)
@@ -43,6 +50,9 @@ class XGBoostClassifier:
     def get_k_least_certain_tuples(self, full_matrix, k=10):
         probability_prediction = self.model.predict(full_matrix)
         certainty = np.absolute(probability_prediction - 0.5)
+
+        print("average Certainty (max=0.5): " + str(np.mean(certainty)))
+
         sorted_ids = np.argsort(certainty)
         return sorted_ids[0:k]
 
