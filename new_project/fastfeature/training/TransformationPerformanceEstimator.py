@@ -97,7 +97,7 @@ class TransformationPerformanceEstimator:
         return featureCandidates, CandidateIdToDataset
 
 
-    def train_model_for_transformation(self, transformation: Transformation, featureCandidates: List[CandidateFeature], candidateIdToDatasetId: List[int], classifier=None, run_regression=False):
+    def get_metadata_feature_matrix(self, transformation: Transformation, featureCandidates: List[CandidateFeature], candidateIdToDatasetId: List[int], classifier=None, run_regression=False):
         # create metafeatures for attributes
         number_parents = transformation.number_parent_features
         metafeatures = [len, stats.skew, np.nanmax, np.nanmin, np.nanmean, np.nanstd, np.nanvar]
@@ -107,17 +107,16 @@ class TransformationPerformanceEstimator:
         working_candidate_to_dataset_id = []
         working_candidates_ids = []
         for attribute_i in range(len(featureCandidates)):
-            attribute_feature_vector = np.zeros(len(metafeatures) * number_parents)
-            for parent_i in range(number_parents):
-                for feature_i in range(len(metafeatures)):
-                    try:
-                        attribute_feature_vector[feature_i + parent_i*len(metafeatures)] = metafeatures[feature_i](featureCandidates[attribute_i].parents[parent_i].materialize()[
-                                'train'])  # get statistic from transformed training data
-                        attribute_feature_list.append(attribute_feature_vector)
-                        working_candidate_to_dataset_id.append(candidateIdToDatasetId[attribute_i])
-                        working_candidates_ids.append(attribute_i)
-                    except:
-                        pass
+            try:
+                attribute_feature_vector = np.zeros(len(metafeatures) * number_parents)
+                for parent_i in range(number_parents):
+                    for feature_i in range(len(metafeatures)):
+                        attribute_feature_vector[feature_i + parent_i*len(metafeatures)] = metafeatures[feature_i](featureCandidates[attribute_i].parents[parent_i].materialize()['train'])  # get statistic from transformed training data
+                attribute_feature_list.append(attribute_feature_vector)
+                working_candidate_to_dataset_id.append(candidateIdToDatasetId[attribute_i])
+                working_candidates_ids.append(attribute_i)
+            except:
+                pass
 
         attribute_feature_matrix = np.vstack(attribute_feature_list)
 
@@ -154,21 +153,28 @@ class TransformationPerformanceEstimator:
             feature_matrix = np.hstack((feature_matrix, diff_matrix))
             feature_names.extend(self.create_feature_names('diff', metafeatures))
 
+
             '''
             # add correlations
             correlation_matrix = np.zeros((len(attribute_feature_matrix), 1))
             for wi in range(len(working_candidates_ids)):
-                correlation_matrix[wi, 0] = np.corrcoef(
-                    Foi_all[working_candidates_ids[wi]].parents[0].materialize()['train'].reshape(-1, 1),
-                     Foi_all[working_candidates_ids[wi]].parents[1].materialize()['train'].reshape(-1, 1))[0, 1]
+                try:
+                    correlation_matrix[wi, 0] = np.corrcoef(
+                        featureCandidates[working_candidates_ids[wi]].parents[0].materialize()['train'].reshape(-1, 1),
+                        featureCandidates[working_candidates_ids[wi]].parents[1].materialize()['train'].reshape(-1, 1))[0, 1]
+                except:
+                    pass
             feature_matrix = np.hstack((feature_matrix, correlation_matrix))
             feature_names.append('correlation')
             '''
 
+        return feature_matrix, working_candidates_ids, working_candidate_to_dataset_id, feature_names
 
 
 
 
+
+    def run_active_learning(self, feature_matrix, working_candidates_ids, working_candidate_to_dataset_id, feature_names):
         print("training size: " + str(feature_matrix.shape))
 
         al = ActiveLearner(self.datasets,
@@ -177,7 +183,7 @@ class TransformationPerformanceEstimator:
                            working_candidate_to_dataset_id,
                            feature_matrix,
                            feature_names,
-                           5)
+                           60)
         al.run()
 
 
@@ -209,23 +215,22 @@ if __name__ == '__main__':
 
     est = TransformationPerformanceEstimator(data_collection)
     est.gather_data()
-    #est.build_feature_matrix(PandasDiscretizerTransformation(number_bins=10), LogisticRegression())
-    #est.build_feature_matrix(MinMaxScalingTransformation(), LogisticRegression())
+
 
     #transformation = PandasDiscretizerTransformation(number_bins=10)
-    transformation = MinMaxScalingTransformation()
-    featureCandidates, candidateIdToDatasetId = est.create_candidates_for_unary_transformations(transformation)
-
-    est.train_model_for_transformation(transformation, featureCandidates, candidateIdToDatasetId, LogisticRegression())
+    #transformation = MinMaxScalingTransformation()
+    #featureCandidates, candidateIdToDatasetId = est.create_candidates_for_unary_transformations(transformation)
 
 
-    '''
-    transformation = HigherOrderCommutativeClassGenerator(2, methods=[np.nansum]).produce()[0]
+    transformation = HigherOrderCommutativeClassGenerator(2, methods=[np.nanprod]).produce()[0]
     #transformation =  NumpyBinaryClassGenerator(methods=[np.subtract]).produce()[0]
     featureCandidates, candidateIdToDatasetId = est.create_candidates_for_binary_transformations(transformation)
 
-    est.build_feature_matrix_binary_transformation(transformation, LogisticRegression())
-    '''
+    feature_matrix, working_candidates_ids, working_candidate_to_dataset_id, feature_names = \
+        est.get_metadata_feature_matrix(transformation, featureCandidates, candidateIdToDatasetId, LogisticRegression())
+
+    est.run_active_learning(feature_matrix, working_candidates_ids, working_candidate_to_dataset_id, feature_names)
+
 
 
 

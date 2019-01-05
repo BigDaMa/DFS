@@ -42,5 +42,5 @@ class XGBoostRegressor:
         xgdmat = xgb.DMatrix(train, train_target, feature_names=feature_names)
         model = xgb.train(our_params, xgdmat, verbose_eval=False)
 
-        print(model.get_score(importance_type='gain'))
+        print(model.get_interpretability(importance_type='gain'))
 

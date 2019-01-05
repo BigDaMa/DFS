@@ -17,6 +17,12 @@ class Generator:
     def __init__(self, raw_features: List[CandidateFeature]):
         self.Fi: List[CandidateFeature] = raw_features
 
+    def generate_all_candidates(self):
+        candidates = self.generate_candidates()
+        candidates.extend(self.Fi)
+        return candidates
+
+
     def generate_candidates(self):
 
         unary_transformations: List[UnaryTransformation] = []

@@ -5,7 +5,7 @@ array = np.array([3,2,1,4,5])
 ids = np.argsort(array)
 print(array[ids[0]])
 
-
+'''
 attribute_feature_matrix = np.matrix([[1,2],[1,2]])
 
 metafeatures = [1]
@@ -22,3 +22,4 @@ print(np.corrcoef(a,b)[0,1])
 
 
 print(np.abs(np.array([-1, -2, -3])))
+'''

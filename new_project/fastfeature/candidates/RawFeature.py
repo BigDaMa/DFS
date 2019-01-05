@@ -8,6 +8,7 @@ class RawFeature(CandidateFeature):
         self.column_id: int = column_id
         self.splitted_values: Dict[str, Any] = splitted_values
         self.properties: Dict[str, Any] = properties
+        self.parents = []
 
     def materialize(self):
         return self.splitted_values
@@ -21,3 +22,8 @@ class RawFeature(CandidateFeature):
     def get_number_of_raw_attributes(self):
         return 1
 
+    def get_raw_attributes(self):
+        return [self]
+
+    def get_name(self):
+        return self.name

@@ -70,8 +70,8 @@ class CandidateFeature:
         if self.number_of_transformations == None:
             self.number_of_transformations: int = 0
             for p in self.parents:
-                self.number_of_transformations += p.get_number_of_transformations() + 1
-        return self.number_of_transformations
+                self.number_of_transformations += p.get_number_of_transformations()
+        return self.number_of_transformations + 1
 
 
     #not the unique set, but the number
@@ -85,12 +85,69 @@ class CandidateFeature:
     def __repr__(self):
         return self.get_name()
 
+    def get_raw_attributes(self):
+        raw_attributes: List[RawFeature] = []
+        for p in self.parents:
+            raw_attributes.extend(p.get_raw_attributes())
+        return raw_attributes
+
+
+    def get_traceability_keys(self, record_i, raw_attributes):
+        str_key_list: List[str] = []
+        target_value: str = str(self.materialize()['train'][record_i])
+        str_key_list.append(target_value)
+        for attribute_i in range(len(raw_attributes)):
+            str_key_list.append(raw_attributes[0].materialize()['train'][record_i])
+        key = tuple(str(element) for element in str_key_list)
+        return target_value, key
+
+
+    def calculate_traceability(self):
+        #first create a tuple for all raw attributes
+        raw_attributes = self.get_raw_attributes()
+
+        target_value_count: Dict[Any, int] = {}
+        value_combination_count = {}
+
+        for record_i in range(len(raw_attributes[0].materialize()['train'])):
+            try:
+                target_value, key = self.get_traceability_keys(record_i, raw_attributes)
+
+                if not target_value in target_value_count:
+                    target_value_count[target_value] = 0
+                target_value_count[target_value] += 1
+                if not key in value_combination_count:
+                    value_combination_count[key] = 0
+                value_combination_count[key] += 1
+            except:
+                pass
+
+        sum_traceability: float = 0.0
+        for record_i in range(len(raw_attributes[0].materialize()['train'])):
+            try:
+                target_value, key = self.get_traceability_keys(record_i, raw_attributes)
+                record_traceability = value_combination_count[key] / float(target_value_count[target_value])
+            except:
+                record_traceability = 0.0
+            sum_traceability += record_traceability
+
+        # return average traceability per record
+        avg_traceability = sum_traceability / len(raw_attributes[0].materialize()['train'])
+
+        print(self.get_name() + ": " + str(avg_traceability))
+
+        return avg_traceability
+
+
+
+
 
     # less complexity than other feature
     def __lt__(self, other: 'CandidateFeature'):
         #first, compare depth -> tree depth
         if self.get_transformation_depth() < other.get_transformation_depth():
             return True
+
         if self.get_transformation_depth() > other.get_transformation_depth():
             return False
 
@@ -99,7 +156,8 @@ class CandidateFeature:
             return True
         if self.get_number_of_transformations() > other.get_number_of_transformations():
             return False
-
+        '''
+        '''
         # third, the number of raw attributes -> number of leaves
         if self.get_number_of_raw_attributes() < other.get_number_of_raw_attributes():
             return True

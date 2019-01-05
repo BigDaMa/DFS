@@ -19,6 +19,8 @@ from fastfeature.candidate_generation.explorekit.Generator import Generator
 from fastfeature.transformations.generators.HigherOrderCommutativeClassGenerator import HigherOrderCommutativeClassGenerator
 import xgboost as xgb
 import time
+from sklearn.model_selection import GridSearchCV
+import pickle
 
 
 class ActiveLearner:
@@ -80,11 +82,37 @@ class ActiveLearner:
         while time.time() - start <= 60 * self.runtimeMinutes:
             X = self.metadata_feature_matrix[selected_ids, :]
             self.model = self.train(X, y)
+            #dump model
+            pickle.dump(self.model, open("/tmp/model.p", "wb"))
+
             least_certain_tuple_ids = self.model.get_k_least_certain_tuples(self.xGBoostMatrix, k=10)
             #label selected tuples:
             for tuple_i in least_certain_tuple_ids:
                 y.append(self.create_label_by_running_classifier(tuple_i))
                 selected_ids.append(tuple_i)
+
+
+
+    '''
+    def evaluate(self, feature_matrix, score=make_scorer(roc_auc_score, average='micro'), folds=5):
+        cv_results = cross_validate(self.classifier,
+                                    feature_matrix,
+                                    self.current_target,
+                                    cv=folds,
+                                    scoring=score,
+                                    return_train_score=False)
+        score = np.average(cv_results['test_score'])
+        return score
+    '''
+
+
+
+    def evaluate(self, feature_matrix,current_target, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+        parameters = {'penalty': ['l1', 'l2'], 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
+        clf = GridSearchCV(self.classifier, parameters, cv=folds, scoring=score)
+        clf.fit(feature_matrix, current_target)
+        score = clf.best_score_
+        return score
 
 
     def create_label_by_running_classifier(self, working_candidate_id, folds=10):
@@ -100,27 +128,14 @@ class ActiveLearner:
             current_target = self.datasets[self.working_candidate_id_to_dataset_id[working_candidate_id]].splitted_target['train']
             current_target = LabelEncoder().fit_transform(current_target)
 
-            cv_results = cross_validate(self.classifier,
-                                        current_plain_matrix,
-                                        current_target,
-                                        cv=folds,
-                                        scoring=make_scorer(roc_auc_score, average='micro'),
-                                        return_train_score=False)
-            raw_score = np.average(cv_results['test_score'])
-
-            materialized_feature = self.all_feature_candidates[self.working_candidates_ids[working_candidate_id]].materialize()['train'].reshape(-1, 1)
+            raw_score = self.evaluate(current_plain_matrix, current_target, folds=folds)
 
             # run transformed attribute
             # think about hyperparameter tuning
-
-            cv_results = cross_validate(self.classifier,
-                                        materialized_feature,
-                                        current_target,
-                                        cv=folds,
-                                        scoring=make_scorer(roc_auc_score, average='micro'),
-                                        return_train_score=False)
-
-            transformed_score = np.average(cv_results['test_score'])
+            materialized_feature = \
+            self.all_feature_candidates[self.working_candidates_ids[working_candidate_id]].materialize()[
+                'train'].reshape(-1, 1)
+            transformed_score = self.evaluate(materialized_feature, current_target, folds=folds)
 
             return transformed_score > raw_score
         except:
