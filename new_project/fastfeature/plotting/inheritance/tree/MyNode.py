@@ -2,6 +2,8 @@ from graphviz import Digraph
 from typing import List
 from fastfeature.candidates.CandidateFeature import CandidateFeature
 import matplotlib.pyplot as plt
+import networkx as nx
+import time
 
 class MyNode(object):
     def __init__(self, name: int, candidate: CandidateFeature, score: float, children=None):
@@ -101,14 +103,14 @@ class MyNode(object):
                 graph.edge(str(self.name), str(self.children[child_i].name), color='#ffffff')
         return graph
 
-    def create_graph_graphml(self, graph, start_score=-1, max_score=2):
+    def create_graph_graphml(self, graph: nx.Graph, start_score=-1, max_score=2):
         node_text: str = ''
         if self.candidate == None:
             node_text = 'root'
         else:
             node_text = self.candidate.get_name()
 
-        print(node_text)
+        print("Node:" + str(node_text) + ": " +  str(self.name))
 
         size = -1.0
         if self.score > start_score:

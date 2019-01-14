@@ -21,6 +21,9 @@ my_range = (0.50, 0.88)
 
 all_data = pickle.load(open(file, "rb"))
 
+
+print(all_data['names'][-1])
+
 cool_plotting(all_data['interpretability'],
               all_data['new_scores'],
               all_data['names'],
