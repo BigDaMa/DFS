@@ -1,6 +1,7 @@
 .idea/
 *.iml
 *.pyc
+*.cpython-36.pyc
 fastsklearnfeature/candidates/__pycache__/
 
 *~

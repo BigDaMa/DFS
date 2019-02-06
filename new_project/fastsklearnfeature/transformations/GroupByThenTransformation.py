@@ -27,7 +27,7 @@ class GroupByThenTransformation(BaseEstimator, TransformerMixin, Transformation)
         return self
 
     def transform(self, X):
-        result = np.zeros(len(X))
+        result = np.zeros((len(X),1))
         for i in range(len(X)):
             key = tuple(element for element in X[i, self.key_attributes])
             if key in self.final_mapping:
