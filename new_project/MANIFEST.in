@@ -1,1 +1,1 @@
-include ml/configuration/resources/*.properties
+include fastsklearnfeature/configuration/resources/*.properties
