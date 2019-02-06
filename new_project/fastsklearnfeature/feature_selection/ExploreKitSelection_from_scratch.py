@@ -29,6 +29,7 @@ from sklearn.model_selection import GridSearchCV
 import multiprocessing as mp
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
+from fastsklearnfeature.configuration.Config import Config
 
 class ExploreKitSelection:
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
@@ -235,10 +236,11 @@ class ExploreKitSelection:
 
 
 
-
+#statlog_heart.csv=/home/felix/datasets/ExploreKit/csv/dataset_53_heart-statlog_heart.csv
+#statlog_heart.target=13
 
 if __name__ == '__main__':
-    dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_53_heart-statlog_heart.csv", 13)
+    dataset = (Config.get('statlog_heart.csv'), int(Config.get('statlog_heart.target')))
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
@@ -253,7 +255,7 @@ if __name__ == '__main__':
 
     start_score, new_scores, ids = selector.run()
 
-    selector.plot_accuracy_vs_interpretability(start_score, new_scores, ids)
+    #selector.plot_accuracy_vs_interpretability(start_score, new_scores, ids)
 
 
 
