@@ -62,7 +62,7 @@ print('starter: ' + str(all_data['start_score']))
 
 start_score = all_data['start_score']
 if start_score < 0:
-    start_score = 0.6
+    start_score = 0.7
 
 import networkx as nx
 graph = nx.Graph()

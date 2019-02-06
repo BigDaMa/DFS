@@ -77,7 +77,6 @@ for stored_id in range(len(all_data['ids'])):
 for c in all_candidates:
     name = c.get_name()
 
-    #if depth_greater2(c):
     if do_not_use_feature(c):
         interpretability_pruned.append(all_data['interpretability'][candidate_id_to_stored_id[names_all[name]]])
         new_scores_pruned.append(all_data['new_scores'][candidate_id_to_stored_id[names_all[name]]])
