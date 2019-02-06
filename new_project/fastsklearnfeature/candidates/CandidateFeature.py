@@ -22,7 +22,8 @@ class CandidateFeature:
 
 
     def create_pipeline(self):
-        parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents], n_jobs=Config.get('feature.union.parallelism'))
+        #parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents], n_jobs=Config.get('feature.union.parallelism'))
+        parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents])
         pipeline = Pipeline([
             ('parents', parent_features),
             (self.transformation.name, self.transformation)
