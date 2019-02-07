@@ -78,11 +78,19 @@ class ExploreKitSelection:
             ('classifier', self.classifier)
         ])
 
+        result = {}
+
+        time_start_gs = time.time()
         clf = GridSearchCV(pipeline, parameters, cv=self.preprocessed_folds, scoring=score, iid=False, error_score='raise')
         clf.fit(self.dataset.splitted_values['train'], self.current_target)
-        score = clf.best_score_
+        result['time'] = time.time() - time_start_gs
+        result['score'] = clf.best_score_
+        result['hyperparameters'] = clf.best_params_
+        result['candidate'] = candidate
+
+
         #print(str(candidate) + " -> " + str(score))
-        return score
+        return result
 
 
 
@@ -126,9 +134,6 @@ class ExploreKitSelection:
         pickle.dump(all_data, open("/tmp/traceability.p", "wb"))
 
 
-    def get_traceability(self, candidate_id):
-        return self.traceability[candidate_id]
-
     def get_interpretability(self, candidate_id):
         return 1.0 - ((self.candidate_id_to_ranked_id[candidate_id] + 1) / float(len(self.candidate_id_to_ranked_id)))
 
@@ -158,14 +163,14 @@ class ExploreKitSelection:
 
 
     def evaluate_single_candidate(self, candidate):
-        new_score = -1.0
+        result = {}
         try:
-            new_score = self.evaluate(candidate)
+            result = self.evaluate(candidate)
             #print("feature: " + str(candidate) + " -> " + str(new_score))
         except Exception as e:
             print(str(candidate) + " -> " + str(e))
             pass
-        return new_score
+        return result
 
 
     '''
@@ -199,38 +204,33 @@ class ExploreKitSelection:
         print("start score: " + str(start_score))
 
         #get candidates that should be evaluated
-        ranked_selected_candidate_ids = self.select_interpretable(len(self.candidates))
+        ranked_selected_candidate_ids = self.select_interpretable(100)#(len(self.candidates))
 
         start_time = time.time()
 
-        new_scores = self.evaluate_candidates(np.array(self.candidates)[ranked_selected_candidate_ids])
+        results = self.evaluate_candidates(np.array(self.candidates)[ranked_selected_candidate_ids])
+
+        new_scores = [r['score'] for r in results]
         best_id = ranked_selected_candidate_ids[np.argmax(new_scores)]
 
         print("start score: " + str(start_score))
         print("feature: " + str(self.candidates[best_id]) + " -> " + str(np.max(new_scores)))
         print("evaluation time: " + str((time.time()-start_time) / 60) + " min")
 
-        return start_score, new_scores, ranked_selected_candidate_ids
+        return start_score, results, ranked_selected_candidate_ids
 
-    def plot_accuracy_vs_interpretability(self, start_score, new_scores, ids):
+    def plot_accuracy_vs_interpretability(self, start_score, results, ids):
         interpretability = []
         names = []
 
+        candidates = [r['candidate'] for r in results]
         for i in range(len(ids)):
             interpretability.append(self.get_interpretability(ids[i]))
             cand = self.candidates[ids[i]]
             names.append(str(cand) + ": d: " + str(cand.get_transformation_depth()) + "& t:" + str(cand.get_number_of_transformations()))
+            assert str(self.candidates[ids[i]]) == str(candidates[i]), "candidates are not matching"
 
-        all_data = {}
-        all_data['start_score'] = start_score
-        all_data['new_scores'] = new_scores
-        all_data['names'] = names
-        all_data['ids'] = ids
-        all_data['interpretability'] = interpretability
-
-        pickle.dump(all_data, open("/tmp/chart.p", "wb"))
-
-        cool_plotting(interpretability, new_scores, names, start_score)
+        cool_plotting(interpretability, [r['score']for r in results], names, start_score)
 
 
 
@@ -251,9 +251,14 @@ if __name__ == '__main__':
     selector = ExploreKitSelection(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
-    start_score, new_scores, ids = selector.run()
+    start_score, results, ids = selector.run()
 
-    #selector.plot_accuracy_vs_interpretability(start_score, new_scores, ids)
+    pickle.dump(results, open("/tmp/all_data.p", "wb"))
+
+    if bool(Config.get('plotting')):
+        selector.plot_accuracy_vs_interpretability(start_score, results, ids)
+
+
 
 
 
