@@ -80,16 +80,11 @@ class ExploreKitSelection:
 
         result = {}
 
-        time_start_gs = time.time()
         clf = GridSearchCV(pipeline, parameters, cv=self.preprocessed_folds, scoring=score, iid=False, error_score='raise')
         clf.fit(self.dataset.splitted_values['train'], self.current_target)
-        result['time'] = time.time() - time_start_gs
         result['score'] = clf.best_score_
         result['hyperparameters'] = clf.best_params_
-        result['candidate'] = candidate
 
-
-        #print(str(candidate) + " -> " + str(score))
         return result
 
 
@@ -164,12 +159,17 @@ class ExploreKitSelection:
 
     def evaluate_single_candidate(self, candidate):
         result = {}
+        result['candidate'] = candidate
+        time_start_gs = time.time()
         try:
             result = self.evaluate(candidate)
             #print("feature: " + str(candidate) + " -> " + str(new_score))
         except Exception as e:
             print(str(candidate) + " -> " + str(e))
+            result['score'] = -1.0
+            result['hyperparameters'] = {}
             pass
+        result['time'] = time.time() - time_start_gs
         return result
 
 
