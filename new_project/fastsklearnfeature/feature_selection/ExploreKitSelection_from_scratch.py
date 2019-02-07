@@ -149,7 +149,6 @@ class ExploreKitSelection:
 
     def evaluate_single_candidate(self, candidate):
         result = {}
-        result['candidate'] = candidate
         time_start_gs = time.time()
         try:
             result = self.evaluate(candidate)
@@ -159,6 +158,7 @@ class ExploreKitSelection:
             result['score'] = -1.0
             result['hyperparameters'] = {}
             pass
+        result['candidate'] = candidate
         result['time'] = time.time() - time_start_gs
         return result
 
