@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
 from fastsklearnfeature.configuration.Config import Config
-
+import copy
 
 class CandidateFeature:
     def __init__(self, transformation: Transformation, parents: List['CandidateFeature']):
@@ -23,7 +23,11 @@ class CandidateFeature:
 
     def create_pipeline(self):
         #parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents], n_jobs=Config.get('feature.union.parallelism'))
-        parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents])
+
+        if bool(Config.get('pipeline.caching')):
+            parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents])
+        else:
+            parent_features = FeatureUnion([(p.get_name(), copy.deepcopy(p.pipeline)) for p in self.parents])
 
         memory = None
         if bool(Config.get('pipeline.caching')):

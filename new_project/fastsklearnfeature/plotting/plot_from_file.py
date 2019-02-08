@@ -35,3 +35,9 @@ cool_plotting(numbers_features_and_numbers_transformations,
               names,
               0.0,
               my_range)
+
+cool_plotting(runtimes,
+              scores,
+              names,
+              0.0,
+              my_range)
