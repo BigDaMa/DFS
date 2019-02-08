@@ -5,6 +5,7 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from fastsklearnfeature.candidates.Identity import identity
+from fastsklearnfeature.configuration.Config import Config
 
 class RawFeature(CandidateFeature):
     def __init__(self, name, column_id, properties):
@@ -17,6 +18,10 @@ class RawFeature(CandidateFeature):
 
 
     def create_pipeline(self):
+        memory=None
+        if bool(Config.get('pipeline.caching')):
+            memory="/tmp"
+
         pipeline = Pipeline([
             (
                 self.name, ColumnTransformer(
@@ -25,7 +30,7 @@ class RawFeature(CandidateFeature):
                     ]
                 )
             )
-        ], memory="/tmp")
+        ], memory=memory)
         return pipeline
 
     def get_transformation_depth(self):

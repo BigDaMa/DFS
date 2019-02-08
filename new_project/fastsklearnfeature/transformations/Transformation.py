@@ -53,4 +53,4 @@ class Transformation:
             return itertools.combinations(features, r=self.number_parent_features)
 
         if not self.parent_feature_order_matters and self.parent_feature_repetition_is_allowed:
-            return  itertools.combinations_with_replacement(features, r=self.number_parent_features)
+            return itertools.combinations_with_replacement(features, r=self.number_parent_features)
