@@ -116,7 +116,7 @@ class ExploreKitSelection:
         for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'], self.current_target):
             self.preprocessed_folds.append((train, test))
 
-        pool = mp.Pool(processes=1)
+        pool = mp.Pool(processes=int(Config.get("parallelism")))
         results = pool.map(self.evaluate_single_candidate, candidates)
         return results
 
