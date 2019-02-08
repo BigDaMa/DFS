@@ -101,6 +101,7 @@ class CandidateFeature:
         return target_value, key
 
 
+    '''
     def calculate_traceability(self):
         #first create a tuple for all raw attributes
         raw_attributes = self.get_raw_attributes()
@@ -136,7 +137,7 @@ class CandidateFeature:
         print(self.get_name() + ": " + str(avg_traceability))
 
         return avg_traceability
-
+    '''
 
 
 

@@ -14,7 +14,7 @@ import numpy as np
 #file = '/home/felix/phd/fastfeature_logs/newest_28_11/chart_hyper_10_all.p'
 #my_range = (0.72, 0.88)
 # heart also raw features
-file = '/home/felix/phd/fastfeatures/results/cluster_good_cv/all_data.p'
+file = '/home/felix/phd/fastfeatures/results/cluster_good_cv_fixed_group/all_data.p'
 my_range = (0.50, 0.88)
 
 

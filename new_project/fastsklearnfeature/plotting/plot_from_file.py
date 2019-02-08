@@ -1,5 +1,7 @@
 import pickle
 from fastfeature.plotting.plotter import cool_plotting
+from typing import List, Dict, Any
+from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 
 #file = "/tmp/chart.p"
 #file = '/home/felix/phd/fastfeature_logs/charts/chart_all_23_11.p'
@@ -10,7 +12,7 @@ from fastfeature.plotting.plotter import cool_plotting
 #file = '/home/felix/phd/fastfeature_logs/newest_28_11/chart_hyper_10_all.p'
 #my_range = (0.72, 0.88)
 # heart also raw features
-file = '/home/felix/phd/fastfeatures/results/cluster_good_cv/all_data.p'
+file = '/home/felix/phd/fastfeatures/results/cluster_good_cv_fixed_group/all_data.p'
 my_range = (0.50, 0.88)
 
 
@@ -25,9 +27,10 @@ all_data = pickle.load(open(file, "rb"))
 names = [str(r['candidate']) for r in all_data]
 scores = [r['score'] for r in all_data]
 runtimes = [r['time'] for r in all_data]
+numbers_features_and_numbers_transformations = [(r['candidate'].get_number_of_transformations() + 1) for r in all_data]
 
 
-cool_plotting(runtimes,
+cool_plotting(numbers_features_and_numbers_transformations,
               scores,
               names,
               0.0,

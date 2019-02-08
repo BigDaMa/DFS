@@ -47,3 +47,6 @@ class RawFeature(CandidateFeature):
 
     def get_name(self):
         return self.name
+
+    def calculate_traceability(self):
+        return 1.0
