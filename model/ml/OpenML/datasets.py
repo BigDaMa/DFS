@@ -16,7 +16,7 @@ for data_id in datasets.iterkeys():
     for feature in data.features.itervalues():
         if feature.data_type == 'string':
             list_string_data.append(data.dataset_id)
-            print data.dataset_id
+            print(data.dataset_id)
             break
 
 
