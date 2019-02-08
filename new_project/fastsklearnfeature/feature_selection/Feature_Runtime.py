@@ -181,7 +181,7 @@ class ExploreKitSelection:
         print("start score: " + str(start_score))
 
         #get candidates that should be evaluated
-        ranked_selected_candidate_ids = self.select_interpretable(100)#len(self.candidates))
+        ranked_selected_candidate_ids = self.select_interpretable(len(self.candidates))
 
         start_time = time.time()
 
