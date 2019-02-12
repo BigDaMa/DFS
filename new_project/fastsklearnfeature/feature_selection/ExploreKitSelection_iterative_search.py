@@ -19,8 +19,11 @@ import multiprocessing as mp
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from fastsklearnfeature.configuration.Config import Config
+from sklearn.pipeline import FeatureUnion
+import copy
+import itertools
 
-class ExploreKitSelection:
+class ExploreKitSelection_iterative_search:
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'classifier__solver': ['lbfgs']}):
@@ -47,25 +50,28 @@ class ExploreKitSelection:
         np.random.shuffle(arr)
         return arr[0:k]
 
-    def select_interpretable(self, k: int):
-        inv_map = {v: k for k, v in self.candidate_id_to_ranked_id.items()}
-        selected = []
-        for i in range(k):
-            selected.append(inv_map[i])
-        return selected
-
-
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
         self.current_target = LabelEncoder().fit_transform(current_target)
 
-    def evaluate(self, candidate: CandidateFeature, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+    def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
         parameters = self.grid_search_parameters
 
-        pipeline = Pipeline([
-            (candidate.get_name(), candidate.pipeline),
-            ('classifier', self.classifier)
-        ])
+
+        if not isinstance(candidate, CandidateFeature):
+            pipeline = Pipeline([('features',FeatureUnion(
+
+                        [(p.get_name(), p.pipeline) for p in candidate]
+                    )),
+                ('classifier', self.classifier)
+            ])
+        else:
+            pipeline = Pipeline([('features', FeatureUnion(
+                [
+                    (candidate.get_name(), candidate.pipeline)
+                ])),
+                 ('classifier', self.classifier)
+                 ])
 
         result = {}
 
@@ -87,39 +93,6 @@ class ExploreKitSelection:
         for f_index in range(len(Fi)):
             starting_feature_matrix[:, f_index] = Fi[f_index].materialize()['train']
         return starting_feature_matrix
-
-    def my_arg_sort(self, seq):
-        # http://stackoverflow.com/questions/3382352/equivalent-of-numpy-argsort-in-basic-python/3383106#3383106
-        # non-lambda version by Tony Veijalainen
-        return [i for (v, i) in sorted((v, i) for (i, v) in enumerate(seq))]
-
-    def get_interpretability_ranking(self):
-        #high interpretability -> low interpretability
-        interpretability_ids = self.my_arg_sort(self.candidates)
-
-        self.candidate_id_to_ranked_id = {}
-        for i in range(len(interpretability_ids)):
-            self.candidate_id_to_ranked_id[interpretability_ids[i]] = i
-
-    def get_traceability_ranking(self):
-        # high traceability -> low traceability
-        self.traceability: List[float] = []
-        for c_i in range(len(self.candidates)):
-            self.traceability.append(self.candidates[c_i].calculate_traceability())
-        ids = np.argsort(np.array(self.traceability)*-1)
-
-        self.candidate_id_to_ranked_id = {}
-        for i in range(len(ids)):
-            self.candidate_id_to_ranked_id[ids[i]] = i
-
-        all_data = {}
-        all_data['my_dict'] = self.candidate_id_to_ranked_id
-        all_data['traceability'] = self.traceability
-        pickle.dump(all_data, open("/tmp/traceability.p", "wb"))
-
-
-    def get_interpretability(self, candidate_id):
-        return 1.0 - ((self.candidate_id_to_ranked_id[candidate_id] + 1) / float(len(self.candidate_id_to_ranked_id)))
 
 
     def evaluate_candidates(self, candidates):
@@ -169,6 +142,46 @@ class ExploreKitSelection:
         return new_score
     '''
 
+    #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
+    def partition(self, number):
+        answer = set()
+        answer.add((number,))
+        for x in range(1, number):
+            for y in self.partition(number - x):
+                answer.add(tuple(sorted((x,) + y)))
+        return answer
+
+    def get_all_features_below_n_cost(self, cost):
+        filtered_candidates = []
+        for i in range(len(self.candidates)):
+            if (self.candidates[i].get_number_of_transformations() + 1) <= cost:
+                filtered_candidates.append(self.candidates[i])
+        return filtered_candidates
+
+    def get_all_features_equal_n_cost(self, cost):
+        filtered_candidates = []
+        for i in range(len(self.candidates)):
+            if (self.candidates[i].get_number_of_transformations() + 1) == cost:
+                filtered_candidates.append(self.candidates[i])
+        return filtered_candidates
+
+
+
+    def get_all_possible_representations_for_step_x(self, x):
+
+        all_representations = []
+        partitions = self.partition(x)
+
+        #get candidates of partitions
+        candidates_with_cost_x = {}
+        for i in range(x+1):
+            candidates_with_cost_x[i] = self.get_all_features_equal_n_cost(i)
+
+        for p in partitions:
+            all_representations.extend(itertools.product(*[candidates_with_cost_x[pi] for pi in p]))
+
+        return all_representations
+
 
     def run(self):
         # generate all candidates
@@ -176,50 +189,29 @@ class ExploreKitSelection:
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-        candidate_name_to_id = {}
-        for c_i in range(len(self.candidates)):
-            candidate_name_to_id[self.candidates[c_i].get_name()] = c_i
 
-        pickle.dump(candidate_name_to_id, open("/tmp/name2id.p", "wb"))
+        found_features = []
+        for round in range(2):
+            start_time = time.time()
 
-        pickle.dump(self.candidates, open("/tmp/all_candiates.p", "wb"))
 
-        self.get_interpretability_ranking()
-        #self.get_traceability_ranking()
+            all_current_rep = self.get_all_possible_representations_for_step_x(round + 1)
+            print(len(all_current_rep))
 
-        #evaluate starting matrix
-        #start_score = self.evaluate(starting_feature_matrix)
-        start_score = -1
-        print("start score: " + str(start_score))
 
-        #get candidates that should be evaluated
-        ranked_selected_candidate_ids = self.select_interpretable(len(self.candidates))
+            results = self.evaluate_candidates(all_current_rep)
 
-        start_time = time.time()
+            new_scores = [r['score'] for r in results]
+            best_id = np.argmax(new_scores)
 
-        results = self.evaluate_candidates(np.array(self.candidates)[ranked_selected_candidate_ids])
+            found_features.append(results[best_id])
 
-        new_scores = [r['score'] for r in results]
-        best_id = ranked_selected_candidate_ids[np.argmax(new_scores)]
+            print(found_features)
 
-        print("start score: " + str(start_score))
-        print("feature: " + str(self.candidates[best_id]) + " -> " + str(np.max(new_scores)))
-        print("evaluation time: " + str((time.time()-start_time) / 60) + " min")
+            print("evaluation time: " + str((time.time()-start_time) / 60) + " min")
 
-        return start_score, results, ranked_selected_candidate_ids
 
-    def plot_accuracy_vs_interpretability(self, start_score, results, ids):
-        interpretability = []
-        names = []
-
-        candidates = [r['candidate'] for r in results]
-        for i in range(len(ids)):
-            interpretability.append(self.get_interpretability(ids[i]))
-            cand = self.candidates[ids[i]]
-            names.append(str(cand) + ": d: " + str(cand.get_transformation_depth()) + "& t:" + str(cand.get_number_of_transformations()))
-            assert str(self.candidates[ids[i]]) == str(candidates[i]), "candidates are not matching"
-
-        cool_plotting(interpretability, [r['score']for r in results], names, start_score)
+        return results
 
 
 
@@ -237,15 +229,12 @@ if __name__ == '__main__':
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
 
-    selector = ExploreKitSelection(dataset)
+    selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
-    start_score, results, ids = selector.run()
+    selector.run()
 
-    pickle.dump(results, open("/tmp/all_data.p", "wb"))
-
-    if bool(Config.get('plotting')):
-        selector.plot_accuracy_vs_interpretability(start_score, results, ids)
+    #pickle.dump(results, open("/tmp/all_data.p", "wb"))
 
 
 

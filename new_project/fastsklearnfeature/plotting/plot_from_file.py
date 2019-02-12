@@ -3,16 +3,8 @@ from fastfeature.plotting.plotter import cool_plotting
 from typing import List, Dict, Any
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 
-#file = "/tmp/chart.p"
-#file = '/home/felix/phd/fastfeature_logs/charts/chart_all_23_11.p'
-#file = '/home/felix/phd/fastfeature_logs/charts/chart_all_fold20_no_hyper_opt_32min.p'
-#file = '/home/felix/phd/fastfeature_logs/charts/chart_all_sorted_by_complexity_fold20_hyper_opt_1045min.p'
-
-#heart
-#file = '/home/felix/phd/fastfeature_logs/newest_28_11/chart_hyper_10_all.p'
-#my_range = (0.72, 0.88)
 # heart also raw features
-file = '/home/felix/phd/fastfeatures/results/cluster_good_cv_fixed_group/all_data.p'
+file = '/home/felix/phd/fastfeatures/results/no_cache/all_data.p'
 my_range = (0.50, 0.88)
 
 

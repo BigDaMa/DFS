@@ -5,60 +5,18 @@ from fastsklearnfeature.candidates.RawFeature import RawFeature
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-#file = "/tmp/chart.p"
-#file = '/home/felix/phd/fastfeature_logs/charts/chart_all_23_11.p'
-#file = '/home/felix/phd/fastfeature_logs/charts/chart_all_fold20_no_hyper_opt_32min.p'
-
-# hearts
-#file = '/home/felix/phd/fastfeature_logs/newest_28_11/chart_hyper_10_all.p'
-#names_all_file = '/home/felix/phd/fastfeature_logs/newest_28_11/name2id.p'
-#all_candidates_file = '/home/felix/phd/fastfeature_logs/newest_28_11/all_candidates.p'
-
-# hearts - all features + fi
-file = '/home/felix/phd/fastfeatures/results/heart_also_raw_features/chart.p'
-names_all_file = '/home/felix/phd/fastfeatures/results/heart_also_raw_features/name2id.p'
-all_candidates_file = '/home/felix/phd/fastfeatures/results/heart_also_raw_features/all_candiates.p'
-
-
-# diabetes
-#file = '/home/felix/phd/fastfeatures/results/diabetes/chart.p'
-#names_all_file = '/home/felix/phd/fastfeatures/results/diabetes/name2id.p'
-#all_candidates_file = '/home/felix/phd/fastfeatures/results/diabetes/all_candiates.p'
-
-
-
-
+file = '/home/felix/phd/fastfeatures/results/cluster_good_cv_fixed_group/all_data.p'
 all_data = pickle.load(open(file, "rb"))
-names_all: Dict[str, int] = pickle.load(open(names_all_file, "rb"))
 
-candidate_id_to_stored_id= {}
-
-for stored_id in range(len(all_data['ids'])):
-    candidate_id_to_stored_id[all_data['ids'][stored_id]] = stored_id
-
-
-all_candidates: List[CandidateFeature] = pickle.load(open(all_candidates_file, "rb"))
-
-
-print(all_candidates[-1])
-print(all_data['new_scores'][candidate_id_to_stored_id[names_all[all_candidates[-1].get_name()]]])
+all_candidates: List[CandidateFeature] = [r['candidate'] for r in all_data]
+scores = [r['score'] for r in all_data]
 
 
 
+max_score = np.max(scores)
+min_score = np.min(scores)
 
-
-max_score = np.max(all_data['new_scores'])
-min_score = np.min(all_data['new_scores'])
-
-print('min score: ' + str(min_score))
-print('starter: ' + str(all_data['start_score']))
-
-
-
-start_score = all_data['start_score']
-if start_score < 0:
-    start_score = 0.7
+start_score = 0.75
 
 import networkx as nx
 graph = nx.Graph()
@@ -77,13 +35,13 @@ candidate_name_to_node = {}
 for i in range(len(all_candidates)):
     id = str(i)
     candidate = all_candidates[i]
-    score = all_data['new_scores'][candidate_id_to_stored_id[names_all[all_candidates[i].get_name()]]]
+    score = scores[i]
     candidate_name_to_node[candidate.get_name()] = id
 
     size = -1.0
     if score > start_score:
         normed_value = (score - start_score) / (max_score - start_score)
-        size = str(100 * normed_value)
+        size = str(np.square(100 * normed_value))
     else:
         size = str(1)
 

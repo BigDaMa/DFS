@@ -66,7 +66,8 @@ def pruned_plotting(interpretability_pruned,
 
 
 def calculate_cummulative(x,y):
-    ids = np.argsort(np.array(x)*-1.0)
+    #ids = np.argsort(np.array(x)*-1.0)
+    ids = np.argsort(np.array(x) )
     sorted_scores = np.array(y)[ids] # 1.0 -> 0.0
 
     cummulative = []
@@ -94,9 +95,9 @@ def cool_plotting(x, y, names, start_score, accuracy_lim=None):
 
     ax.set_xlabel("Interpretability (low -> high)")
     ax.set_ylabel("Accuracy (Micro AUC)")
-    ax.set_xlim((0, 1.0))
-    if type(accuracy_lim) != type(None):
-        ax.set_ylim(accuracy_lim)
+    #ax.set_xlim((0, 1.0))
+    #if type(accuracy_lim) != type(None):
+    #    ax.set_ylim(accuracy_lim)
 
     ax.axhline(y=start_score, color='red', linestyle='--')
 
