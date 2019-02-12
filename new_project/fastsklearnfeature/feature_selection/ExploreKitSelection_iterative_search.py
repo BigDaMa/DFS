@@ -191,13 +191,12 @@ class ExploreKitSelection_iterative_search:
 
 
         found_features = []
-        for round in range(2):
+        for round in range(3):
             start_time = time.time()
 
 
             all_current_rep = self.get_all_possible_representations_for_step_x(round + 1)
             print(len(all_current_rep))
-
 
             results = self.evaluate_candidates(all_current_rep)
 
@@ -211,7 +210,8 @@ class ExploreKitSelection_iterative_search:
             print("evaluation time: " + str((time.time()-start_time) / 60) + " min")
 
 
-        return results
+
+        return found_features
 
 
 
