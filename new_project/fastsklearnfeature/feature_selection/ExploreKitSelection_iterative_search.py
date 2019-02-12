@@ -12,7 +12,6 @@ from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
-from fastfeature.plotting.plotter import cool_plotting
 import pickle
 from sklearn.model_selection import GridSearchCV
 import multiprocessing as mp
@@ -20,7 +19,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from fastsklearnfeature.configuration.Config import Config
 from sklearn.pipeline import FeatureUnion
-import copy
 import itertools
 
 class ExploreKitSelection_iterative_search:
@@ -190,6 +188,9 @@ class ExploreKitSelection_iterative_search:
         self.generate_target()
 
 
+        all_results = []
+
+
         found_features = []
         for round in range(3):
             start_time = time.time()
@@ -199,6 +200,8 @@ class ExploreKitSelection_iterative_search:
             print(len(all_current_rep))
 
             results = self.evaluate_candidates(all_current_rep)
+
+            all_results.append(results)
 
             new_scores = [r['score'] for r in results]
             best_id = np.argmax(new_scores)
@@ -211,7 +214,7 @@ class ExploreKitSelection_iterative_search:
 
 
 
-        return found_features
+        return all_results
 
 
 
@@ -232,9 +235,9 @@ if __name__ == '__main__':
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
-    selector.run()
+    results = selector.run()
 
-    #pickle.dump(results, open("/tmp/all_data.p", "wb"))
+    pickle.dump(results, open("/tmp/all_data_iterations.p", "wb"))
 
 
 
