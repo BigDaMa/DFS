@@ -192,7 +192,7 @@ class ExploreKitSelection_iterative_search:
 
 
         found_features = []
-        for round in range(3):
+        for round in range(4):
             start_time = time.time()
 
 
