@@ -1,30 +1,47 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from fastsklearnfeature.transformations.Transformation import Transformation
-from typing import List
+from typing import List, Dict
 from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
 from fastsklearnfeature.transformations.generators.HigherOrderCommutativeClassGenerator import HigherOrderCommutativeClassGenerator
 from fastsklearnfeature.transformations.generators.NumpyBinaryClassGenerator import NumpyBinaryClassGenerator
 from fastsklearnfeature.transformations.generators.GroupByThenGenerator import GroupByThenGenerator
 from fastsklearnfeature.transformations.PandasDiscretizerTransformation import PandasDiscretizerTransformation
 from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
+from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 from fastsklearnfeature.reader.Reader import Reader
 import numpy as np
 import copy
+import itertools
+from fastsklearnfeature.candidate_generation.tree.FeatureNode import FeatureNode
+import networkx as nx
 
 
 
-
-class Generator:
+class TreeGenerator:
     def __init__(self, raw_features: List[CandidateFeature]):
         self.Fi: List[CandidateFeature] = raw_features
 
     def generate_all_candidates(self):
         candidates = self.generate_candidates()
         candidates.extend(self.Fi)
+
+        self.candidates = candidates
+
         return candidates
 
 
+    def plot_graph(self, graph):
+        temp_graph = copy.deepcopy(graph)
+
+        for n in temp_graph.nodes:
+            temp_graph.node[n]['feature'] = str("")
+
+        nx.write_graphml(temp_graph, '/tmp/tree_generator_new.graphml')
+
+
+
     def generate_candidates(self):
+
 
         unary_transformations: List[UnaryTransformation] = []
         unary_transformations.append(PandasDiscretizerTransformation(number_bins=10))
@@ -42,54 +59,58 @@ class Generator:
                                                         np.nanstd,
                                                         len]).produce())
 
+        transformations = []
+        transformations.extend(unary_transformations)
+        transformations.extend(higher_order_transformations)
+        #transformations.append(IdentityTransformation(2))
+
+
+
+
         print("unary transformations: " + str(len(unary_transformations)))
         print("higherorder transformations: " + str(len(higher_order_transformations)))
 
-
-        print("Fi: " + str(len(self.Fi)))
-
-        #for f_i in self.Fi:
-        #    print(f_i.get_name())
-
-        Fui = self.generate_features(unary_transformations, self.Fi)
-
-        print("Fui: " + str(len(Fui)))
-
-        #for f_i in Fui:
-        #    print(f_i.get_name())
+        features = self.Fi
 
 
-        Fi_and_Fui = []
-        Fi_and_Fui.extend(self.Fi)
-        Fi_and_Fui.extend(Fui)
-
-        Foi = self.generate_features(higher_order_transformations, Fi_and_Fui)
-
-        #for f_i in Foi:
-        #    print(f_i.get_name())
-
-        print("Foi: " + str(len(Foi)))
-
-        Foui = self.generate_features(unary_transformations, Foi)
-
-        print("Foui: " + str(len(Foui)))
-
-        Fi_cand = []
-        Fi_cand.extend(Fui)
-        Fi_cand.extend(Foi)
-        Fi_cand.extend(Foui)
+        graph = nx.DiGraph()
 
 
-        return Fi_cand
+        graph.add_node('root')
+        for f in features:
+            graph.add_node(str(f))
+            graph.node[str(f)]['feature'] = f
+            graph.add_edge('root', str(f))
+
+
+        for t_i in transformations:
+            for f_i in t_i.get_combinations(features):
+                if t_i.is_applicable(f_i):
+                    current_feature = CandidateFeature(copy.deepcopy(t_i), f_i)
+
+                    graph.add_node(str(current_feature))
+                    graph.node[str(current_feature)]['feature'] = current_feature
+                    for parent_feature in f_i:
+                        graph.add_edge(str(parent_feature), str(current_feature))
+
+        self.plot_graph(graph)
+
+
+
+
+
+
+
 
     def generate_features(self, transformations: List[Transformation], features: List[CandidateFeature]):
         generated_features: List[CandidateFeature] = []
         for t_i in transformations:
             for f_i in t_i.get_combinations(features):
                 if t_i.is_applicable(f_i):
-                    generated_features.append(CandidateFeature(copy.deepcopy(t_i), f_i)) # do we need a deep copy here?
+                    generated_features.append(CandidateFeature(copy.deepcopy(t_i), f_i))
                     #if output is multidimensional adapt here
         return generated_features
+
 
     def materialize(self, features: List[CandidateFeature], r: Reader):
         successful = 0
@@ -106,6 +127,52 @@ class Generator:
 
         print("successful transformations: " + str(successful))
 
+
+    def get_all_features_equal_n_cost(self, cost):
+        filtered_candidates = []
+        for i in range(len(self.candidates)):
+            if (self.candidates[i].get_number_of_transformations() + 1) == cost:
+                filtered_candidates.append(self.candidates[i])
+        return filtered_candidates
+
+    # https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
+    def partition(self, number):
+        answer = set()
+        answer.add((number,))
+        for x in range(1, number):
+            for y in self.partition(number - x):
+                answer.add(tuple(sorted((x,) + y)))
+        return answer
+
+
+    def get_all_possible_representations_for_step_x(self, x):
+
+        all_representations = set()
+        partitions = self.partition(x)
+
+
+
+        #get candidates of partitions
+        candidates_with_cost_x = {}
+        for i in range(x+1):
+            candidates_with_cost_x[i] = self.get_all_features_equal_n_cost(i)
+
+
+        print(partitions)
+
+
+        for p in partitions:
+            current_list = itertools.product(*[candidates_with_cost_x[pi] for pi in p])
+            for c_output in current_list:
+                if len(set(c_output)) == len(p):
+                    all_representations.add(frozenset(c_output))
+
+
+
+
+        print(len(all_representations))
+
+        return all_representations
 
 
 if __name__ == '__main__':
@@ -133,25 +200,12 @@ if __name__ == '__main__':
     raw_features = r.read()
 
 
-    g = Generator(raw_features)
+    g = TreeGenerator(raw_features)
 
     start_time = time.time()
 
-    candidates = g.generate_candidates()
-
-    candidate_generation = time.time()
-
-    print("candidate generation time: " + str(candidate_generation - start_time))
-
-    candidates.sort(reverse=False)
-    print(candidates[0])
-    print(candidates[-1])
+    g.generate_candidates()
 
 
-    print(len(candidates))
-
-    #g.materialize(candidates, r)
-
-    print("materialization time: " + str(time.time() - candidate_generation))
 
 

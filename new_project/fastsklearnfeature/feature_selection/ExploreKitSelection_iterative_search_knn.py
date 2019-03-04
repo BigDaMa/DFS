@@ -20,6 +20,10 @@ from sklearn.model_selection import StratifiedKFold
 from fastsklearnfeature.configuration.Config import Config
 from sklearn.pipeline import FeatureUnion
 import itertools
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import ComplementNB
+from sklearn.naive_bayes import MultinomialNB
+
 
 class ExploreKitSelection_iterative_search:
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
@@ -215,6 +219,7 @@ class ExploreKitSelection_iterative_search:
 
             found_features.append(results[best_id])
 
+            print("hello")
             print(found_features)
 
             print("evaluation time: " + str((time.time()-start_time) / 60) + " min")
@@ -239,8 +244,16 @@ if __name__ == '__main__':
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
 
-    selector = ExploreKitSelection_iterative_search(dataset)
-    #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
+    selector = ExploreKitSelection_iterative_search(dataset, KNeighborsClassifier(), {'classifier__n_neighbors': np.arange(3,10), 'classifier__weights': ['uniform','distance'], 'classifier__metric': ['minkowski','euclidean','manhattan']})
+
+    '''
+    selector = ExploreKitSelection_iterative_search(dataset, ComplementNB(),
+                                                    {'classifier__alpha': [0.0001, 0.001, 0.01, 0.1, 1, 10],
+                                                     'classifier__norm': [True, False]})
+    
+    selector = ExploreKitSelection_iterative_search(dataset, MultinomialNB(),
+                                                    {'classifier__alpha': [0.0001, 0.001, 0.01, 0.1, 1, 10]})
+    '''
 
     results = selector.run()
 

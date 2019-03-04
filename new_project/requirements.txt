@@ -3,3 +3,6 @@ pandas
 scikit-learn
 xgboost
 matplotlib
+
+autofeat
+joblib

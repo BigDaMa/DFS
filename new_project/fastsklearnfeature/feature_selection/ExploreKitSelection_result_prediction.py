@@ -19,7 +19,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from fastsklearnfeature.configuration.Config import Config
 from sklearn.pipeline import FeatureUnion
-import itertools
 
 class ExploreKitSelection_iterative_search:
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
@@ -57,30 +56,18 @@ class ExploreKitSelection_iterative_search:
         self.current_target = LabelEncoder().fit_transform(current_target)
 
     def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
-        parameters = self.grid_search_parameters
 
-
-        if not isinstance(candidate, CandidateFeature):
-            pipeline = Pipeline([('features',FeatureUnion(
-
-                        [(p.get_name(), p.pipeline) for p in candidate]
-                    )),
-                ('classifier', self.classifier)
-            ])
-        else:
-            pipeline = Pipeline([('features', FeatureUnion(
+        pipeline = Pipeline([('feature', FeatureUnion(
                 [
                     (candidate.get_name(), candidate.pipeline)
                 ])),
-                 ('classifier', self.classifier)
+                 ('classifier', LogisticRegression(penalty='l2', solver='lbfgs', class_weight='balanced'))
                  ])
 
         result = {}
 
-        clf = GridSearchCV(pipeline, parameters, cv=self.preprocessed_folds, scoring=score, iid=False, error_score='raise')
-        clf.fit(self.dataset.splitted_values['train'], self.current_target)
-        result['score'] = clf.best_score_
-        result['hyperparameters'] = clf.best_params_
+        pipeline.fit(self.dataset.splitted_values['train'][self.train], self.current_target[self.train])
+        result['probability_estimations_test'] = pipeline.predict_proba(self.dataset.splitted_values['train'][self.test])
 
         return result
 
@@ -98,28 +85,9 @@ class ExploreKitSelection_iterative_search:
 
 
     def evaluate_candidates(self, candidates):
-        self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'], self.current_target):
-            self.preprocessed_folds.append((train, test))
-
         pool = mp.Pool(processes=int(Config.get("parallelism")))
         results = pool.map(self.evaluate_single_candidate, candidates)
         return results
-
-    '''
-    def evaluate_candidates(self, candidates):
-        self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'],
-                                                                               self.current_target):
-            self.preprocessed_folds.append((train, test))
-
-        results = []
-        for c in candidates:
-            results.append(self.evaluate_single_candidate(c))
-        return results
-
-    '''
-
 
     def evaluate_single_candidate(self, candidate):
         result = {}
@@ -137,55 +105,17 @@ class ExploreKitSelection_iterative_search:
         return result
 
 
-    '''
-    def evaluate_single_candidate(self, candidate):
-        new_score = -1.0
-        new_score = self.evaluate(candidate)
-        return new_score
-    '''
+    def filter_failing_features(self):
+        working_features: List[CandidateFeature] = []
+        for candidate in self.candidates:
+            try:
+                candidate.fit(self.dataset.splitted_values['train'])
+                candidate.transform(self.dataset.splitted_values['train'])
+            except:
+                continue
+            working_features.append(candidate)
+        return working_features
 
-    #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
-    def partition(self, number):
-        answer = set()
-        answer.add((number,))
-        for x in range(1, number):
-            for y in self.partition(number - x):
-                answer.add(tuple(sorted((x,) + y)))
-        return answer
-
-    def get_all_features_below_n_cost(self, cost):
-        filtered_candidates = []
-        for i in range(len(self.candidates)):
-            if (self.candidates[i].get_number_of_transformations() + 1) <= cost:
-                filtered_candidates.append(self.candidates[i])
-        return filtered_candidates
-
-    def get_all_features_equal_n_cost(self, cost):
-        filtered_candidates = []
-        for i in range(len(self.candidates)):
-            if (self.candidates[i].get_number_of_transformations() + 1) == cost:
-                filtered_candidates.append(self.candidates[i])
-        return filtered_candidates
-
-
-
-    def get_all_possible_representations_for_step_x(self, x):
-
-        all_representations = set()
-        partitions = self.partition(x)
-
-        #get candidates of partitions
-        candidates_with_cost_x = {}
-        for i in range(x+1):
-            candidates_with_cost_x[i] = self.get_all_features_equal_n_cost(i)
-
-        for p in partitions:
-            current_list = itertools.product(*[candidates_with_cost_x[pi] for pi in p])
-            for c_output in current_list:
-                if len(set(c_output)) == len(p):
-                    all_representations.add(frozenset(c_output))
-
-        return all_representations
 
 
     def run(self):
@@ -194,34 +124,19 @@ class ExploreKitSelection_iterative_search:
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
+        stratifier = StratifiedKFold(n_splits=2, random_state=42)
 
-        all_results = []
-
-
-        found_features = []
-        for round in range(2):
-            start_time = time.time()
+        self.train, self.test = next(stratifier.split(self.dataset.splitted_values['train'], self.current_target))
 
 
-            all_current_rep = self.get_all_possible_representations_for_step_x(round + 1)
-            print(len(all_current_rep))
+        results = self.evaluate_candidates(self.candidates)
 
-            results = self.evaluate_candidates(all_current_rep)
-
-            all_results.append(results)
-
-            new_scores = [r['score'] for r in results]
-            best_id = np.argmax(new_scores)
-
-            found_features.append(results[best_id])
-
-            print(found_features)
-
-            print("evaluation time: " + str((time.time()-start_time) / 60) + " min")
+        return results
 
 
 
-        return all_results
+
+
 
 
 
@@ -244,7 +159,7 @@ if __name__ == '__main__':
 
     results = selector.run()
 
-    pickle.dump(results, open("/tmp/all_data_iterations.p", "wb"))
+    pickle.dump(results, open("/tmp/all_data_predictions.p", "wb"))
 
 
 

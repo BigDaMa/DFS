@@ -1,5 +1,7 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
+from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 from fastsklearnfeature.transformations.Transformation import Transformation
+from fastsklearnfeature.transformations.feature_selection.FeatureSelectionTransformation import FeatureSelectionTransformation
 from typing import List
 import numpy as np
 from fastsklearnfeature.reader.Reader import Reader
@@ -188,6 +190,19 @@ class ExploreKitSelection_iterative_search:
         return all_representations
 
 
+    def filter_failing_features(self):
+        working_features: List[CandidateFeature] = []
+        for candidate in self.candidates:
+            try:
+                candidate.fit(self.dataset.splitted_values['train'])
+                candidate.transform(self.dataset.splitted_values['train'])
+            except:
+                continue
+            working_features.append(candidate)
+        return working_features
+
+
+
     def run(self):
         # generate all candidates
         self.generate()
@@ -195,33 +210,21 @@ class ExploreKitSelection_iterative_search:
         self.generate_target()
 
 
-        all_results = []
+        working_features = self.filter_failing_features()
 
 
-        found_features = []
-        for round in range(2):
-            start_time = time.time()
+        all_f = CandidateFeature(IdentityTransformation(len(working_features)), working_features)
 
+        selection = CandidateFeature(FeatureSelectionTransformation(1, 2, LogisticRegression(penalty='l2', solver='lbfgs', class_weight='balanced', max_iter=10000)), [all_f])
 
-            all_current_rep = self.get_all_possible_representations_for_step_x(round + 1)
-            print(len(all_current_rep))
-
-            results = self.evaluate_candidates(all_current_rep)
-
-            all_results.append(results)
-
-            new_scores = [r['score'] for r in results]
-            best_id = np.argmax(new_scores)
-
-            found_features.append(results[best_id])
-
-            print(found_features)
-
-            print("evaluation time: " + str((time.time()-start_time) / 60) + " min")
+        results = self.evaluate_candidates([selection])
 
 
 
-        return all_results
+        new_scores = [r['score'] for r in results]
+        best_id = np.argmax(new_scores)
+
+        print(results[best_id])
 
 
 
