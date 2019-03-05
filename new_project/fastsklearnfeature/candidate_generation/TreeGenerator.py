@@ -13,7 +13,7 @@ import numpy as np
 import copy
 import itertools
 from fastsklearnfeature.candidate_generation.tree.FeatureNode import FeatureNode
-import networkx as nx
+#import networkx as nx
 from fastsklearnfeature.configuration.Config import Config
 import multiprocessing as mp
 
@@ -94,6 +94,7 @@ class TreeGenerator:
         features = self.Fi
 
 
+        '''
         graph = nx.DiGraph()
 
 
@@ -102,6 +103,7 @@ class TreeGenerator:
             graph.add_node(str(f))
             graph.node[str(f)]['feature'] = f
             graph.add_edge('root', str(f))
+        '''
 
         F0 = features
 
