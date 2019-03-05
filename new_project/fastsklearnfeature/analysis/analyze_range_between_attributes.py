@@ -59,7 +59,13 @@ def calculate_MSE(candidate: CandidateFeature, X):
     #score = np.abs(np.mean(ys[0]) - np.mean(ys[1]))
 
     #score = mean_squared_error(ys[0], ys[1])
-    #score = r2_score(ys[0], ys[1])
+    score = r2_score(ys[0], ys[1])
+
+    if score < -100000:
+        print('A: ' + str(candidate.parents[0])  + str(list(ys[0])))
+        print('B: ' + str(candidate.parents[1])  + str(list(ys[1])))
+
+    #score = np.abs(np.corrcoef(np.matrix(ys[0]).A1, np.matrix(ys[1]).A1)[0,1])
 
     return score
 

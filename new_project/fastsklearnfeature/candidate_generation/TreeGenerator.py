@@ -14,6 +14,8 @@ import copy
 import itertools
 from fastsklearnfeature.candidate_generation.tree.FeatureNode import FeatureNode
 import networkx as nx
+from fastsklearnfeature.configuration.Config import Config
+import multiprocessing as mp
 
 
 
@@ -40,6 +42,26 @@ class TreeGenerator:
 
 
 
+    def generate_for_transformation(self, t_i):
+        result_features = []
+        for f_i in t_i.get_combinations(list(itertools.chain(*self.current_features))):
+            if t_i.is_applicable(f_i):
+                current_feature = CandidateFeature(copy.deepcopy(t_i), f_i)
+                #print(current_feature)
+
+                result_features.append(current_feature)
+        return result_features
+
+
+    def generate_in_parallel(self, transformations, current_features):
+        self.current_features = current_features
+        pool = mp.Pool(processes=int(Config.get("parallelism")))
+        results = pool.map(self.generate_for_transformation, transformations)
+
+        return list(itertools.chain(*results))
+
+
+
     def generate_candidates(self):
 
 
@@ -56,8 +78,7 @@ class TreeGenerator:
         higher_order_transformations.extend(GroupByThenGenerator(2, methods=[np.nanmax,
                                                         np.nanmin,
                                                         np.nanmean,
-                                                        np.nanstd,
-                                                        len]).produce())
+                                                        np.nanstd]).produce())
 
         transformations = []
         transformations.extend(unary_transformations)
@@ -82,18 +103,42 @@ class TreeGenerator:
             graph.node[str(f)]['feature'] = f
             graph.add_edge('root', str(f))
 
+        F0 = features
 
-        for t_i in transformations:
-            for f_i in t_i.get_combinations(features):
-                if t_i.is_applicable(f_i):
-                    current_feature = CandidateFeature(copy.deepcopy(t_i), f_i)
+        F = []
+        F.append(F0)
 
-                    graph.add_node(str(current_feature))
-                    graph.node[str(current_feature)]['feature'] = current_feature
-                    for parent_feature in f_i:
-                        graph.add_edge(str(parent_feature), str(current_feature))
 
-        self.plot_graph(graph)
+        '''
+        for depth in range(2):
+            F_t_plus_1 = []
+            for t_i in transformations:
+                for f_i in t_i.get_combinations(list(itertools.chain(*F[0:depth+1]))):
+                    if t_i.is_applicable(f_i):
+                        current_feature = CandidateFeature(copy.deepcopy(t_i), f_i)
+                        print(current_feature)
+
+                        
+                        graph.add_node(str(current_feature))
+                        graph.node[str(current_feature)]['feature'] = current_feature
+                        for parent_feature in f_i:
+                            graph.add_edge(str(parent_feature), str(current_feature))
+                        
+                        F_t_plus_1.append(current_feature)
+            F.append(F_t_plus_1)
+
+            print(len(list(itertools.chain(*F))))
+
+        #self.plot_graph(graph)
+        '''
+
+        for depth in range(3):
+            results = self.generate_in_parallel(transformations, F[0:depth + 1])
+            F.append(results)
+
+            print(len(list(itertools.chain(*F))))
+
+        # self.plot_graph(graph)
 
 
 

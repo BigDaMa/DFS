@@ -7,7 +7,7 @@ class HigherOrderCommutativeTransformation(BaseEstimator, TransformerMixin, Tran
         self.method = method
         Transformation.__init__(self, self.method.__name__,
                  number_parent_features, output_dimensions=1,
-                 parent_feature_order_matters=False, parent_feature_repetition_is_allowed=False)
+                 parent_feature_order_matters=False, parent_feature_repetition_is_allowed=True)
 
 
     def transform(self, X):
