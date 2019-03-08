@@ -324,7 +324,7 @@ class ExploreKitSelection_iterative_search:
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
         max_feature.score = -2
 
-        for c in range(1, 4):
+        for c in range(1, 5):
             current_layer: List[CandidateFeature] = []
 
             #0th
@@ -442,6 +442,12 @@ class ExploreKitSelection_iterative_search:
 
         print(max_feature)
 
+        pickle.dump(cost_2_raw_features, open("/tmp/data_raw.p", "wb"))
+        pickle.dump(cost_2_unary_transformed, open("/tmp/data_unary.p", "wb"))
+        pickle.dump(cost_2_binary_transformed, open("/tmp/data_binary.p", "wb"))
+        pickle.dump(cost_2_combination, open("/tmp/data_combination.p", "wb"))
+        pickle.dump(cost_2_dropped_evaluated_candidates, open("/tmp/data_dropped.p", "wb"))
+
 
 
 
@@ -463,9 +469,9 @@ if __name__ == '__main__':
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
-    results = selector.run()
+    selector.run()
 
-    pickle.dump(results, open("/tmp/all_data_iterations.p", "wb"))
+
 
 
 
