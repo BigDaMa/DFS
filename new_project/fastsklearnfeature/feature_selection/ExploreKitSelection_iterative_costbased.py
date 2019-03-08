@@ -434,7 +434,11 @@ class ExploreKitSelection_iterative_search:
                         cost_2_dropped_evaluated_candidates[c]: List[CandidateFeature] = []
                     cost_2_dropped_evaluated_candidates[c].append(candidate)
 
-            print("From " + str(len(current_layer)) + "candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))
+            if c in cost_2_dropped_evaluated_candidates:
+                print("From " + str(len(current_layer)) + "candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))
+            else:
+                print("From " + str(len(current_layer)) + "candidates, we dropped 0")
+
 
         print(max_feature)
 
