@@ -13,6 +13,7 @@ class GroupByThenTransformation(BaseEstimator, TransformerMixin, Transformation)
                  parent_feature_order_matters=True,
                  parent_feature_repetition_is_allowed=False)
 
+    #0th feature will be aggregated, 1th-nth = key attributes
     def fit(self, X, y=None):
         self.key_attributes = list(range(1, (self.number_parent_features)))
 

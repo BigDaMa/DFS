@@ -17,6 +17,8 @@ class CandidateFeature:
         self.number_of_transformations = None
         self.number_of_raw_attributes = None
 
+        self.score = None
+
         self.pipeline = self.create_pipeline()
 
         self.derive_properties()
@@ -54,6 +56,7 @@ class CandidateFeature:
         self.properties['type'] = str('float64')
 
 
+    #todo implement this in the transformation class
     def get_name(self):
         if self.name == '':
             name_list: List[str] = []

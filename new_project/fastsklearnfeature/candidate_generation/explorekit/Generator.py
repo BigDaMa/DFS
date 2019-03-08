@@ -39,8 +39,7 @@ class Generator:
         higher_order_transformations.extend(GroupByThenGenerator(2, methods=[np.nanmax,
                                                         np.nanmin,
                                                         np.nanmean,
-                                                        np.nanstd,
-                                                        len]).produce())
+                                                        np.nanstd]).produce())
 
         print("unary transformations: " + str(len(unary_transformations)))
         print("higherorder transformations: " + str(len(higher_order_transformations)))

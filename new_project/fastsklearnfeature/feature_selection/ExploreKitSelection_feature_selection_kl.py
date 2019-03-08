@@ -1,5 +1,9 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
+from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 from fastsklearnfeature.transformations.Transformation import Transformation
+from fastsklearnfeature.transformations.feature_selection.SelectKBestTransformer import SelectKBestTransformer
+from fastsklearnfeature.transformations.feature_selection.FeatureEliminationTransformer import FeatureEliminationTransformer
+from fastsklearnfeature.transformations.feature_selection.SissoTransformer import SissoTransformer
 from typing import List
 import numpy as np
 from fastsklearnfeature.reader.Reader import Reader
@@ -40,9 +44,9 @@ class ExploreKitSelection_iterative_search:
         #s = Splitter(train_fraction=[0.1, 10000000], seed=42)
 
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
-        raw_features = self.dataset.read()
+        self.raw_features = self.dataset.read()
 
-        g = Generator(raw_features)
+        g = Generator(self.raw_features)
         self.candidates = g.generate_all_candidates()
         print("Number candidates: " + str(len(self.candidates)))
 
@@ -96,7 +100,7 @@ class ExploreKitSelection_iterative_search:
             starting_feature_matrix[:, f_index] = Fi[f_index].materialize()['train']
         return starting_feature_matrix
 
-
+    '''
     def evaluate_candidates(self, candidates):
         self.preprocessed_folds = []
         for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'], self.current_target):
@@ -105,6 +109,8 @@ class ExploreKitSelection_iterative_search:
         pool = mp.Pool(processes=int(Config.get("parallelism")))
         results = pool.map(self.evaluate_single_candidate, candidates)
         return results
+
+
 
     '''
     def evaluate_candidates(self, candidates):
@@ -118,9 +124,10 @@ class ExploreKitSelection_iterative_search:
             results.append(self.evaluate_single_candidate(c))
         return results
 
+
+
+
     '''
-
-
     def evaluate_single_candidate(self, candidate):
         result = {}
         time_start_gs = time.time()
@@ -139,10 +146,12 @@ class ExploreKitSelection_iterative_search:
 
     '''
     def evaluate_single_candidate(self, candidate):
-        new_score = -1.0
-        new_score = self.evaluate(candidate)
-        return new_score
-    '''
+        time_start_gs = time.time()
+        result = self.evaluate(candidate)
+        result['candidate'] = candidate
+        result['time'] = time.time() - time_start_gs
+        return result
+
 
     #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
     def partition(self, number):
@@ -160,16 +169,16 @@ class ExploreKitSelection_iterative_search:
                 filtered_candidates.append(self.candidates[i])
         return filtered_candidates
 
-    def get_all_features_equal_n_cost(self, cost, candidates):
+    def get_all_features_equal_n_cost(self, cost):
         filtered_candidates = []
-        for i in range(len(candidates)):
-            if (candidates[i].get_number_of_transformations() + 1) == cost:
-                filtered_candidates.append(candidates[i])
+        for i in range(len(self.candidates)):
+            if (self.candidates[i].get_number_of_transformations() + 1) == cost:
+                filtered_candidates.append(self.candidates[i])
         return filtered_candidates
 
 
 
-    def get_all_possible_representations_for_step_x(self, x, candidates):
+    def get_all_possible_representations_for_step_x(self, x):
 
         all_representations = set()
         partitions = self.partition(x)
@@ -177,7 +186,7 @@ class ExploreKitSelection_iterative_search:
         #get candidates of partitions
         candidates_with_cost_x = {}
         for i in range(x+1):
-            candidates_with_cost_x[i] = self.get_all_features_equal_n_cost(i, candidates)
+            candidates_with_cost_x[i] = self.get_all_features_equal_n_cost(i)
 
         for p in partitions:
             current_list = itertools.product(*[candidates_with_cost_x[pi] for pi in p])
@@ -186,6 +195,18 @@ class ExploreKitSelection_iterative_search:
                     all_representations.add(frozenset(c_output))
 
         return all_representations
+
+
+    def filter_failing_features(self):
+        working_features: List[CandidateFeature] = []
+        for candidate in self.candidates:
+            try:
+                candidate.fit(self.dataset.splitted_values['train'])
+                candidate.transform(self.dataset.splitted_values['train'])
+            except:
+                continue
+            working_features.append(candidate)
+        return working_features
 
 
     def filter_candidate(self, candidate):
@@ -211,43 +232,34 @@ class ExploreKitSelection_iterative_search:
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-        working_features = self.filter_failing_in_parallel()
-        print(len(working_features))
+        #working_features = self.filter_failing_in_parallel()
+        #all_f = CandidateFeature(IdentityTransformation(len(working_features)), working_features)
+
+        all_f = CandidateFeature(IdentityTransformation(len(self.raw_features)), self.raw_features)
 
 
-        all_results = []
+        my_list = []
+
+        for i in range(1, 13):
+            my_list.append(CandidateFeature(SelectKBestTransformer(len(self.raw_features), i), [all_f]))
+            #my_list.append(CandidateFeature(FeatureEliminationTransformer(len(self.raw_features), i, LogisticRegression(penalty='l2', solver='lbfgs', class_weight='balanced', max_iter=10000)), [all_f]))
 
 
-        print(len(self.candidates))
+        #my_list.append(CandidateFeature(SissoTransformer(len(self.raw_features)), [all_f]))
 
+        results = self.evaluate_candidates(my_list)
 
-        found_features = []
-        for round in range(4):
-            start_time = time.time()
+        print(results)
 
-
-            all_current_rep = self.get_all_possible_representations_for_step_x(round + 1, working_features)
-            #all_current_rep = self.get_all_possible_representations_for_step_x(round + 1, self.candidates)
-            print(len(all_current_rep))
-
-            '''
-            results = self.evaluate_candidates(all_current_rep)
-
-            all_results.append(results)
-
-            new_scores = [r['score'] for r in results]
-            best_id = np.argmax(new_scores)
-
-            found_features.append(results[best_id])
-
-            print(found_features)
-
-            print("evaluation time: " + str((time.time()-start_time) / 60) + " min")
-            '''
+        for r in range(len(results)):
+            print("(" + str(r+1) +"," + str(results[r]['score']) + ")")
 
 
 
-        return all_results
+        new_scores = [r['score'] for r in results]
+        best_id = np.argmax(new_scores)
+
+        print(results[best_id])
 
 
 

@@ -43,9 +43,9 @@ class SissoExperiment:
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         raw_features = self.dataset.read()
 
-        #g = Generator(raw_features)
-        #self.candidates = g.generate_all_candidates()
-        #print("Number candidates: " + str(len(self.candidates)))
+        g = Generator(raw_features)
+        self.candidates = g.generate_all_candidates()
+        print("Number candidates: " + str(len(self.candidates)))
 
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
@@ -122,7 +122,16 @@ class SissoExperiment:
         print(es)
 
         feature_matrix, feature_defs = ft.dfs(entityset=es, target_entity='target_e', max_depth=6, verbose=1,
-                                              n_jobs=4, max_features=3)
+                                              n_jobs=4)
+
+        df = es['heart'].df
+        dfs_transformer = ft.wrappers.DFSTransformer(entityset=es, target_entity='target_e', max_features=3)
+
+        #does not work
+        dfs_transformer.fit(df['id'])
+        transformed = dfs_transformer.transform([0])
+        print(transformed)
+
 
         drop_cols = []
         for col in feature_matrix:
