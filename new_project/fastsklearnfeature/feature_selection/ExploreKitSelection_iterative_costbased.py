@@ -257,7 +257,7 @@ class ExploreKitSelection_iterative_search:
 
     def get_features_from_identity_candidate(self, identity: CandidateFeature, my_list = set()):
         for p in identity.parents:
-            if not isinstance(p.transformation, IdentityTransformation):
+            if isinstance(p, RawFeature) or not isinstance(p.transformation, IdentityTransformation):
                 my_list.add(str(p))
             else:
                 self.get_features_from_identity_candidate(p, my_list)
@@ -315,7 +315,7 @@ class ExploreKitSelection_iterative_search:
 
         complexity_delta = 1.0
 
-        epsilon = 0.0
+        epsilon = 0.03
 
         baseline_score = self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
         print("baseline: " + str(baseline_score))
@@ -391,7 +391,7 @@ class ExploreKitSelection_iterative_search:
             print(current_layer)
 
             #now evaluate all from this layer
-            print("----------- Evaluation -----------")
+            print("----------- Evaluation of " + str(len(current_layer)) + " features -----------")
             results = self.evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
 
@@ -435,9 +435,9 @@ class ExploreKitSelection_iterative_search:
                     cost_2_dropped_evaluated_candidates[c].append(candidate)
 
             if c in cost_2_dropped_evaluated_candidates:
-                print("From " + str(len(current_layer)) + "candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))
+                print("From " + str(len(current_layer)) + " candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))
             else:
-                print("From " + str(len(current_layer)) + "candidates, we dropped 0")
+                print("From " + str(len(current_layer)) + " candidates, we dropped 0")
 
 
         print(max_feature)
