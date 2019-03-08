@@ -318,13 +318,13 @@ class ExploreKitSelection_iterative_search:
         epsilon = 0.0
 
         baseline_score = self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
-        print("baseline: "+ str(baseline_score))
+        print("baseline: " + str(baseline_score))
 
 
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
         max_feature.score = -2
 
-        for c in range(1, 3):
+        for c in range(1, 4):
             current_layer: List[CandidateFeature] = []
 
             #0th
@@ -400,7 +400,7 @@ class ExploreKitSelection_iterative_search:
                 candidate: CandidateFeature = result['candidate']
                 candidate.score = result['score']
 
-                print(str(candidate) + " -> " + str(candidate.score))
+                #print(str(candidate) + " -> " + str(candidate.score))
 
                 if candidate.score > max_feature.score:
                     max_feature = candidate
@@ -433,6 +433,8 @@ class ExploreKitSelection_iterative_search:
                     if not c in cost_2_dropped_evaluated_candidates:
                         cost_2_dropped_evaluated_candidates[c]: List[CandidateFeature] = []
                     cost_2_dropped_evaluated_candidates[c].append(candidate)
+
+            print("From " + str(len(current_layer)) + "candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))
 
         print(max_feature)
 
