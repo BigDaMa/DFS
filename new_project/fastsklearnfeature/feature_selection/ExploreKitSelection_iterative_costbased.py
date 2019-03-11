@@ -316,6 +316,7 @@ class ExploreKitSelection_iterative_search:
         complexity_delta = 1.0
 
         epsilon = 0.00
+        limit_runs = 2  # 5
 
         baseline_score = self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
         print("baseline: " + str(baseline_score))
@@ -324,7 +325,7 @@ class ExploreKitSelection_iterative_search:
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
         max_feature.score = -2
 
-        for c in range(1, 5):
+        for c in range(1, limit_runs):
             current_layer: List[CandidateFeature] = []
 
             #0th
@@ -440,13 +441,13 @@ class ExploreKitSelection_iterative_search:
                 print("From " + str(len(current_layer)) + " candidates, we dropped 0")
 
 
-        print(max_feature)
+            print(max_feature)
 
-        pickle.dump(cost_2_raw_features, open("/tmp/data_raw.p", "wb"))
-        pickle.dump(cost_2_unary_transformed, open("/tmp/data_unary.p", "wb"))
-        pickle.dump(cost_2_binary_transformed, open("/tmp/data_binary.p", "wb"))
-        pickle.dump(cost_2_combination, open("/tmp/data_combination.p", "wb"))
-        pickle.dump(cost_2_dropped_evaluated_candidates, open("/tmp/data_dropped.p", "wb"))
+            pickle.dump(cost_2_raw_features, open(Config.get("tmp.folder") + "/data_raw.p", "wb"))
+            pickle.dump(cost_2_unary_transformed, open(Config.get("tmp.folder") + "/data_unary.p", "wb"))
+            pickle.dump(cost_2_binary_transformed, open(Config.get("tmp.folder") + "/data_binary.p", "wb"))
+            pickle.dump(cost_2_combination, open(Config.get("tmp.folder") + "/data_combination.p", "wb"))
+            pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get("tmp.folder") + "/data_dropped.p", "wb"))
 
 
 
