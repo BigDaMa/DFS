@@ -316,7 +316,7 @@ class ExploreKitSelection_iterative_search:
         complexity_delta = 1.0
 
         epsilon = 0.00
-        limit_runs = 2  # 5
+        limit_runs = 5  # 5
 
         baseline_score = self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
         print("baseline: " + str(baseline_score))
