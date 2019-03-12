@@ -128,6 +128,7 @@ class ExploreKitSelection_iterative_search:
     '''
 
 
+
     def evaluate_single_candidate(self, candidate):
         result = {}
         time_start_gs = time.time()
@@ -145,6 +146,13 @@ class ExploreKitSelection_iterative_search:
 
 
     '''
+    def evaluate_single_candidate(self, candidate):
+        result = {}
+        result['score'] = 0.0
+        result['candidate'] = candidate
+        return result
+
+
     def evaluate_single_candidate(self, candidate):
         new_score = -1.0
         new_score = self.evaluate(candidate)
@@ -285,6 +293,16 @@ class ExploreKitSelection_iterative_search:
         return result_list
 
 
+    # filter candidates that use one raw feature twice
+    def filter_non_unique_combinations(self, candidates: List[CandidateFeature]):
+        filtered_list: List[CandidateFeature] = []
+        for candidate in candidates:
+            all_raw_features = candidate.get_raw_attributes()
+            if len(all_raw_features) == len(set(all_raw_features)):
+                filtered_list.append(candidate)
+        return filtered_list
+
+
 
 
     def run(self):
@@ -315,8 +333,10 @@ class ExploreKitSelection_iterative_search:
 
         complexity_delta = 1.0
 
-        epsilon = 0.00
-        limit_runs = 5  # 5
+        epsilon = 0.031 #0.00
+        limit_runs = 4  # 5
+        unique_raw_combinations = False
+
 
         baseline_score = self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
         print("baseline: " + str(baseline_score))
@@ -388,8 +408,14 @@ class ExploreKitSelection_iterative_search:
                     combinations_to_be_applied.append(CandidateFeature(IdentityTransformation(None), list(combo)))
             current_layer.extend(combinations_to_be_applied)
 
-            print(len(current_layer))
-            print(current_layer)
+
+
+            if unique_raw_combinations:
+                length = len(current_layer)
+                current_layer = self.filter_non_unique_combinations(current_layer)
+                print("From " + str(length) + " combinations, we filter " +  str(length - len(current_layer)) + " nonunique raw feature combinations.")
+
+
 
             #now evaluate all from this layer
             print("----------- Evaluation of " + str(len(current_layer)) + " features -----------")
@@ -434,6 +460,8 @@ class ExploreKitSelection_iterative_search:
                     if not c in cost_2_dropped_evaluated_candidates:
                         cost_2_dropped_evaluated_candidates[c]: List[CandidateFeature] = []
                     cost_2_dropped_evaluated_candidates[c].append(candidate)
+            
+
 
             if c in cost_2_dropped_evaluated_candidates:
                 print("From " + str(len(current_layer)) + " candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))

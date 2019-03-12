@@ -13,6 +13,7 @@ class RawFeature(CandidateFeature):
         self.column_id: int = column_id
         self.properties: Dict[str, Any] = properties
         self.parents = []
+        self.transformation = None
 
         self.pipeline = self.create_pipeline()
 
