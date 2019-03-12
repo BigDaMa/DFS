@@ -151,8 +151,9 @@ class ExploreKitSelection_iterative_search:
         result['score'] = 0.0
         result['candidate'] = candidate
         return result
+    '''
 
-
+    '''
     def evaluate_single_candidate(self, candidate):
         new_score = -1.0
         new_score = self.evaluate(candidate)
@@ -333,7 +334,7 @@ class ExploreKitSelection_iterative_search:
 
         complexity_delta = 1.0
 
-        epsilon = 0.02 #0.00
+        epsilon = 0.00 #0.02 #0.00
         limit_runs = 6  # 5
         unique_raw_combinations = False
 
@@ -359,13 +360,14 @@ class ExploreKitSelection_iterative_search:
                 unary_candidates_to_be_applied.extend(cost_2_raw_features[c - 1])
             if (c - 1) in cost_2_binary_transformed:
                 unary_candidates_to_be_applied.extend(cost_2_binary_transformed[c - 1])
+            #maybe also unary
 
             current_layer.extend(self.generate_features(unary_transformations, unary_candidates_to_be_applied))
 
             #second binary
             #get length 2 partitions for current cost
-            partition = self.get_length_2_partition(c)
-            print(partition)
+            partition = self.get_length_2_partition(c-1)
+            #print("bin: c: " + str(c) + " partition" + str(partition))
 
             #apply cross product from partitions
             binary_candidates_to_be_applied: List[CandidateFeature] = []
@@ -388,6 +390,8 @@ class ExploreKitSelection_iterative_search:
             #third: feature combinations
             #first variant: treat combination as a transformation
             #therefore, we can use the same partition as for binary data
+            partition = self.get_length_2_partition(c)
+            #print("combo c: " + str(c) + " partition" + str(partition))
 
             combinations_to_be_applied: List[CandidateFeature] = []
             for p in partition:
@@ -418,6 +422,7 @@ class ExploreKitSelection_iterative_search:
 
 
             #now evaluate all from this layer
+            #print(current_layer)
             print("----------- Evaluation of " + str(len(current_layer)) + " features -----------")
             results = self.evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
