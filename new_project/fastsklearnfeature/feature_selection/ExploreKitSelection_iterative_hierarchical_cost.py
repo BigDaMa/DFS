@@ -335,7 +335,7 @@ class ExploreKitSelection_iterative_search:
         complexity_delta = 1.0
 
         epsilon = 0.00 #0.02 #0.00
-        limit_runs = 6  # 5
+        limit_runs = 9  # 5
         unique_raw_combinations = False
 
 
