@@ -52,7 +52,7 @@ class ExploreKitSelection_iterative_search:
         #just debugging
         subset_raw_features = []
         for r in self.raw_features:
-            if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal':
+            if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal' or str(r) == 'exercise_induced_angina':
                 subset_raw_features.append(r)
         self.raw_features = subset_raw_features
 
