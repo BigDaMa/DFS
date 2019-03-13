@@ -295,7 +295,7 @@ class ExploreKitSelection_iterative_search:
             if not isinstance(p.transformation, IdentityTransformation):
                 my_list.add(str(p))
             else:
-                my_list.union(self.get_features_from_identity_candidate(p))
+                my_list = my_list.union(self.get_features_from_identity_candidate(p))
         return my_list
 
 
