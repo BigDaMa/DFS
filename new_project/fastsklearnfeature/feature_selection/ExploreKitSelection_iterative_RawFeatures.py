@@ -335,168 +335,19 @@ class ExploreKitSelection_iterative_search:
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-        unary_transformations, binary_transformations = self.transformation_producer()
+        numeric_features = []
+        for r in self.raw_features:
+            if 'float' in str(r.properties['type']) \
+                    or 'int' in str(r.properties['type']) \
+                    or 'bool' in str(r.properties['type']):
+                numeric_features.append(r)
 
+        combo = CandidateFeature(IdentityTransformation(len(numeric_features)), numeric_features)
 
+        results = self.evaluate_candidates([combo])
 
-        cost_2_raw_features: Dict[int, List[CandidateFeature]] = {}
-        cost_2_unary_transformed: Dict[int, List[CandidateFeature]] = {}
-        cost_2_binary_transformed: Dict[int, List[CandidateFeature]] = {}
-        cost_2_combination: Dict[int, List[CandidateFeature]] = {}
+        print(results)
 
-        cost_2_dropped_evaluated_candidates: Dict[int, List[CandidateFeature]] = {}
-
-        complexity_delta = 1.0
-
-        epsilon = 0.00 #0.02 #0.00
-        limit_runs = 9  # 5
-        unique_raw_combinations = False
-
-
-        baseline_score = 0.0#self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
-        print("baseline: " + str(baseline_score))
-
-
-        max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
-        max_feature.score = -2
-
-        for c in range(1, limit_runs):
-            current_layer: List[CandidateFeature] = []
-
-            #0th
-            if c == 1:
-                current_layer.extend(self.raw_features)
-
-            # first unary
-            # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
-            unary_candidates_to_be_applied: List[CandidateFeature] = []
-            if (c - 1) in cost_2_raw_features:
-                unary_candidates_to_be_applied.extend(cost_2_raw_features[c - 1])
-            if (c - 1) in cost_2_unary_transformed:
-                unary_candidates_to_be_applied.extend(cost_2_unary_transformed[c - 1])
-            if (c - 1) in cost_2_binary_transformed:
-                unary_candidates_to_be_applied.extend(cost_2_binary_transformed[c - 1])
-
-
-            current_layer.extend(self.generate_features(unary_transformations, unary_candidates_to_be_applied))
-
-            #second binary
-            #get length 2 partitions for current cost
-            partition = self.get_length_2_partition(c-1)
-            #print("bin: c: " + str(c) + " partition" + str(partition))
-
-            #apply cross product from partitions
-            binary_candidates_to_be_applied: List[CandidateFeature] = []
-            for p in partition:
-                lists_for_each_element: List[List[CandidateFeature]] = [[], []]
-                for element in range(2):
-                    if p[element] in cost_2_raw_features:
-                        lists_for_each_element[element].extend(cost_2_raw_features[p[element]])
-                    if p[element] in cost_2_unary_transformed:
-                        lists_for_each_element[element].extend(cost_2_unary_transformed[p[element]])
-                    if p[element] in cost_2_binary_transformed:
-                        lists_for_each_element[element].extend(cost_2_binary_transformed[p[element]])
-
-                for bt in binary_transformations:
-                    list_of_combinations = self.generate_merge(lists_for_each_element[0], lists_for_each_element[1], bt.parent_feature_order_matters, bt.parent_feature_repetition_is_allowed)
-                    for combo in list_of_combinations:
-                        binary_candidates_to_be_applied.append(CandidateFeature(copy.deepcopy(bt), combo))
-            current_layer.extend(binary_candidates_to_be_applied)
-
-            #third: feature combinations
-            #first variant: treat combination as a transformation
-            #therefore, we can use the same partition as for binary data
-            partition = self.get_length_2_partition(c)
-            #print("combo c: " + str(c) + " partition" + str(partition))
-
-            combinations_to_be_applied: List[CandidateFeature] = []
-            for p in partition:
-                lists_for_each_element: List[List[CandidateFeature]] = [[], []]
-                for element in range(2):
-                    if p[element] in cost_2_raw_features:
-                        lists_for_each_element[element].extend(cost_2_raw_features[p[element]])
-                    if p[element] in cost_2_unary_transformed:
-                        lists_for_each_element[element].extend(cost_2_unary_transformed[p[element]])
-                    if p[element] in cost_2_binary_transformed:
-                        lists_for_each_element[element].extend(cost_2_binary_transformed[p[element]])
-                    if p[element] in cost_2_combination:
-                        lists_for_each_element[element].extend(cost_2_combination[p[element]])
-
-
-                list_of_combinations = self.generate_merge_for_combination(lists_for_each_element[0], lists_for_each_element[1])
-                for combo in list_of_combinations:
-                    combinations_to_be_applied.append(CandidateFeature(IdentityTransformation(None), list(combo)))
-            current_layer.extend(combinations_to_be_applied)
-
-
-
-            if unique_raw_combinations:
-                length = len(current_layer)
-                current_layer = self.filter_non_unique_combinations(current_layer)
-                print("From " + str(length) + " combinations, we filter " +  str(length - len(current_layer)) + " nonunique raw feature combinations.")
-
-
-
-            #now evaluate all from this layer
-            #print(current_layer)
-            print("----------- Evaluation of " + str(len(current_layer)) + " features -----------")
-            results = self.evaluate_candidates(current_layer)
-            print("----------- Evaluation Finished -----------")
-
-            #calculate whether we drop the evaluated candidate
-            for result in results:
-                candidate: CandidateFeature = result['candidate']
-                candidate.score = result['score']
-
-                #print(str(candidate) + " -> " + str(candidate.score))
-
-                if candidate.score > max_feature.score:
-                    max_feature = candidate
-
-                #calculate original score
-                original_score = baseline_score #or zero??
-                if not isinstance(candidate, RawFeature):
-                    original_score = max([p.score for p in candidate.parents])
-
-                accuracy_delta = result['score'] - original_score
-
-                if accuracy_delta / complexity_delta > epsilon:
-                    if isinstance(candidate, RawFeature):
-                        if not c in cost_2_raw_features:
-                            cost_2_raw_features[c]: List[CandidateFeature] = []
-                        cost_2_raw_features[c].append(candidate)
-                    elif isinstance(candidate.transformation, UnaryTransformation):
-                        if not c in cost_2_unary_transformed:
-                            cost_2_unary_transformed[c]: List[CandidateFeature] = []
-                        cost_2_unary_transformed[c].append(candidate)
-                    elif isinstance(candidate.transformation, IdentityTransformation):
-                        if not c in cost_2_combination:
-                            cost_2_combination[c]: List[CandidateFeature] = []
-                        cost_2_combination[c].append(candidate)
-                    else:
-                        if not c in cost_2_binary_transformed:
-                            cost_2_binary_transformed[c]: List[CandidateFeature] = []
-                        cost_2_binary_transformed[c].append(candidate)
-                else:
-                    if not c in cost_2_dropped_evaluated_candidates:
-                        cost_2_dropped_evaluated_candidates[c]: List[CandidateFeature] = []
-                    cost_2_dropped_evaluated_candidates[c].append(candidate)
-            
-
-
-            if c in cost_2_dropped_evaluated_candidates:
-                print("From " + str(len(current_layer)) + " candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))
-            else:
-                print("From " + str(len(current_layer)) + " candidates, we dropped 0")
-
-
-            print(max_feature)
-
-            pickle.dump(cost_2_raw_features, open(Config.get("tmp.folder") + "/data_raw.p", "wb"))
-            pickle.dump(cost_2_unary_transformed, open(Config.get("tmp.folder") + "/data_unary.p", "wb"))
-            pickle.dump(cost_2_binary_transformed, open(Config.get("tmp.folder") + "/data_binary.p", "wb"))
-            pickle.dump(cost_2_combination, open(Config.get("tmp.folder") + "/data_combination.p", "wb"))
-            pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get("tmp.folder") + "/data_dropped.p", "wb"))
 
 
 
