@@ -49,6 +49,15 @@ class ExploreKitSelection_iterative_search:
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         self.raw_features = self.dataset.read()
 
+        #just debugging
+        subset_raw_features = []
+        for r in self.raw_features:
+            if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal':
+                subset_raw_features.append(r)
+        self.raw_features = subset_raw_features
+
+
+
         #g = Generator(raw_features)
         #self.candidates = g.generate_all_candidates()
         #print("Number candidates: " + str(len(self.candidates)))
@@ -264,12 +273,16 @@ class ExploreKitSelection_iterative_search:
 
 
 
-    def get_features_from_identity_candidate(self, identity: CandidateFeature, my_list = set()):
+    def get_features_from_identity_candidate(self, identity: CandidateFeature):
+        my_list = set()
+        if not isinstance(identity.transformation, IdentityTransformation):
+            return set([str(identity)])
+
         for p in identity.parents:
-            if isinstance(p, RawFeature) or not isinstance(p.transformation, IdentityTransformation):
+            if not isinstance(p.transformation, IdentityTransformation):
                 my_list.add(str(p))
             else:
-                self.get_features_from_identity_candidate(p, my_list)
+                my_list.union(self.get_features_from_identity_candidate(p))
         return my_list
 
 
@@ -281,16 +294,13 @@ class ExploreKitSelection_iterative_search:
 
         for a_i in range(len(a)):
             for b_i in range(len(b)):
-                #if both had as last transformation Identity -> then tricky
-                if not isinstance(a[a_i], RawFeature) and isinstance(a[a_i].transformation, IdentityTransformation) and \
-                        not isinstance(b[b_i], RawFeature) and isinstance(b[b_i].transformation, IdentityTransformation):
-                    #we have to check whether they intersect or not
-                    #so we climb down the transformation pipeline and gather all concatenated features
-                    if len(self.get_features_from_identity_candidate(a[a_i]).intersection(self.get_features_from_identity_candidate(b[b_i]))) == 0:
-                        result_list.add(frozenset([a[a_i], b[b_i]]))
-                else:
-                    if str(a[a_i]) != str(b[b_i]):
-                        result_list.add(frozenset([a[a_i], b[b_i]]))
+                #we have to check whether they intersect or not
+                #so we climb down the transformation pipeline and gather all concatenated features
+                set_a = self.get_features_from_identity_candidate(a[a_i])
+                set_b = self.get_features_from_identity_candidate(b[b_i])
+                if len(set_a.intersection(set_b)) == 0:
+                    result_list.add(frozenset([a[a_i], b[b_i]]))
+
         return result_list
 
 
