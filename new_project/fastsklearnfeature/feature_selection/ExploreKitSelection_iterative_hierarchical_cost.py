@@ -80,8 +80,8 @@ class ExploreKitSelection_iterative_search:
         self.current_target = LabelEncoder().fit_transform(current_target)
         #self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
 
-    def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
-    #def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
+    #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
         parameters = self.grid_search_parameters
 
 
@@ -518,7 +518,8 @@ if __name__ == '__main__':
 
 
     #dataset = (Config.get('iris.csv'), 4)
-    dataset = (Config.get('banknote.csv'), 4)
+    #dataset = (Config.get('banknote.csv'), 4)
+    dataset = (Config.get('ecoli.csv'), 8)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
