@@ -5,6 +5,8 @@ from typing import List
 
 class NumpyClassGeneratorInvertible:
     def __init__(self, methods=[np.cos, np.sin, np.tan, np.cosh, np.sinh, np.tanh,
+                   np.abs,
+                   np.sqrt, np.square,
                    np.degrees, np.radians,
                    np.log, np.exp,
                    stats.mstats.plotting_positions, stats.mstats.rankdata,

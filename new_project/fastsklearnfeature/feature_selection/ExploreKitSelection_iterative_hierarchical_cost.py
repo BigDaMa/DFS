@@ -19,14 +19,11 @@ from sklearn.pipeline import FeatureUnion
 import itertools
 from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
-from fastsklearnfeature.transformations.generators.HigherOrderCommutativeClassGenerator import HigherOrderCommutativeClassGenerator
-from fastsklearnfeature.transformations.generators.NumpyBinaryClassGenerator import NumpyBinaryClassGenerator
-from fastsklearnfeature.transformations.generators.GroupByThenGenerator import GroupByThenGenerator
-from fastsklearnfeature.transformations.PandasDiscretizerTransformation import PandasDiscretizerTransformation
-from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 from fastsklearnfeature.transformations.DummyOneTransformation import DummyOneTransformation
 import copy
+from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
+
 
 class ExploreKitSelection_iterative_search:
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
@@ -34,11 +31,13 @@ class ExploreKitSelection_iterative_search:
                                                                                                 'classifier__solver': ['lbfgs'],
                                                                                                 'classifier__class_weight': ['balanced'],
                                                                                                 'classifier__max_iter': [10000]
-                                                                                                }
+                                                                                                },
+                 transformation_producer=get_transformation_for_feature_space
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
+        self.transformation_producer = transformation_producer
 
     #generate all possible combinations of features
     def generate(self):
@@ -53,8 +52,8 @@ class ExploreKitSelection_iterative_search:
         #just debugging
         subset_raw_features = []
         for r in self.raw_features:
-            #if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal' or str(r) == 'exercise_induced_angina':
-            if str(r) != "fasting_blood_sugar" and str(r) != "resting_electrocardiographic_results":
+            if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal':
+            #if str(r) != "fasting_blood_sugar" and str(r) != "resting_electrocardiographic_results":
                 subset_raw_features.append(r)
         self.raw_features = subset_raw_features
 
@@ -325,18 +324,9 @@ class ExploreKitSelection_iterative_search:
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-        unary_transformations: List[UnaryTransformation] = []
-        unary_transformations.append(PandasDiscretizerTransformation(number_bins=10))
-        unary_transformations.append(MinMaxScalingTransformation())
+        unary_transformations, binary_transformations = self.transformation_producer()
 
-        binary_transformations: List[Transformation] = []
-        binary_transformations.extend(HigherOrderCommutativeClassGenerator(2, methods=[np.nansum, np.nanprod]).produce())
-        binary_transformations.extend(NumpyBinaryClassGenerator(methods=[np.divide, np.subtract]).produce())
 
-        binary_transformations.extend(GroupByThenGenerator(2, methods=[np.nanmax,
-                                                                             np.nanmin,
-                                                                             np.nanmean,
-                                                                             np.nanstd]).produce())
 
         cost_2_raw_features: Dict[int, List[CandidateFeature]] = {}
         cost_2_unary_transformed: Dict[int, List[CandidateFeature]] = {}
@@ -347,7 +337,7 @@ class ExploreKitSelection_iterative_search:
 
         complexity_delta = 1.0
 
-        epsilon = 0.004 #0.02 #0.00
+        epsilon = 0.00 #0.02 #0.00
         limit_runs = 9  # 5
         unique_raw_combinations = False
 
@@ -371,9 +361,11 @@ class ExploreKitSelection_iterative_search:
             unary_candidates_to_be_applied: List[CandidateFeature] = []
             if (c - 1) in cost_2_raw_features:
                 unary_candidates_to_be_applied.extend(cost_2_raw_features[c - 1])
+            if (c - 1) in cost_2_unary_transformed:
+                unary_candidates_to_be_applied.extend(cost_2_unary_transformed[c - 1])
             if (c - 1) in cost_2_binary_transformed:
                 unary_candidates_to_be_applied.extend(cost_2_binary_transformed[c - 1])
-            #maybe also unary
+
 
             current_layer.extend(self.generate_features(unary_transformations, unary_candidates_to_be_applied))
 

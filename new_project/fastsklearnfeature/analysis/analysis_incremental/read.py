@@ -8,8 +8,14 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 from fastsklearnfeature.candidates.RawFeature import RawFeature
 import matplotlib.pyplot as plt
 
-path = '/home/felix/phd/fastfeatures/results/11_03_incremental_construction'
+#path = '/home/felix/phd/fastfeatures/results/11_03_incremental_construction'
 #path = '/home/felix/phd/fastfeatures/results/12_03_incremental_03_threshold'
+#path = '/home/felix/phd/fastfeatures/results/12_03_incremental_02_threshold'
+#path = '/tmp'
+#path = '/home/felix/phd/fastfeatures/results/12_03_hierarchical'
+#path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_subset'
+#path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_subset_2'
+path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_new'
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
 cost_2_unary_transformed = pickle.load(open(path + "/data_unary.p", "rb"))
@@ -101,7 +107,7 @@ binary_dropped = {}
 combination_dropped = {}
 
 #sort dropped by type:
-for cost in range(1,5):
+for cost in range(1,8):
     unary_dropped[cost] = []
     combination_dropped[cost] = []
     raw_dropped[cost] = []
@@ -150,7 +156,7 @@ print("\n")
 
 best_pro_cost = {}
 
-for c in range(1, 5):
+for c in range(1, 8):
     best_candidate = cost_2_raw_features[1][0]
 
     best_candidate = get_max_candidate(cost_2_raw_features, c, best_candidate)
@@ -174,7 +180,7 @@ for c in range(1, 5):
 
 
 
-for i in range(1, 5):
+for i in range(1, 8):
     acc_score = getAccuracyScore(best_pro_cost[i], 4)
     simplicity_score = getSimplicityScore(best_pro_cost[i], 4)
 
