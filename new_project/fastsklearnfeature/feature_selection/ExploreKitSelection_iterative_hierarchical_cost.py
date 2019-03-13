@@ -77,8 +77,8 @@ class ExploreKitSelection_iterative_search:
 
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
-        #self.current_target = LabelEncoder().fit_transform(current_target)
-        self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
+        self.current_target = LabelEncoder().fit_transform(current_target)
+        #self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
 
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
     def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
