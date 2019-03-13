@@ -8,6 +8,7 @@ from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score
 from sklearn.preprocessing import LabelEncoder
 import pickle
 from sklearn.model_selection import GridSearchCV
@@ -23,6 +24,7 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 from fastsklearnfeature.transformations.DummyOneTransformation import DummyOneTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
+from sklearn import preprocessing
 
 
 class ExploreKitSelection_iterative_search:
@@ -30,7 +32,8 @@ class ExploreKitSelection_iterative_search:
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'classifier__solver': ['lbfgs'],
                                                                                                 'classifier__class_weight': ['balanced'],
-                                                                                                'classifier__max_iter': [10000]
+                                                                                                'classifier__max_iter': [10000],
+                                                                                                'classifier__multi_class':['auto']
                                                                                                 },
                  transformation_producer=get_transformation_for_feature_space
                  ):
@@ -50,12 +53,14 @@ class ExploreKitSelection_iterative_search:
 
 
         #just debugging
+        '''
         subset_raw_features = []
         for r in self.raw_features:
             if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal':
             #if str(r) != "fasting_blood_sugar" and str(r) != "resting_electrocardiographic_results":
                 subset_raw_features.append(r)
         self.raw_features = subset_raw_features
+        '''
 
 
 
@@ -72,9 +77,11 @@ class ExploreKitSelection_iterative_search:
 
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
-        self.current_target = LabelEncoder().fit_transform(current_target)
+        #self.current_target = LabelEncoder().fit_transform(current_target)
+        self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
 
-    def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+    #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
         parameters = self.grid_search_parameters
 
 
@@ -124,6 +131,7 @@ class ExploreKitSelection_iterative_search:
         results = pool.map(self.evaluate_single_candidate, candidates)
         return results
 
+    
     '''
     def evaluate_candidates(self, candidates):
         self.preprocessed_folds = []
@@ -135,8 +143,8 @@ class ExploreKitSelection_iterative_search:
         for c in candidates:
             results.append(self.evaluate_single_candidate(c))
         return results
-
     '''
+
 
 
 
@@ -156,6 +164,8 @@ class ExploreKitSelection_iterative_search:
         return result
 
 
+
+
     '''
     def evaluate_single_candidate(self, candidate):
         result = {}
@@ -170,6 +180,7 @@ class ExploreKitSelection_iterative_search:
         new_score = self.evaluate(candidate)
         return new_score
     '''
+
 
     #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
     def partition(self, number):
@@ -495,7 +506,7 @@ class ExploreKitSelection_iterative_search:
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    dataset = (Config.get('statlog_heart.csv'), int(Config.get('statlog_heart.target')))
+    #dataset = (Config.get('statlog_heart.csv'), 13)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
@@ -504,6 +515,9 @@ if __name__ == '__main__':
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_31_credit-g_german_credit.csv", 20)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
+
+
+    dataset = (Config.get('iris.csv'), 4)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
