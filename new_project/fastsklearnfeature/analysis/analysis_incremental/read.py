@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 #path = '/home/felix/phd/fastfeatures/results/11_03_incremental_construction'
 #path = '/home/felix/phd/fastfeatures/results/12_03_incremental_03_threshold'
 #path = '/home/felix/phd/fastfeatures/results/12_03_incremental_02_threshold'
-#path = '/tmp'
+path = '/tmp'
 #path = '/home/felix/phd/fastfeatures/results/12_03_hierarchical'
 #path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_subset'
 #path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_subset_2'
-path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_new'
+#path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_new'
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
 cost_2_unary_transformed = pickle.load(open(path + "/data_unary.p", "rb"))
