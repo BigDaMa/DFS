@@ -49,12 +49,15 @@ class ExploreKitSelection_iterative_search:
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         self.raw_features = self.dataset.read()
 
+
         #just debugging
         subset_raw_features = []
         for r in self.raw_features:
-            if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal' or str(r) == 'exercise_induced_angina':
+            #if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal' or str(r) == 'exercise_induced_angina':
+            if str(r) != "fasting_blood_sugar" and str(r) != "resting_electrocardiographic_results":
                 subset_raw_features.append(r)
         self.raw_features = subset_raw_features
+
 
 
 
@@ -344,7 +347,7 @@ class ExploreKitSelection_iterative_search:
 
         complexity_delta = 1.0
 
-        epsilon = 0.00 #0.02 #0.00
+        epsilon = 0.004 #0.02 #0.00
         limit_runs = 9  # 5
         unique_raw_combinations = False
 
