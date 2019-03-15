@@ -89,8 +89,8 @@ class ExploreKitSelection_iterative_search:
         self.current_target = LabelEncoder().fit_transform(current_target)
         #self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
 
-    def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
-    #def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
+    #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
         parameters = self.grid_search_parameters
 
 
@@ -487,7 +487,7 @@ class ExploreKitSelection_iterative_search:
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    dataset = (Config.get('statlog_heart.csv'), 13)
+    #dataset = (Config.get('statlog_heart.csv'), 13)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
@@ -503,7 +503,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('ecoli.csv'), 8)
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
-    #dataset = (Config.get('transfusion.csv'), 4)
+    dataset = (Config.get('transfusion.csv'), 4)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
