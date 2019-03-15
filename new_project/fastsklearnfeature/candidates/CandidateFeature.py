@@ -20,6 +20,7 @@ class CandidateFeature:
         self.number_of_raw_attributes = None
 
         self.runtime_properties: Dict[str, Any] = {}
+        self.score = None #deprecated
 
         self.pipeline = self.create_pipeline()
 

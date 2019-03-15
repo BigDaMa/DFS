@@ -31,6 +31,7 @@ from fastsklearnfeature.transformations.generators.NumpyBinaryClassGenerator imp
 from fastsklearnfeature.transformations.generators.GroupByThenGenerator import GroupByThenGenerator
 from fastsklearnfeature.transformations.PandasDiscretizerTransformation import PandasDiscretizerTransformation
 from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
+import pickle
 
 from sklearn.feature_selection import mutual_info_classif
 
@@ -169,6 +170,7 @@ class ExploreKitSelection_iterative_search:
             pass
         result['candidate'] = candidate
         result['time'] = time.time() - time_start_gs
+        result['global_time'] = time.time() - self.global_starting_time
         return result
 
 
@@ -371,10 +373,7 @@ class ExploreKitSelection_iterative_search:
 
     def get_info_gain_of_feature(self, candidate: CandidateFeature):
         try:
-            my_list = []
-            my_list.extend(self.base_features)
-            my_list.append(candidate)
-            new_candidate = CandidateFeature(IdentityTransformation(len(self.base_features)+1), my_list)
+            new_candidate = CandidateFeature(IdentityTransformation(2), [self.base_features, candidate])
             X = new_candidate.pipeline.fit_transform(self.dataset.splitted_values['train'], self.current_target)
             return mutual_info_classif(X, self.current_target)[-1]
         except:
@@ -394,6 +393,9 @@ class ExploreKitSelection_iterative_search:
 
 
     def run(self):
+
+        self.global_starting_time = time.time()
+
         # generate all candidates
         self.generate()
         #starting_feature_matrix = self.create_starting_features()
@@ -409,7 +411,7 @@ class ExploreKitSelection_iterative_search:
 
         print(len(all_features))
 
-        self.base_features = self.raw_features
+        self.base_features = CandidateFeature(IdentityTransformation(len(self.raw_features)), self.raw_features)
 
         results = {}
 
@@ -417,10 +419,13 @@ class ExploreKitSelection_iterative_search:
 
             print("base features: " + str(self.base_features))
 
-            current_score = self.evaluate_candidates([CandidateFeature(IdentityTransformation(len(self.base_features)), self.base_features)])[0]
+            current_result = self.evaluate_candidates([self.base_features])[0]
 
-            results[i] = (self.base_features, current_score['score'], self.calculate_complexity(self.base_features))
-            print(results[i])
+            results[i] = self.base_features
+            results[i].runtime_properties['score'] = current_result['score']
+            results[i].runtime_properties['execution_time'] = current_result['time']
+            results[i].runtime_properties['global_time'] = current_result['global_time']
+            results[i].runtime_properties['hyperparameters'] = current_result['hyperparameters']
 
             feature_scores = self.evaluate_ranking(all_features)
             ids = np.argsort(np.array(feature_scores) * -1)
@@ -432,25 +437,34 @@ class ExploreKitSelection_iterative_search:
                 if feature_scores[ids[f_i]] < threshold_f:
                     break
 
-                my_list = []
-                my_list.extend(self.base_features)
-                my_list.append(all_features[ids[f_i]])
-                candidate_score = self.evaluate_candidates([CandidateFeature(IdentityTransformation(len(my_list)), my_list)])[0]
+                current_feature_set = CandidateFeature(IdentityTransformation(2), [self.base_features, all_features[ids[f_i]]])
+                result = self.evaluate_candidates([current_feature_set])[0]
                 evaluated_candidate_features += 1
-                improvement = candidate_score['score'] - current_score['score']
+                improvement = result['score'] - current_result['score']
 
-                print("Candidate: " + str(all_features[ids[f_i]]) + " score: " + str(candidate_score['score']) + " info: " + str(feature_scores[ids[f_i]]))
+                print("Candidate: " + str(all_features[ids[f_i]]) + " score: " + str(result['score']) + " info: " + str(feature_scores[ids[f_i]]))
                 print("improvement: " + str(improvement))
                 if improvement > best_improvement_so_far:
                     best_improvement_so_far = improvement
-                    best_Feature_So_Far = all_features[ids[f_i]]
+                    best_Feature_So_Far = current_feature_set
+
+                    results[i] = best_Feature_So_Far
+                    results[i].runtime_properties['score'] = result['score']
+                    results[i].runtime_properties['execution_time'] = result['time']
+                    results[i].runtime_properties['global_time'] = result['global_time']
+                    results[i].runtime_properties['hyperparameters'] = result['hyperparameters']
+                    results[i].runtime_properties['score_improvement'] = improvement
+                    results[i].runtime_properties['info_gain'] = feature_scores[ids[f_i]]
+
+                    pickle.dump(results, open(Config.get("tmp.folder") + "/explorekit_results.p", "wb"))
+
                 if improvement >= epsilon_w:
                     break
                 if evaluated_candidate_features >= R_w:
                     break
 
             if best_improvement_so_far > threshold_w:
-                self.base_features.append(best_Feature_So_Far)
+                self.base_features = best_Feature_So_Far
             else:
                 return self.base_features
 
