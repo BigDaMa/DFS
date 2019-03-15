@@ -6,6 +6,8 @@ from sklearn.pipeline import Pipeline
 from fastsklearnfeature.configuration.Config import Config
 import copy
 import time
+from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
+
 
 class CandidateFeature:
     def __init__(self, transformation: Transformation, parents: List['CandidateFeature']):
@@ -147,6 +149,13 @@ class CandidateFeature:
         return avg_traceability
     '''
 
+    def get_complexity(self):
+        if self.transformation == None:
+            return 1
+        elif isinstance(self.transformation, IdentityTransformation):
+            return np.sum(np.array([f.get_complexity() for f in self.parents]))
+        else:
+            return np.sum(np.array([f.get_complexity() for f in self.parents])) + 1
 
 
 

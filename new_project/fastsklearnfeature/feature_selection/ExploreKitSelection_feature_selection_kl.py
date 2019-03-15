@@ -240,12 +240,12 @@ class ExploreKitSelection_iterative_search:
 
         my_list = []
 
-        for i in range(1, 13):
-            my_list.append(CandidateFeature(SelectKBestTransformer(len(self.raw_features), i), [all_f]))
+        #for i in range(1, 13):
+        #   my_list.append(CandidateFeature(SelectKBestTransformer(len(self.raw_features), i), [all_f]))
             #my_list.append(CandidateFeature(FeatureEliminationTransformer(len(self.raw_features), i, LogisticRegression(penalty='l2', solver='lbfgs', class_weight='balanced', max_iter=10000)), [all_f]))
 
 
-        #my_list.append(CandidateFeature(SissoTransformer(len(self.raw_features)), [all_f]))
+        my_list.append(CandidateFeature(SissoTransformer(len(self.raw_features)), [all_f]))
 
         results = self.evaluate_candidates(my_list)
 
@@ -267,7 +267,7 @@ class ExploreKitSelection_iterative_search:
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    dataset = (Config.get('statlog_heart.csv'), int(Config.get('statlog_heart.target')))
+    #dataset = (Config.get('statlog_heart.csv'), int(Config.get('statlog_heart.target')))
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
@@ -276,6 +276,8 @@ if __name__ == '__main__':
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_31_credit-g_german_credit.csv", 20)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
+
+    dataset = (Config.get('transfusion.csv'), 4)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})

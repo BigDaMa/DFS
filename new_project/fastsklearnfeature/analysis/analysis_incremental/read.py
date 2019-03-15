@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 #path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_subset'
 #path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_subset_2'
 #path = '/home/felix/phd/fastfeatures/results/13_03_hierarcical_new'
-path = '/home/felix/phd/fastfeatures/results/13_03_banknote'
-#path = '/home/felix/phd/fastfeatures/results/13_03_ecoli'
+#path = '/home/felix/phd/fastfeatures/results/13_03_banknote'
+path = '/home/felix/phd/fastfeatures/results/13_03_ecoli'
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
 cost_2_unary_transformed = pickle.load(open(path + "/data_unary.p", "rb"))

@@ -1,6 +1,5 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
-from typing import List, Dict, Set
-import numpy as np
+from typing import Set
 from fastsklearnfeature.reader.Reader import Reader
 from fastsklearnfeature.splitting.Splitter import Splitter
 import time
@@ -10,7 +9,6 @@ from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import f1_score
 from sklearn.preprocessing import LabelEncoder
-import pickle
 from sklearn.model_selection import GridSearchCV
 import multiprocessing as mp
 from sklearn.pipeline import Pipeline
@@ -24,7 +22,17 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 from fastsklearnfeature.transformations.DummyOneTransformation import DummyOneTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
-from sklearn import preprocessing
+from typing import List
+import numpy as np
+from fastsklearnfeature.transformations.Transformation import Transformation
+from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
+from fastsklearnfeature.transformations.generators.HigherOrderCommutativeClassGenerator import HigherOrderCommutativeClassGenerator
+from fastsklearnfeature.transformations.generators.NumpyBinaryClassGenerator import NumpyBinaryClassGenerator
+from fastsklearnfeature.transformations.generators.GroupByThenGenerator import GroupByThenGenerator
+from fastsklearnfeature.transformations.PandasDiscretizerTransformation import PandasDiscretizerTransformation
+from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
+
+from sklearn.feature_selection import mutual_info_classif
 
 
 class ExploreKitSelection_iterative_search:
@@ -80,8 +88,8 @@ class ExploreKitSelection_iterative_search:
         self.current_target = LabelEncoder().fit_transform(current_target)
         #self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
 
-    #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
-    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
+    def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+    #def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
         parameters = self.grid_search_parameters
 
 
@@ -243,15 +251,6 @@ class ExploreKitSelection_iterative_search:
         return list(itertools.chain(*results))
 
 
-    def generate_features(self, transformations: List[Transformation], features: List[CandidateFeature]) -> List[CandidateFeature]:
-        generated_features: List[CandidateFeature] = []
-        for t_i in transformations:
-            for f_i in t_i.get_combinations(features):
-                if t_i.is_applicable(f_i):
-                    generated_features.append(CandidateFeature(copy.deepcopy(t_i), f_i)) # do we need a deep copy here?
-                    #if output is multidimensional adapt here
-        return generated_features
-
 
     def get_length_2_partition(self, cost: int) -> List[List[int]]:
         partition: List[List[int]] = []
@@ -326,7 +325,72 @@ class ExploreKitSelection_iterative_search:
                 filtered_list.append(candidate)
         return filtered_list
 
+    def generate_features1(self, transformations: List[Transformation], features: List[CandidateFeature]):
+        generated_features: List[CandidateFeature] = []
+        for t_i in transformations:
+            for f_i in t_i.get_combinations(features):
+                if t_i.is_applicable(f_i):
+                    generated_features.append(CandidateFeature(copy.deepcopy(t_i), f_i)) # do we need a deep copy here?
+                    #if output is multidimensional adapt here
+        return generated_features
 
+
+    def produce_features(self):
+        unary_transformations: List[UnaryTransformation] = []
+        unary_transformations.append(PandasDiscretizerTransformation(number_bins=10))
+        unary_transformations.append(MinMaxScalingTransformation())
+
+        higher_order_transformations: List[Transformation] = []
+        higher_order_transformations.extend(
+            HigherOrderCommutativeClassGenerator(2, methods=[np.nansum, np.nanprod]).produce())
+        higher_order_transformations.extend(NumpyBinaryClassGenerator(methods=[np.divide, np.subtract]).produce())
+
+        # count is missing
+        higher_order_transformations.extend(GroupByThenGenerator(2, methods=[np.nanmax,
+                                                                             np.nanmin,
+                                                                             np.nanmean,
+                                                                             np.nanstd]).produce())
+
+        Fui = self.generate_features1(unary_transformations, self.raw_features)
+
+        Fi_and_Fui = []
+        Fi_and_Fui.extend(self.raw_features)
+        Fi_and_Fui.extend(Fui)
+
+        Foi = self.generate_features1(higher_order_transformations, Fi_and_Fui)
+
+        Foui = self.generate_features1(unary_transformations, Foi)
+
+        Fi_cand = []
+        Fi_cand.extend(Fui)
+        Fi_cand.extend(Foi)
+        Fi_cand.extend(Foui)
+
+        return Fi_cand
+
+
+    def get_info_gain_of_feature(self, candidate: CandidateFeature):
+        try:
+            my_list = []
+            my_list.extend(self.base_features)
+            my_list.append(candidate)
+            new_candidate = CandidateFeature(IdentityTransformation(len(self.base_features)+1), my_list)
+            X = new_candidate.pipeline.fit_transform(self.dataset.splitted_values['train'], self.current_target)
+            return mutual_info_classif(X, self.current_target)[-1]
+        except:
+            return -1
+
+    def evaluate_ranking(self, candidates):
+        self.preprocessed_folds = []
+        pool = mp.Pool(processes=int(Config.get("parallelism")))
+        results = pool.map(self.get_info_gain_of_feature, candidates)
+        return results
+
+    def calculate_complexity(self, feature_set: List[CandidateFeature]):
+        complexity = 0
+        for f in feature_set:
+            complexity += f.get_complexity()
+        return complexity
 
 
     def run(self):
@@ -335,20 +399,70 @@ class ExploreKitSelection_iterative_search:
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-        numeric_features = []
-        for r in self.raw_features:
-            if 'float' in str(r.properties['type']) \
-                    or 'int' in str(r.properties['type']) \
-                    or 'bool' in str(r.properties['type']):
-                numeric_features.append(r)
+        R_w = 15000
+        max_iterations = 3 #15
+        threshold_f = 0.001
+        epsilon_w = 0.01
+        threshold_w = 0.0
 
-        print(len(numeric_features))
+        all_features = self.produce_features()
 
-        combo = CandidateFeature(IdentityTransformation(len(numeric_features)), numeric_features)
+        print(len(all_features))
 
-        results = self.evaluate_candidates([combo])
+        self.base_features = self.raw_features
 
-        print(results)
+        results = {}
+
+        for i in range(max_iterations):
+
+            print("base features: " + str(self.base_features))
+
+            current_score = self.evaluate_candidates([CandidateFeature(IdentityTransformation(len(self.base_features)), self.base_features)])[0]
+
+            results[i] = (self.base_features, current_score['score'], self.calculate_complexity(self.base_features))
+            print(results[i])
+
+            feature_scores = self.evaluate_ranking(all_features)
+            ids = np.argsort(np.array(feature_scores) * -1)
+
+            best_improvement_so_far = np.NINF
+            best_Feature_So_Far = None
+            evaluated_candidate_features = 0
+            for f_i in range(len(feature_scores)):
+                if feature_scores[ids[f_i]] < threshold_f:
+                    break
+
+                my_list = []
+                my_list.extend(self.base_features)
+                my_list.append(all_features[ids[f_i]])
+                candidate_score = self.evaluate_candidates([CandidateFeature(IdentityTransformation(len(my_list)), my_list)])[0]
+                evaluated_candidate_features += 1
+                improvement = candidate_score['score'] - current_score['score']
+
+                print("Candidate: " + str(all_features[ids[f_i]]) + " score: " + str(candidate_score['score']) + " info: " + str(feature_scores[ids[f_i]]))
+                print("improvement: " + str(improvement))
+                if improvement > best_improvement_so_far:
+                    best_improvement_so_far = improvement
+                    best_Feature_So_Far = all_features[ids[f_i]]
+                if improvement >= epsilon_w:
+                    break
+                if evaluated_candidate_features >= R_w:
+                    break
+
+            if best_improvement_so_far > threshold_w:
+                self.base_features.append(best_Feature_So_Far)
+            else:
+                return self.base_features
+
+            all_features_new = []
+            for i in range(len(feature_scores)):
+                if feature_scores[i] >= 0:
+                    all_features_new.append(all_features[i])
+            all_features = all_features_new
+        return results
+
+
+
 
 
 
@@ -359,7 +473,7 @@ class ExploreKitSelection_iterative_search:
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    #dataset = (Config.get('statlog_heart.csv'), 13)
+    dataset = (Config.get('statlog_heart.csv'), 13)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
@@ -373,12 +487,14 @@ if __name__ == '__main__':
     #dataset = (Config.get('iris.csv'), 4)
     #dataset = (Config.get('banknote.csv'), 4)
     #dataset = (Config.get('ecoli.csv'), 8)
-    dataset = (Config.get('transfusion.csv'), 4)
+    #dataset = (Config.get('abalone.csv'), 8)
+    #dataset = (Config.get('breastcancer.csv'), 0)
+    #dataset = (Config.get('transfusion.csv'), 4)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
-    selector.run()
+    print(selector.run())
 
 
 

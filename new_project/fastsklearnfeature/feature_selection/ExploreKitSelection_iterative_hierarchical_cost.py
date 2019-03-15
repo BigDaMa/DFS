@@ -519,7 +519,10 @@ if __name__ == '__main__':
 
     #dataset = (Config.get('iris.csv'), 4)
     #dataset = (Config.get('banknote.csv'), 4)
-    dataset = (Config.get('ecoli.csv'), 8)
+    #dataset = (Config.get('ecoli.csv'), 8)
+    #dataset = (Config.get('abalone.csv'), 8)
+    #dataset = (Config.get('breastcancer.csv'), 0)
+    dataset = (Config.get('transfusion.csv'), 4)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
