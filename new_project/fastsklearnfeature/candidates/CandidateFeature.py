@@ -19,7 +19,7 @@ class CandidateFeature:
         self.number_of_transformations = None
         self.number_of_raw_attributes = None
 
-        self.score = None
+        self.runtime_properties: Dict[str, Any] = {}
 
         self.pipeline = self.create_pipeline()
 

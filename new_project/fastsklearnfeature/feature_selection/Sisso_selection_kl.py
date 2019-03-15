@@ -14,6 +14,7 @@ from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import pickle
@@ -60,7 +61,8 @@ class ExploreKitSelection_iterative_search:
         current_target = self.dataset.splitted_target['train']
         self.current_target = LabelEncoder().fit_transform(current_target)
 
-    def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
+    #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
         parameters = self.grid_search_parameters
 
 
@@ -260,7 +262,7 @@ class ExploreKitSelection_iterative_search:
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    dataset = (Config.get('statlog_heart.csv'), 13)
+    #dataset = (Config.get('statlog_heart.csv'), 13)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
@@ -270,7 +272,7 @@ if __name__ == '__main__':
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
 
-    #dataset = (Config.get('transfusion.csv'), 4)
+    dataset = (Config.get('transfusion.csv'), 4)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})

@@ -161,6 +161,7 @@ class ExploreKitSelection_iterative_search:
             pass
         result['candidate'] = candidate
         result['time'] = time.time() - time_start_gs
+        result['global_time'] = time.time() - self.global_starting_time
         return result
 
 
@@ -330,6 +331,9 @@ class ExploreKitSelection_iterative_search:
 
 
     def run(self):
+
+        self.global_starting_time = time.time()
+
         # generate all candidates
         self.generate()
         #starting_feature_matrix = self.create_starting_features()
@@ -358,7 +362,7 @@ class ExploreKitSelection_iterative_search:
 
 
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
-        max_feature.score = -2
+        max_feature.runtime_properties['score'] = -2
 
         for c in range(1, limit_runs):
             current_layer: List[CandidateFeature] = []
@@ -443,20 +447,26 @@ class ExploreKitSelection_iterative_search:
             results = self.evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
 
+            layer_end_time = time.time() - self.global_starting_time
+
             #calculate whether we drop the evaluated candidate
             for result in results:
                 candidate: CandidateFeature = result['candidate']
-                candidate.score = result['score']
+                candidate.runtime_properties['score'] = result['score']
+                candidate.runtime_properties['execution_time'] = result['time']
+                candidate.runtime_properties['global_time'] = result['global_time']
+                candidate.runtime_properties['hyperparameters'] = result['hyperparameters']
+                candidate.runtime_properties['layer_end_time'] = layer_end_time
 
                 #print(str(candidate) + " -> " + str(candidate.score))
 
-                if candidate.score > max_feature.score:
+                if candidate.runtime_properties['score'] > max_feature.runtime_properties['score']:
                     max_feature = candidate
 
                 #calculate original score
                 original_score = baseline_score #or zero??
                 if not isinstance(candidate, RawFeature):
-                    original_score = max([p.score for p in candidate.parents])
+                    original_score = max([p.runtime_properties['score'] for p in candidate.parents])
 
                 accuracy_delta = result['score'] - original_score
 

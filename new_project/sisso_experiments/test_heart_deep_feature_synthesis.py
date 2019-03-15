@@ -122,7 +122,7 @@ class SissoExperiment:
         print(es)
 
         feature_matrix, feature_defs = ft.dfs(entityset=es, target_entity='target_e', max_depth=6, verbose=1,
-                                              n_jobs=4, max_features=3)
+                                              n_jobs=4, max_features=2)
 
         drop_cols = []
         for col in feature_matrix:
@@ -212,7 +212,7 @@ class SissoExperiment:
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    dataset = (Config.get('statlog_heart.csv'), int(Config.get('statlog_heart.target')))
+    dataset = (Config.get('statlog_heart.csv'), 13)
 
     selector = SissoExperiment(dataset)
 

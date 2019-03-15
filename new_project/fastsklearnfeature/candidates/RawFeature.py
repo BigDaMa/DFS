@@ -15,6 +15,8 @@ class RawFeature(CandidateFeature):
         self.parents = []
         self.transformation = None
 
+        self.runtime_properties: Dict[str, Any] = {}
+
         self.pipeline = self.create_pipeline()
 
 

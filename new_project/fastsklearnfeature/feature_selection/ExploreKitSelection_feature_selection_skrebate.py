@@ -1,9 +1,6 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
-from fastsklearnfeature.transformations.Transformation import Transformation
-from fastsklearnfeature.transformations.feature_selection.SelectKBestTransformer import SelectKBestTransformer
-from fastsklearnfeature.transformations.feature_selection.FeatureEliminationTransformer import FeatureEliminationTransformer
-from fastsklearnfeature.transformations.feature_selection.SissoTransformer import SissoTransformer
+from fastsklearnfeature.transformations.feature_selection.skrebateTransformer import skrebateTransformer
 from typing import List
 import numpy as np
 from fastsklearnfeature.reader.Reader import Reader
@@ -26,18 +23,6 @@ from fastsklearnfeature.configuration.Config import Config
 from sklearn.pipeline import FeatureUnion
 import itertools
 
-
-from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
-from fastsklearnfeature.transformations.generators.HigherOrderCommutativeClassGenerator import HigherOrderCommutativeClassGenerator
-from fastsklearnfeature.transformations.generators.NumpyBinaryClassGenerator import NumpyBinaryClassGenerator
-from fastsklearnfeature.transformations.GroupByThenTransformation import GroupByThenTransformation
-from fastsklearnfeature.transformations.PandasDiscretizerTransformation import PandasDiscretizerTransformation
-from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
-from fastsklearnfeature.transformations.binary.NonCommutativeBinaryTransformation import NonCommutativeBinaryTransformation
-from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
-
-
-
 class ExploreKitSelection_iterative_search:
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
@@ -59,9 +44,9 @@ class ExploreKitSelection_iterative_search:
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         self.raw_features = self.dataset.read()
 
-        #g = Generator(self.raw_features)
-        #self.candidates = g.generate_all_candidates()
-        #print("Number candidates: " + str(len(self.candidates)))
+        g = Generator(self.raw_features)
+        self.candidates = g.generate_all_candidates()
+        print("Number candidates: " + str(len(self.candidates)))
 
     #rank and select features
     def random_select(self, k: int):
@@ -223,81 +208,22 @@ class ExploreKitSelection_iterative_search:
         return working_features
 
 
-
-    def explorekit_heart_features(self, name2feature):
-        explore_kit_features = []
-        explore_kit_features.extend(self.raw_features)
-
-        # Discretize({Mean(age) GROUP BY Discretize(sex), Discretize(exercise_induced_angina)})
-        discr_sex = CandidateFeature(PandasDiscretizerTransformation(10), [name2feature['sex']])
-        discr_angina = CandidateFeature(PandasDiscretizerTransformation(10), [name2feature['exercise_induced_angina']])
-        grouped = CandidateFeature(GroupByThenTransformation(np.mean, 3),
-                                   [name2feature['age'], discr_sex, discr_angina])
-        final = CandidateFeature(PandasDiscretizerTransformation(10), [grouped])
-
-        explore_kit_features.append(final)
-
-        all_f = CandidateFeature(IdentityTransformation(len(explore_kit_features)), explore_kit_features)
-        return [all_f]
+    def filter_candidate(self, candidate):
+        working_features: List[CandidateFeature] = []
+        try:
+            candidate.fit(self.dataset.splitted_values['train'])
+            candidate.transform(self.dataset.splitted_values['train'])
+            working_features.append(candidate)
+        except:
+            pass
+        return working_features
 
 
+    def filter_failing_in_parallel(self):
+        pool = mp.Pool(processes=int(Config.get("parallelism")))
+        results = pool.map(self.filter_candidate, self.candidates)
+        return list(itertools.chain(*results))
 
-    #Index(['Recency', 'Frequency', 'Monetary', 'Time', 'Frequency/Time',
-    #   'Recency**2/Time', 'Frequency**2/Time', 'Time/Frequency'],
-    #  dtype='object')
-    def sisso_transfusion_features(self, name2feature):
-        sisso_features = []
-        sisso_features.extend(self.raw_features)
-
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide), [name2feature['Frequency'], name2feature['Time']]))
-
-        squared_recency = CandidateFeature(HigherOrderCommutativeTransformation(np.prod, 2), [name2feature['Recency'], name2feature['Recency']])
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
-                                               [squared_recency, name2feature['Time']]))
-
-        squared_frequency = CandidateFeature(HigherOrderCommutativeTransformation(np.prod, 2),
-                                           [name2feature['Frequency'], name2feature['Frequency']])
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
-                                               [squared_frequency, name2feature['Time']]))
-
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
-                                               [name2feature['Time'], name2feature['Frequency']]))
-
-        all_f = CandidateFeature(IdentityTransformation(len(sisso_features)), sisso_features)
-        return [all_f]
-
-    # Index(['Recency', 'Frequency', 'Monetary', 'Time', 'Frequency/Time'],
-    def sisso_transfusion_features_new(self, name2feature):
-        sisso_features = []
-        sisso_features.extend(self.raw_features)
-
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
-                                               [name2feature['Frequency'], name2feature['Time']]))
-
-        all_f = CandidateFeature(IdentityTransformation(len(sisso_features)), sisso_features)
-        return [all_f]
-
-    #Index(['Recency', 'Frequency', 'Monetary', 'Time', 'Time/Monetary','Frequency**2/Time', 'Monetary/Time']
-    def sisso_transfusion_features_new2(self, name2feature):
-        sisso_features = []
-        sisso_features.extend(self.raw_features)
-
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide), [name2feature['Time'], name2feature['Monetary']]))
-
-        squared_Frequency = CandidateFeature(HigherOrderCommutativeTransformation(np.prod, 2), [name2feature['Frequency'], name2feature['Frequency']])
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
-                                               [squared_Frequency, name2feature['Time']]))
-
-        squared_frequency = CandidateFeature(HigherOrderCommutativeTransformation(np.prod, 2),
-                                           [name2feature['Frequency'], name2feature['Frequency']])
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
-                                               [squared_frequency, name2feature['Time']]))
-
-        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
-                                               [name2feature['Monetary'], name2feature['Time']]))
-
-        all_f = CandidateFeature(IdentityTransformation(len(sisso_features)), sisso_features)
-        return [all_f]
 
     def run(self):
         # generate all candidates
@@ -305,18 +231,19 @@ class ExploreKitSelection_iterative_search:
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-
-        #working_features = self.filter_failing_features()
+        #working_features = self.filter_failing_in_parallel()
         #all_f = CandidateFeature(IdentityTransformation(len(working_features)), working_features)
 
+        all_f = CandidateFeature(IdentityTransformation(len(self.raw_features)), self.raw_features)
 
-        name2feature = {}
-        for f in self.raw_features:
-            name2feature[str(f)] = f
 
-        #my_list = self.explorekit_heart_features(name2feature)
+        my_list = []
 
-        my_list = self.sisso_transfusion_features_new(name2feature)
+        for i in range(1, len(self.raw_features)+1):
+            my_list.append(CandidateFeature(skrebateTransformer(len(self.raw_features), i), [all_f]))
+
+
+        #my_list.append(CandidateFeature(SissoTransformer(len(self.raw_features)), [all_f]))
 
         results = self.evaluate_candidates(my_list)
 
@@ -353,7 +280,9 @@ if __name__ == '__main__':
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
-    selector.run()
+    results = selector.run()
+
+    pickle.dump(results, open("/tmp/all_data_iterations.p", "wb"))
 
 
 

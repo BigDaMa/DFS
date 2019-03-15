@@ -14,6 +14,7 @@ from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import pickle
@@ -60,7 +61,8 @@ class ExploreKitSelection_iterative_search:
         current_target = self.dataset.splitted_target['train']
         self.current_target = LabelEncoder().fit_transform(current_target)
 
-    def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
+    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
+    #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
         parameters = self.grid_search_parameters
 
 
@@ -240,12 +242,12 @@ class ExploreKitSelection_iterative_search:
 
         my_list = []
 
-        #for i in range(1, 13):
-        #   my_list.append(CandidateFeature(SelectKBestTransformer(len(self.raw_features), i), [all_f]))
+        for i in range(1, len(self.raw_features)+1):
+            my_list.append(CandidateFeature(SelectKBestTransformer(len(self.raw_features), i), [all_f]))
             #my_list.append(CandidateFeature(FeatureEliminationTransformer(len(self.raw_features), i, LogisticRegression(penalty='l2', solver='lbfgs', class_weight='balanced', max_iter=10000)), [all_f]))
 
 
-        my_list.append(CandidateFeature(SissoTransformer(len(self.raw_features)), [all_f]))
+        #my_list.append(CandidateFeature(SissoTransformer(len(self.raw_features)), [all_f]))
 
         results = self.evaluate_candidates(my_list)
 
