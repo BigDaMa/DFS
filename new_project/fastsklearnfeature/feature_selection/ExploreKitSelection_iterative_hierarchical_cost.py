@@ -44,35 +44,13 @@ class ExploreKitSelection_iterative_search:
 
     #generate all possible combinations of features
     def generate(self):
-
-        #s = Splitter(train_fraction=[0.6, 10000000], seed=42)
-
         s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
-
 
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         self.raw_features = self.dataset.read()
 
         print("training:" + str(len(self.dataset.splitted_target['train'])))
         print("test:" + str(len(self.dataset.splitted_target['test'])))
-
-
-        #just debugging
-        '''
-        subset_raw_features = []
-        for r in self.raw_features:
-            if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal':
-            #if str(r) != "fasting_blood_sugar" and str(r) != "resting_electrocardiographic_results":
-                subset_raw_features.append(r)
-        self.raw_features = subset_raw_features
-        '''
-
-
-
-
-        #g = Generator(raw_features)
-        #self.candidates = g.generate_all_candidates()
-        #print("Number candidates: " + str(len(self.candidates)))
 
     #rank and select features
     def random_select(self, k: int):
@@ -87,8 +65,6 @@ class ExploreKitSelection_iterative_search:
         label_encoder.fit(current_target)
 
         self.current_target = label_encoder.transform(current_target)
-        #self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
-
         self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
 
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
@@ -144,7 +120,7 @@ class ExploreKitSelection_iterative_search:
         results = pool.map(self.evaluate_single_candidate, candidates)
         return results
 
-    
+
     '''
     def evaluate_candidates(self, candidates):
         self.preprocessed_folds = []
@@ -174,7 +150,7 @@ class ExploreKitSelection_iterative_search:
             result['hyperparameters'] = {}
             pass
         result['candidate'] = candidate
-        result['time'] = time.time() - time_start_gs
+        result['execution_time'] = time.time() - time_start_gs
         result['global_time'] = time.time() - self.global_starting_time
         return result
 

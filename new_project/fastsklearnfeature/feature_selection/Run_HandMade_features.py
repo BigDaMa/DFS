@@ -50,18 +50,15 @@ class ExploreKitSelection_iterative_search:
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
 
-    #generate all possible combinations of features
+    # generate all possible combinations of features
     def generate(self):
-
-        s = Splitter(train_fraction=[0.6, 10000000], seed=42)
-        #s = Splitter(train_fraction=[0.1, 10000000], seed=42)
+        s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
 
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         self.raw_features = self.dataset.read()
 
-        #g = Generator(self.raw_features)
-        #self.candidates = g.generate_all_candidates()
-        #print("Number candidates: " + str(len(self.candidates)))
+        print("training:" + str(len(self.dataset.splitted_target['train'])))
+        print("test:" + str(len(self.dataset.splitted_target['test'])))
 
     #rank and select features
     def random_select(self, k: int):
@@ -71,7 +68,13 @@ class ExploreKitSelection_iterative_search:
 
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
-        self.current_target = LabelEncoder().fit_transform(current_target)
+
+        label_encoder = LabelEncoder()
+        label_encoder.fit(current_target)
+
+        self.current_target = label_encoder.transform(current_target)
+        self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
+
 
     def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
@@ -100,6 +103,7 @@ class ExploreKitSelection_iterative_search:
         result['score'] = clf.best_score_
         result['hyperparameters'] = clf.best_params_
 
+        result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
         return result
 
 
@@ -142,7 +146,7 @@ class ExploreKitSelection_iterative_search:
 
 
     '''
-    def evaluate_single_candidate(self, candidate):
+        def evaluate_single_candidate(self, candidate):
         result = {}
         time_start_gs = time.time()
         try:
@@ -151,10 +155,12 @@ class ExploreKitSelection_iterative_search:
         except Exception as e:
             print(str(candidate) + " -> " + str(e))
             result['score'] = -1.0
+            result['test_score'] = -1.0
             result['hyperparameters'] = {}
             pass
         result['candidate'] = candidate
-        result['time'] = time.time() - time_start_gs
+        result['execution_time'] = time.time() - time_start_gs
+        result['global_time'] = time.time() - self.global_starting_time
         return result
 
 

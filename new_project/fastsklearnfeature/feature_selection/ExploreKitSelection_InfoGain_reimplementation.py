@@ -162,7 +162,7 @@ class ExploreKitSelection_iterative_search:
             result['hyperparameters'] = {}
             pass
         result['candidate'] = candidate
-        result['time'] = time.time() - time_start_gs
+        result['execution_time'] = time.time() - time_start_gs
         result['global_time'] = time.time() - self.global_starting_time
         return result
 
@@ -444,8 +444,8 @@ class ExploreKitSelection_iterative_search:
 
                     results[i] = best_Feature_So_Far
                     results[i].runtime_properties['score'] = result['score']
-                    results[i].runtime_properties['score'] = result['test_score']
-                    results[i].runtime_properties['execution_time'] = result['time']
+                    results[i].runtime_properties['test_score'] = result['test_score']
+                    results[i].runtime_properties['execution_time'] = result['execution_time']
                     results[i].runtime_properties['global_time'] = result['global_time']
                     results[i].runtime_properties['hyperparameters'] = result['hyperparameters']
                     results[i].runtime_properties['score_improvement'] = improvement
