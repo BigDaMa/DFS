@@ -36,9 +36,10 @@ from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMa
 from fastsklearnfeature.transformations.binary.NonCommutativeBinaryTransformation import NonCommutativeBinaryTransformation
 from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
 
+from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationFramework
 
 
-class ExploreKitSelection_iterative_search:
+class ExploreKitSelection_iterative_search(EvaluationFramework):
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'classifier__solver': ['lbfgs'],
@@ -49,128 +50,6 @@ class ExploreKitSelection_iterative_search:
         self.dataset_config = dataset_config
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
-
-    # generate all possible combinations of features
-    def generate(self):
-        s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
-
-        self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
-        self.raw_features = self.dataset.read()
-
-        print("training:" + str(len(self.dataset.splitted_target['train'])))
-        print("test:" + str(len(self.dataset.splitted_target['test'])))
-
-    #rank and select features
-    def random_select(self, k: int):
-        arr = np.arange(len(self.candidates))
-        np.random.shuffle(arr)
-        return arr[0:k]
-
-    def generate_target(self):
-        current_target = self.dataset.splitted_target['train']
-
-        label_encoder = LabelEncoder()
-        label_encoder.fit(current_target)
-
-        self.current_target = label_encoder.transform(current_target)
-        self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
-
-
-    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
-    #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
-        parameters = self.grid_search_parameters
-
-
-        if not isinstance(candidate, CandidateFeature):
-            pipeline = Pipeline([('features',FeatureUnion(
-
-                        [(p.get_name(), p.pipeline) for p in candidate]
-                    )),
-                ('classifier', self.classifier)
-            ])
-        else:
-            pipeline = Pipeline([('features', FeatureUnion(
-                [
-                    (candidate.get_name(), candidate.pipeline)
-                ])),
-                 ('classifier', self.classifier)
-                 ])
-
-        result = {}
-
-        clf = GridSearchCV(pipeline, parameters, cv=self.preprocessed_folds, scoring=score, iid=False, error_score='raise')
-        clf.fit(self.dataset.splitted_values['train'], self.current_target)
-        result['score'] = clf.best_score_
-        result['hyperparameters'] = clf.best_params_
-
-        result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
-        return result
-
-
-
-
-    def create_starting_features(self):
-        Fi: List[RawFeature]= self.dataset.raw_features
-
-        #materialize and numpyfy the features
-        starting_feature_matrix = np.zeros((Fi[0].materialize()['train'].shape[0], len(Fi)))
-        for f_index in range(len(Fi)):
-            starting_feature_matrix[:, f_index] = Fi[f_index].materialize()['train']
-        return starting_feature_matrix
-
-    '''
-    def evaluate_candidates(self, candidates):
-        self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'], self.current_target):
-            self.preprocessed_folds.append((train, test))
-
-        pool = mp.Pool(processes=int(Config.get("parallelism")))
-        results = pool.map(self.evaluate_single_candidate, candidates)
-        return results
-
-
-
-    '''
-    def evaluate_candidates(self, candidates):
-        self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'],
-                                                                               self.current_target):
-            self.preprocessed_folds.append((train, test))
-
-        results = []
-        for c in candidates:
-            results.append(self.evaluate_single_candidate(c))
-        return results
-
-
-
-
-    '''
-        def evaluate_single_candidate(self, candidate):
-        result = {}
-        time_start_gs = time.time()
-        try:
-            result = self.evaluate(candidate)
-            #print("feature: " + str(candidate) + " -> " + str(new_score))
-        except Exception as e:
-            print(str(candidate) + " -> " + str(e))
-            result['score'] = -1.0
-            result['test_score'] = -1.0
-            result['hyperparameters'] = {}
-            pass
-        result['candidate'] = candidate
-        result['execution_time'] = time.time() - time_start_gs
-        result['global_time'] = time.time() - self.global_starting_time
-        return result
-
-
-    '''
-    def evaluate_single_candidate(self, candidate):
-        time_start_gs = time.time()
-        result = self.evaluate(candidate)
-        result['candidate'] = candidate
-        result['time'] = time.time() - time_start_gs
-        return result
 
 
     #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
@@ -305,7 +184,36 @@ class ExploreKitSelection_iterative_search:
         all_f = CandidateFeature(IdentityTransformation(len(sisso_features)), sisso_features)
         return [all_f]
 
+    # Index(['Recency', 'Frequency', 'Monetary', 'Time', 'Recency**2/Time',
+    #        'Recency/Time', 'Monetary**2/Time', 'Monetary/Time'],
+    def sisso_transfusion_features_new3(self, name2feature) -> List[CandidateFeature]:
+        sisso_features = []
+        sisso_features.extend(self.raw_features)
+
+        squared_recency = CandidateFeature(HigherOrderCommutativeTransformation(np.prod, 2),
+                                           [name2feature['Recency'], name2feature['Recency']])
+
+        squared_monetary = CandidateFeature(HigherOrderCommutativeTransformation(np.prod, 2),
+                                             [name2feature['Monetary'], name2feature['Monetary']])
+
+        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
+                                               [name2feature['Recency'], name2feature['Time']]))
+
+        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
+                                               [name2feature['Monetary'], name2feature['Time']]))
+
+        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
+                                               [squared_monetary, name2feature['Time']]))
+
+        sisso_features.append(CandidateFeature(NonCommutativeBinaryTransformation(np.divide),
+                                               [squared_recency, name2feature['Time']]))
+
+        all_f = CandidateFeature(IdentityTransformation(len(sisso_features)), sisso_features)
+        return [all_f]
+
     def run(self):
+        self.global_starting_time = time.time()
+
         # generate all candidates
         self.generate()
         #starting_feature_matrix = self.create_starting_features()
@@ -322,21 +230,17 @@ class ExploreKitSelection_iterative_search:
 
         #my_list = self.explorekit_heart_features(name2feature)
 
-        my_list = self.sisso_transfusion_features_new(name2feature)
+        my_list = self.sisso_transfusion_features_new3(name2feature)
 
         results = self.evaluate_candidates(my_list)
 
         print(results)
 
+        print("Complexity: " + str(my_list[0].get_complexity()))
+
         for r in range(len(results)):
-            print("(" + str(r+1) +"," + str(results[r]['score']) + ")")
+            print("(" + str(r+1) + "," + str(results[r]['test_score']) + ")")
 
-
-
-        new_scores = [r['score'] for r in results]
-        best_id = np.argmax(new_scores)
-
-        print(results[best_id])
 
 
 

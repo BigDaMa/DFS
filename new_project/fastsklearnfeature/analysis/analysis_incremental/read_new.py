@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 #path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion_node1'
 path = '/home/felix/phd/fastfeatures/results/16_03_test_transfusion_me'
 
+
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
 cost_2_unary_transformed = pickle.load(open(path + "/data_unary.p", "rb"))
 cost_2_binary_transformed = pickle.load(open(path + "/data_binary.p", "rb"))
@@ -165,8 +166,8 @@ for c in range(1, 8):
 
     best_pro_cost[c] = copy.deepcopy(best_candidate)
 
-    print(best_candidate.runtime_properties)
-    print("complexity: " + str(c) + " " + \
+    #print(best_candidate.runtime_properties)
+    print("\ncomplexity: " + str(c) + " " + \
           str(best_candidate) + \
           " cross-validation score: " + str(best_candidate.runtime_properties['score']) + \
           " test score: " + str(best_candidate.runtime_properties['test_score']) + \
