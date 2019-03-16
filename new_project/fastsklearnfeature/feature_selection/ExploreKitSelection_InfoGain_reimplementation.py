@@ -51,32 +51,18 @@ class ExploreKitSelection_iterative_search:
         self.grid_search_parameters = grid_search_parameters
         self.transformation_producer = transformation_producer
 
-    #generate all possible combinations of features
     def generate(self):
 
-        s = Splitter(train_fraction=[0.6, 10000000], seed=42)
-        #s = Splitter(train_fraction=[0.1, 10000000], seed=42)
+        s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
+
 
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         self.raw_features = self.dataset.read()
 
-
-        #just debugging
-        '''
-        subset_raw_features = []
-        for r in self.raw_features:
-            if str(r) == 'number_of_major_vessels' or str(r) == 'chest' or str(r) == 'thal':
-            #if str(r) != "fasting_blood_sugar" and str(r) != "resting_electrocardiographic_results":
-                subset_raw_features.append(r)
-        self.raw_features = subset_raw_features
-        '''
+        print("training:" + str(len(self.dataset.splitted_target['train'])))
+        print("test:" + str(len(self.dataset.splitted_target['test'])))
 
 
-
-
-        #g = Generator(raw_features)
-        #self.candidates = g.generate_all_candidates()
-        #print("Number candidates: " + str(len(self.candidates)))
 
     #rank and select features
     def random_select(self, k: int):
@@ -86,8 +72,12 @@ class ExploreKitSelection_iterative_search:
 
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
-        self.current_target = LabelEncoder().fit_transform(current_target)
-        #self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
+
+        label_encoder = LabelEncoder()
+        label_encoder.fit(current_target)
+
+        self.current_target = label_encoder.transform(current_target)
+        self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
 
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
     def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
@@ -115,6 +105,8 @@ class ExploreKitSelection_iterative_search:
         clf.fit(self.dataset.splitted_values['train'], self.current_target)
         result['score'] = clf.best_score_
         result['hyperparameters'] = clf.best_params_
+
+        result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
 
         return result
 
@@ -166,6 +158,7 @@ class ExploreKitSelection_iterative_search:
         except Exception as e:
             print(str(candidate) + " -> " + str(e))
             result['score'] = -1.0
+            result['test_score'] = -1.0
             result['hyperparameters'] = {}
             pass
         result['candidate'] = candidate
@@ -422,6 +415,7 @@ class ExploreKitSelection_iterative_search:
             current_result = self.evaluate_candidates([self.base_features])[0]
 
             results[i] = self.base_features
+            results[i].runtime_properties['test_score'] = current_result['test_score']
             results[i].runtime_properties['score'] = current_result['score']
             results[i].runtime_properties['execution_time'] = current_result['time']
             results[i].runtime_properties['global_time'] = current_result['global_time']
@@ -450,6 +444,7 @@ class ExploreKitSelection_iterative_search:
 
                     results[i] = best_Feature_So_Far
                     results[i].runtime_properties['score'] = result['score']
+                    results[i].runtime_properties['score'] = result['test_score']
                     results[i].runtime_properties['execution_time'] = result['time']
                     results[i].runtime_properties['global_time'] = result['global_time']
                     results[i].runtime_properties['hyperparameters'] = result['hyperparameters']

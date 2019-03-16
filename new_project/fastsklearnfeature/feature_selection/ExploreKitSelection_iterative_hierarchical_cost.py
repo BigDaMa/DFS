@@ -45,11 +45,16 @@ class ExploreKitSelection_iterative_search:
     #generate all possible combinations of features
     def generate(self):
 
-        s = Splitter(train_fraction=[0.6, 10000000], seed=42)
-        #s = Splitter(train_fraction=[0.1, 10000000], seed=42)
+        #s = Splitter(train_fraction=[0.6, 10000000], seed=42)
+
+        s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
+
 
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         self.raw_features = self.dataset.read()
+
+        print("training:" + str(len(self.dataset.splitted_target['train'])))
+        print("test:" + str(len(self.dataset.splitted_target['test'])))
 
 
         #just debugging
@@ -77,8 +82,14 @@ class ExploreKitSelection_iterative_search:
 
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
-        self.current_target = LabelEncoder().fit_transform(current_target)
+
+        label_encoder = LabelEncoder()
+        label_encoder.fit(current_target)
+
+        self.current_target = label_encoder.transform(current_target)
         #self.current_target = preprocessing.OneHotEncoder(sparse=False).fit_transform(current_target.reshape(-1, 1))[:,0]
+
+        self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
 
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
     def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
@@ -106,6 +117,8 @@ class ExploreKitSelection_iterative_search:
         clf.fit(self.dataset.splitted_values['train'], self.current_target)
         result['score'] = clf.best_score_
         result['hyperparameters'] = clf.best_params_
+
+        result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
 
         return result
 
@@ -157,6 +170,7 @@ class ExploreKitSelection_iterative_search:
         except Exception as e:
             print(str(candidate) + " -> " + str(e))
             result['score'] = -1.0
+            result['test_score'] = -1.0
             result['hyperparameters'] = {}
             pass
         result['candidate'] = candidate
@@ -453,6 +467,7 @@ class ExploreKitSelection_iterative_search:
             for result in results:
                 candidate: CandidateFeature = result['candidate']
                 candidate.runtime_properties['score'] = result['score']
+                candidate.runtime_properties['test_score'] = result['test_score']
                 candidate.runtime_properties['execution_time'] = result['time']
                 candidate.runtime_properties['global_time'] = result['global_time']
                 candidate.runtime_properties['hyperparameters'] = result['hyperparameters']

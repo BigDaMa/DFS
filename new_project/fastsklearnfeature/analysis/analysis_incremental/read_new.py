@@ -11,8 +11,9 @@ import matplotlib.pyplot as plt
 #path = '/home/felix/phd/fastfeatures/results/11_03_incremental_construction'
 #path = '/home/felix/phd/fastfeatures/results/12_03_incremental_03_threshold'
 #path = '/home/felix/phd/fastfeatures/results/12_03_incremental_02_threshold'
-#path = '/tmp'
-path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion'
+path = '/tmp'
+#path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion'
+#path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion_node1'
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
 cost_2_unary_transformed = pickle.load(open(path + "/data_unary.p", "rb"))
@@ -163,11 +164,12 @@ for c in range(1, 8):
 
     best_pro_cost[c] = copy.deepcopy(best_candidate)
 
-
+    print(best_candidate.runtime_properties)
     print("complexity: " + str(c) + " " + \
           str(best_candidate) + \
-          " accuracy: " + str(best_candidate.runtime_properties['score']) +\
-          " layer time: " + str(best_candidate.runtime_properties['layer_end_time'])   +\
+          " cross-validation score: " + str(best_candidate.runtime_properties['score']) + \
+          " test score: " + str(best_candidate.runtime_properties['test_score']) + \
+          " layer time: " + str(best_candidate.runtime_properties['layer_end_time']) +\
           " real time: " + str(best_candidate.runtime_properties['global_time'])
           )
 
@@ -181,8 +183,8 @@ for c in range(1, 8):
 
 
 for i in range(1, 8):
-    acc_score = getAccuracyScore(best_pro_cost[i], 4)
-    simplicity_score = getSimplicityScore(best_pro_cost[i], 4)
+    acc_score = getAccuracyScore(best_pro_cost[i], 5)
+    simplicity_score = getSimplicityScore(best_pro_cost[i], 5)
 
     print("\n\nstart: " + str(i))
     print("acc: " + str(acc_score))
