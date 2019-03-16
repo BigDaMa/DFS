@@ -417,7 +417,7 @@ class ExploreKitSelection_iterative_search:
             results[i] = self.base_features
             results[i].runtime_properties['test_score'] = current_result['test_score']
             results[i].runtime_properties['score'] = current_result['score']
-            results[i].runtime_properties['execution_time'] = current_result['time']
+            results[i].runtime_properties['execution_time'] = current_result['execution_time']
             results[i].runtime_properties['global_time'] = current_result['global_time']
             results[i].runtime_properties['hyperparameters'] = current_result['hyperparameters']
 
