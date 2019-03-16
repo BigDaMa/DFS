@@ -267,7 +267,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
         self.generate_target()
 
         R_w = 15000
-        max_iterations = 3 #15
+        max_iterations = 5 #15
         threshold_f = 0.001
         epsilon_w = 0.01
         threshold_w = 0.0
