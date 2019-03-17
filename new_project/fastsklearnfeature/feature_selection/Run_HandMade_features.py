@@ -230,7 +230,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
         #my_list = self.explorekit_heart_features(name2feature)
 
-        my_list = self.sisso_transfusion_features_new3(name2feature)
+        my_list = self.sisso_transfusion_features_new(name2feature)
 
         results = self.evaluate_candidates(my_list)
 

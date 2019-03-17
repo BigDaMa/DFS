@@ -16,14 +16,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
 from fastsklearnfeature.configuration.Config import Config
 from sklearn.pipeline import FeatureUnion
-import itertools
-from fastsklearnfeature.transformations.Transformation import Transformation
-from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
-from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
-from fastsklearnfeature.transformations.DummyOneTransformation import DummyOneTransformation
-import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
-from sklearn import preprocessing
+import warnings
 
 
 class EvaluationFramework:
@@ -143,7 +137,7 @@ class EvaluationFramework:
             result = self.evaluate(candidate)
             #print("feature: " + str(candidate) + " -> " + str(new_score))
         except Exception as e:
-            print(str(candidate) + " -> " + str(e))
+            warnings.warn(str(candidate) + " -> " + str(e), RuntimeWarning)
             result['score'] = -1.0
             result['test_score'] = -1.0
             result['hyperparameters'] = {}

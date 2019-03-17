@@ -26,9 +26,11 @@ import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from sklearn import preprocessing
 from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationFramework
+import warnings
+warnings.filterwarnings("ignore")
 
 
-class ExploreKitSelection_iterative_search(EvaluationFramework):
+class SimpleFeatureConstruction(EvaluationFramework):
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'classifier__solver': ['lbfgs'],
@@ -36,12 +38,18 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
                                                                                                 'classifier__max_iter': [10000],
                                                                                                 'classifier__multi_class':['auto']
                                                                                                 },
-                 transformation_producer=get_transformation_for_feature_space
+                 transformation_producer=get_transformation_for_feature_space,
+                 epsilon=0.0,
+                 c_max = 2,
+                 save_logs=False
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
         self.transformation_producer = transformation_producer
+        self.epsilon = epsilon
+        self.c_max = c_max
+        self.save_logs = save_logs
 
     #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
     def partition(self, number):
@@ -212,13 +220,13 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
         complexity_delta = 1.0
 
-        epsilon = 0.00 #0.02 #0.00
-        limit_runs = 9  # 5
+        epsilon = self.epsilon
+        limit_runs = self.c_max + 1  # 5
         unique_raw_combinations = False
 
 
         baseline_score = 0.0#self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
-        print("baseline: " + str(baseline_score))
+        #print("baseline: " + str(baseline_score))
 
 
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
@@ -363,11 +371,12 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
             print(max_feature)
 
-            pickle.dump(cost_2_raw_features, open(Config.get("tmp.folder") + "/data_raw.p", "wb"))
-            pickle.dump(cost_2_unary_transformed, open(Config.get("tmp.folder") + "/data_unary.p", "wb"))
-            pickle.dump(cost_2_binary_transformed, open(Config.get("tmp.folder") + "/data_binary.p", "wb"))
-            pickle.dump(cost_2_combination, open(Config.get("tmp.folder") + "/data_combination.p", "wb"))
-            pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get("tmp.folder") + "/data_dropped.p", "wb"))
+            if self.save_logs:
+                pickle.dump(cost_2_raw_features, open(Config.get("tmp.folder") + "/data_raw.p", "wb"))
+                pickle.dump(cost_2_unary_transformed, open(Config.get("tmp.folder") + "/data_unary.p", "wb"))
+                pickle.dump(cost_2_binary_transformed, open(Config.get("tmp.folder") + "/data_binary.p", "wb"))
+                pickle.dump(cost_2_combination, open(Config.get("tmp.folder") + "/data_combination.p", "wb"))
+                pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get("tmp.folder") + "/data_dropped.p", "wb"))
 
 
 
@@ -395,7 +404,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('breastcancer.csv'), 0)
     dataset = (Config.get('transfusion.csv'), 4)
 
-    selector = ExploreKitSelection_iterative_search(dataset)
+    selector = SimpleFeatureConstruction(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()

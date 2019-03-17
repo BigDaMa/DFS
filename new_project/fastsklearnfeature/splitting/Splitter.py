@@ -20,7 +20,7 @@ class Splitter:
         self.ids = {}
         self.ids['valid'] = []
 
-        print(dataset)
+        #print(dataset)
         X_rest, X_test, y_rest, y_test = train_test_split(dataset, y, test_size=self.test_fraction,
                                                           random_state=self.seed, stratify=y)
         self.ids['test'] = X_test.index.values

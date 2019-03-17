@@ -3,7 +3,8 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.feature_selection.SelectKBestTransformer import SelectKBestTransformer
 from fastsklearnfeature.transformations.feature_selection.FeatureEliminationTransformer import FeatureEliminationTransformer
-from fastsklearnfeature.transformations.feature_selection.SissoTransformer import SissoTransformer
+from fastsklearnfeature.transformations.feature_selection.skrebateTransformer import skrebateTransformer
+
 from typing import List
 import numpy as np
 from fastsklearnfeature.reader.Reader import Reader
@@ -117,36 +118,41 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
 
     def run(self):
-        self.global_starting_time = time.time()
 
         # generate all candidates
         self.generate()
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-        all_f = CandidateFeature(IdentityTransformation(len(self.raw_features)), self.raw_features)
-
-
-        feature_names = [str(r) for r in self.raw_features]
-
-        t = CandidateFeature(SissoTransformer(len(self.raw_features), feature_names, ["^2", "^3", "1/"]), [all_f])
-
-        t.pipeline.fit(self.dataset.splitted_values['train'], self.current_target)
-        X = t.transform(self.dataset.splitted_values['train'])
-        X_test = t.transform(self.dataset.splitted_values['test'])
-
-        print((time.time() - self.global_starting_time))
-
         self.preprocessed_folds = []
         for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'],
                                                                                self.current_target):
             self.preprocessed_folds.append((train, test))
 
-        clf = GridSearchCV(LogisticRegression(), self.grid_search_parameters, cv=self.preprocessed_folds, scoring=make_scorer(f1_score, average='micro'), iid=False,
-                           error_score='raise')
-        clf.fit(X, self.current_target)
+        self.global_starting_time = time.time()
 
-        print(clf.score(X_test, self.test_target))
+        for k in range(1,len(self.raw_features)+1):
+
+
+            all_f = CandidateFeature(IdentityTransformation(len(self.raw_features)), self.raw_features)
+
+
+
+
+            t = CandidateFeature(skrebateTransformer(len(self.raw_features),k), [all_f])
+
+            t.pipeline.fit(self.dataset.splitted_values['train'], self.current_target)
+            X = t.transform(self.dataset.splitted_values['train'])
+            X_test = t.transform(self.dataset.splitted_values['test'])
+
+            print((time.time() - self.global_starting_time))
+
+            clf = GridSearchCV(LogisticRegression(), self.grid_search_parameters, cv=self.preprocessed_folds, scoring=make_scorer(f1_score, average='micro'), iid=False,
+                               error_score='raise')
+            clf.fit(X, self.current_target)
+
+            print(clf.score(X_test, self.test_target))
+            print("\n\n")
 
 
 
