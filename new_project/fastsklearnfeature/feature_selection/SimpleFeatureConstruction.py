@@ -1,30 +1,17 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from typing import List, Dict, Set
-import numpy as np
-from fastsklearnfeature.reader.Reader import Reader
-from fastsklearnfeature.splitting.Splitter import Splitter
 import time
 from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import make_scorer
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import f1_score
-from sklearn.preprocessing import LabelEncoder
 import pickle
-from sklearn.model_selection import GridSearchCV
 import multiprocessing as mp
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import StratifiedKFold
 from fastsklearnfeature.configuration.Config import Config
-from sklearn.pipeline import FeatureUnion
 import itertools
 from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
-from fastsklearnfeature.transformations.DummyOneTransformation import DummyOneTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
-from sklearn import preprocessing
 from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationFramework
 import warnings
 warnings.filterwarnings("ignore")
@@ -40,7 +27,7 @@ class SimpleFeatureConstruction(EvaluationFramework):
                                                                                                 },
                  transformation_producer=get_transformation_for_feature_space,
                  epsilon=0.0,
-                 c_max = 2,
+                 c_max=2,
                  save_logs=False
                  ):
         self.dataset_config = dataset_config
@@ -394,14 +381,14 @@ if __name__ == '__main__':
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
 
 
-    #dataset = (Config.get('iris.csv'), 4)
+    dataset = (Config.get('iris.csv'), 4)
     #dataset = (Config.get('banknote.csv'), 4)
     #dataset = (Config.get('ecoli.csv'), 8)
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
-    dataset = (Config.get('transfusion.csv'), 4)
+    #dataset = (Config.get('transfusion.csv'), 4)
 
-    selector = SimpleFeatureConstruction(dataset, c_max=2, save_logs=True)
+    selector = SimpleFeatureConstruction(dataset, c_max=9, save_logs=True)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()
