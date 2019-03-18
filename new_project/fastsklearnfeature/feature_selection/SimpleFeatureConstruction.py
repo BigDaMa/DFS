@@ -311,7 +311,7 @@ class SimpleFeatureConstruction(EvaluationFramework):
 
             #now evaluate all from this layer
             #print(current_layer)
-            print("----------- Evaluation of " + str(len(current_layer)) + " features -----------")
+            print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
             results = self.evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
 
@@ -364,12 +364,12 @@ class SimpleFeatureConstruction(EvaluationFramework):
 
 
             if c in cost_2_dropped_evaluated_candidates:
-                print("From " + str(len(current_layer)) + " candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))
+                print("Of " + str(len(current_layer)) + " candidate representations, " + str(len(cost_2_dropped_evaluated_candidates[c])) + " did not satisfy the epsilon threshold.")
             else:
-                print("From " + str(len(current_layer)) + " candidates, we dropped 0")
+                print("Of " + str(len(current_layer)) + " candidate representations, all satisfied the epsilon threshold.")
 
 
-            print(max_feature)
+            print("Best representation found for complexity = " + str(c) + ": " + str(max_feature) + "\n")
 
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get("tmp.folder") + "/data_raw.p", "wb"))
@@ -395,13 +395,13 @@ if __name__ == '__main__':
 
 
     #dataset = (Config.get('iris.csv'), 4)
-    dataset = (Config.get('banknote.csv'), 4)
+    #dataset = (Config.get('banknote.csv'), 4)
     #dataset = (Config.get('ecoli.csv'), 8)
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
-    #dataset = (Config.get('transfusion.csv'), 4)
+    dataset = (Config.get('transfusion.csv'), 4)
 
-    selector = SimpleFeatureConstruction(dataset, c_max=9, save_logs=True)
+    selector = SimpleFeatureConstruction(dataset, c_max=2, save_logs=True)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()

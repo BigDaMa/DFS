@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 #path = '/tmp'
 #path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion'
 #path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion_node1'
-path = '/home/felix/phd/fastfeatures/results/16_03_test_transfusion_me'
+#path = '/home/felix/phd/fastfeatures/results/16_03_test_transfusion_me'
+path = '/home/felix/phd/fastfeatures/results/18_03_banknote'
 
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
