@@ -60,13 +60,18 @@ class EvaluationFramework:
         self.current_target = label_encoder.transform(current_target)
         self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
 
+        self.preprocessed_folds = []
+        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'],
+                                                                               self.current_target):
+            self.preprocessed_folds.append((train, test))
+
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
     def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
         parameters = self.grid_search_parameters
 
 
         if not isinstance(candidate, CandidateFeature):
-            pipeline = Pipeline([('features',FeatureUnion(
+            pipeline = Pipeline([('features', FeatureUnion(
 
                         [(p.get_name(), p.pipeline) for p in candidate]
                     )),
@@ -94,21 +99,7 @@ class EvaluationFramework:
 
 
 
-    def create_starting_features(self):
-        Fi: List[RawFeature]= self.dataset.raw_features
-
-        #materialize and numpyfy the features
-        starting_feature_matrix = np.zeros((Fi[0].materialize()['train'].shape[0], len(Fi)))
-        for f_index in range(len(Fi)):
-            starting_feature_matrix[:, f_index] = Fi[f_index].materialize()['train']
-        return starting_feature_matrix
-
-
     def evaluate_candidates(self, candidates):
-        self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'], self.current_target):
-            self.preprocessed_folds.append((train, test))
-
         pool = mp.Pool(processes=int(Config.get("parallelism")))
         results = pool.map(self.evaluate_single_candidate, candidates)
         return results
