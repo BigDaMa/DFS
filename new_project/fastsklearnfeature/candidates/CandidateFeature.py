@@ -37,7 +37,7 @@ class CandidateFeature:
 
         memory = None
         if bool(Config.get('pipeline.caching')):
-            memory = "/tmp"
+            memory = "/dev/shm"
 
         pipeline = Pipeline([
             ('parents', parent_features),
