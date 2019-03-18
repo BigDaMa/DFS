@@ -14,7 +14,7 @@ We provide a small jupyter notebook as an example: [Example Notebook](../master/
 ## Experiments
 We already applied our system for the datasets [Blood Transfusion Service Center](https://archive.ics.uci.edu/ml/datasets/Blood+Transfusion+Service+Center), [Banknote Authentication](https://archive.ics.uci.edu/ml/datasets/banknote+authentication), [Ecoli](https://archive.ics.uci.edu/ml/datasets/ecoli), and [Statlog (Heart)](http://archive.ics.uci.edu/ml/datasets/statlog+(heart)):
 
-<img src="https://user-images.githubusercontent.com/5217389/54512199-b63bdb00-4953-11e9-9d79-5b63a9c29a04.png" align="left" width="300" >
+<img src="https://user-images.githubusercontent.com/5217389/54563865-a6131280-49ca-11e9-8fde-eba0feb4f3ee.png" align="left" width="300" >
 <img src="https://user-images.githubusercontent.com/5217389/54511804-5db80e00-4952-11e9-98c8-4f76b56c76e0.png" align="left" width="300" >
 <img src="https://user-images.githubusercontent.com/5217389/54512643-2a2ab300-4955-11e9-84e9-2ea661bcbcda.png" align="left" width="300" >
 <img src="https://user-images.githubusercontent.com/5217389/54512707-5d6d4200-4955-11e9-96ca-07ea912598d4.png" align="left" width="300" >
