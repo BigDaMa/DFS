@@ -12,7 +12,7 @@ To run the experiments, first, you need to set the paths in a configuration file
 We provide a small jupyter notebook as an example: [Example Notebook](../master/new_project/fastsklearnfeature/documentation/Example.ipynb)
 
 ## Experiments
-We already applied our system for the datasets [Blood Transfusion Service Center](https://archive.ics.uci.edu/ml/datasets/Blood+Transfusion+Service+Center), [Banknote Authentication](https://archive.ics.uci.edu/ml/datasets/banknote+authentication), [Ecoli](https://archive.ics.uci.edu/ml/datasets/ecoli), and [Statlog (Heart)](http://archive.ics.uci.edu/ml/datasets/statlog+(heart))
+We already applied our system for the datasets [Blood Transfusion Service Center](https://archive.ics.uci.edu/ml/datasets/Blood+Transfusion+Service+Center), [Banknote Authentication](https://archive.ics.uci.edu/ml/datasets/banknote+authentication), [Ecoli](https://archive.ics.uci.edu/ml/datasets/ecoli), and [Statlog (Heart)](http://archive.ics.uci.edu/ml/datasets/statlog+(heart)):
 
 <img src="https://user-images.githubusercontent.com/5217389/54512199-b63bdb00-4953-11e9-9d79-5b63a9c29a04.png" align="left" width="300" >
 <img src="https://user-images.githubusercontent.com/5217389/54511804-5db80e00-4952-11e9-98c8-4f76b56c76e0.png" align="left" width="300" >
