@@ -382,9 +382,6 @@ class SimpleFeatureConstruction(EvaluationFramework):
 
 
 
-#statlog_heart.csv=/home/felix/datasets/ExploreKit/csv/dataset_53_heart-statlog_heart.csv
-#statlog_heart.target=13
-
 if __name__ == '__main__':
     #dataset = (Config.get('statlog_heart.csv'), 13)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
@@ -398,13 +395,13 @@ if __name__ == '__main__':
 
 
     #dataset = (Config.get('iris.csv'), 4)
-    #dataset = (Config.get('banknote.csv'), 4)
+    dataset = (Config.get('banknote.csv'), 4)
     #dataset = (Config.get('ecoli.csv'), 8)
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
-    dataset = (Config.get('transfusion.csv'), 4)
+    #dataset = (Config.get('transfusion.csv'), 4)
 
-    selector = SimpleFeatureConstruction(dataset)
+    selector = SimpleFeatureConstruction(dataset, c_max=9, save_logs=True)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()
