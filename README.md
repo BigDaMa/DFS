@@ -1,4 +1,4 @@
-# Simple Feature Construction
+# Complexity Driven Feeature Construction
 
 Feature engineering is a critical but time-consuming task in machine learning.
 In particular, in cases where raw features can be transformed and combined into new features, the search space is exponentially large.
