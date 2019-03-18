@@ -1,8 +1,8 @@
-# Complexity Driven Feeature Construction
+# Complexity-Driven Feature Construction
 
 Feature engineering is a critical but time-consuming task in machine learning.
 In particular, in cases where raw features can be transformed and combined into new features, the search space is exponentially large.
-Existing feature selection methods try to identify the best representations. However the selected feature representations are often very complex, hard to understand, and might suffer from overfitting.
+Existing feature selection methods try to identify the best representations. However, the selected feature representations are often very complex, hard to understand, and might suffer from overfitting.
 Therefore, we propose a system that leverages feature set complexity to prune the huge feature search space.
 Preliminary experiments show that our system generates representations that are less complex, yield higher classification accuracy, and generalize better to unseen data than current state-of-the-art feature selection and construction methods.
 
