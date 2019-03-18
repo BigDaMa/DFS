@@ -9,7 +9,7 @@ Preliminary experiments show that our system generates representations that are 
 ## Using our system
 To run the experiments, first, you need to set the paths in a configuration file with the name of your machine. Examples can be found here: ~/new_project/fastsklearnfeature/configuration/resources
 
-We provide a small jupyter notebook as example: [Example Notebook](../master/new_project/fastsklearnfeature/documentation/Example.ipynb)
+We provide a small jupyter notebook as an example: [Example Notebook](../master/new_project/fastsklearnfeature/documentation/Example.ipynb)
 
 ## Experiments
 We already applied our system for the datasets [Blood Transfusion Service Center](https://archive.ics.uci.edu/ml/datasets/Blood+Transfusion+Service+Center), [Banknote Authentication](https://archive.ics.uci.edu/ml/datasets/banknote+authentication), [Ecoli](https://archive.ics.uci.edu/ml/datasets/ecoli), and [Statlog (Heart)](http://archive.ics.uci.edu/ml/datasets/statlog+(heart))
