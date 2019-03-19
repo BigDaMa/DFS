@@ -11,6 +11,12 @@ To run the experiments, first, you need to set the paths in a configuration file
 
 We provide a small jupyter notebook as an example: [Example Notebook](../master/new_project/fastsklearnfeature/documentation/Example.ipynb)
 
+## Setup 
+```
+cd new_project/
+python3.6 setup.py install
+```
+
 ## Experiments
 We already applied our system for the datasets [Blood Transfusion Service Center](https://archive.ics.uci.edu/ml/datasets/Blood+Transfusion+Service+Center), [Banknote Authentication](https://archive.ics.uci.edu/ml/datasets/banknote+authentication), [Ecoli](https://archive.ics.uci.edu/ml/datasets/ecoli), and [Statlog (Heart)](http://archive.ics.uci.edu/ml/datasets/statlog+(heart)):
 
