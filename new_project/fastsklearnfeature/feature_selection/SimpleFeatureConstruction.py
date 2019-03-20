@@ -404,7 +404,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    selector = SimpleFeatureConstruction(dataset, c_max=2, save_logs=True)
+    selector = SimpleFeatureConstruction(dataset, c_max=9, save_logs=True)
     selector.run()
 
     print(time.time() - start)
