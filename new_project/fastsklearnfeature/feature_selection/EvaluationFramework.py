@@ -84,7 +84,10 @@ class EvaluationFramework:
         result['score'] = clf.best_score_
         result['hyperparameters'] = clf.best_params_
 
-        result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
+        if bool(Config.get_default('score.test', False)):
+            result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
+        else:
+            result['test_score'] = 0.0
 
         return result
 
@@ -92,7 +95,7 @@ class EvaluationFramework:
 
 
     def evaluate_candidates(self, candidates):
-        pool = mp.Pool(processes=int(Config.get("parallelism")))
+        pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
         results = pool.map(self.evaluate_single_candidate, candidates)
         return results
 
