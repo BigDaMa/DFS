@@ -26,8 +26,11 @@ class Config:
 
     @staticmethod
     def get_default(key, default_value):
-        if len(Config.config) == 0:
-            Config.load()
+        try:
+            if len(Config.config) == 0:
+                Config.load()
+        except:
+            return default_value
         if not key in Config.config:
             return default_value
         return Config.get(key)

@@ -30,13 +30,13 @@ class CandidateFeature:
     def create_pipeline(self):
         #parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents], n_jobs=Config.get('feature.union.parallelism'))
 
-        if bool(Config.get('pipeline.caching')):
+        if bool(Config.get_default('pipeline.caching', True)):
             parent_features = FeatureUnion([(p.get_name() + str(time.time()), p.pipeline) for p in self.parents])
         else:
             parent_features = FeatureUnion([(p.get_name() + str(time.time()), copy.deepcopy(p.pipeline)) for p in self.parents])
 
         memory = None
-        if bool(Config.get('pipeline.caching')):
+        if bool(Config.get_default('pipeline.caching', True)):
             memory = "/dev/shm"
 
         pipeline = Pipeline([

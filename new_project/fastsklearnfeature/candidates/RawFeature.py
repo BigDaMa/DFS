@@ -22,7 +22,7 @@ class RawFeature(CandidateFeature):
 
     def create_pipeline(self):
         memory=None
-        if bool(Config.get('pipeline.caching')):
+        if bool(Config.get_default('pipeline.caching', True)):
             memory="/dev/shm"
 
         pipeline = Pipeline([

@@ -370,11 +370,11 @@ class SimpleFeatureConstruction(EvaluationFramework):
             print("Best representation found for complexity = " + str(c) + ": " + str(max_feature) + "\n")
 
             if self.save_logs:
-                pickle.dump(cost_2_raw_features, open(Config.get("tmp.folder") + "/data_raw.p", "wb"))
-                pickle.dump(cost_2_unary_transformed, open(Config.get("tmp.folder") + "/data_unary.p", "wb"))
-                pickle.dump(cost_2_binary_transformed, open(Config.get("tmp.folder") + "/data_binary.p", "wb"))
-                pickle.dump(cost_2_combination, open(Config.get("tmp.folder") + "/data_combination.p", "wb"))
-                pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get("tmp.folder") + "/data_dropped.p", "wb"))
+                pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
+                pickle.dump(cost_2_unary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_unary.p", "wb"))
+                pickle.dump(cost_2_binary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_binary.p", "wb"))
+                pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"))
+                pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"))
 
 
 
@@ -397,8 +397,10 @@ if __name__ == '__main__':
     #dataset = (Config.get('ecoli.csv'), 8)
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
-    dataset = (Config.get('transfusion.csv'), 4)
+    #dataset = (Config.get('transfusion.csv'), 4)
     #dataset = (Config.get('test_categorical.csv'), 4)
+
+    dataset = ('../configuration/resources/data/transfusion.data', 4)
 
     start = time.time()
 
