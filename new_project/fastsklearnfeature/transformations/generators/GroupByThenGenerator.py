@@ -1,4 +1,5 @@
-from fastsklearnfeature.transformations.GroupByThenTransformation import GroupByThenTransformation
+#from fastsklearnfeature.transformations.GroupByThenTransformation import GroupByThenTransformation
+from fastsklearnfeature.transformations.FastGroupByThenTransformation import FastGroupByThenTransformation
 from typing import List
 import numpy as np
 
@@ -18,7 +19,7 @@ class GroupByThenGenerator:
 
 
     def produce(self):
-        transformation_classes: List[GroupByThenTransformation] = []
+        transformation_classes: List[FastGroupByThenTransformation] = []
         for m in self.methods:
-            transformation_classes.append(GroupByThenTransformation(m, self.number_of_parents))
+            transformation_classes.append(FastGroupByThenTransformation(m))
         return transformation_classes

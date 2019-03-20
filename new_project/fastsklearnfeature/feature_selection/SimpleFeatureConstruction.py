@@ -14,7 +14,7 @@ import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationFramework
 import warnings
-warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore")
 
 
 class SimpleFeatureConstruction(EvaluationFramework):
@@ -383,13 +383,17 @@ if __name__ == '__main__':
 
     #dataset = (Config.get('iris.csv'), 4)
     #dataset = (Config.get('banknote.csv'), 4)
-    dataset = (Config.get('ecoli.csv'), 8)
+    #dataset = (Config.get('ecoli.csv'), 8)
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
-    #dataset = (Config.get('transfusion.csv'), 4)
+    dataset = (Config.get('transfusion.csv'), 4)
 
-    selector = SimpleFeatureConstruction(dataset, c_max=9, save_logs=True)
+    start = time.time()
+
+    selector = SimpleFeatureConstruction(dataset, c_max=3, save_logs=True)
     selector.run()
+
+    print(time.time() - start)
 
 
 

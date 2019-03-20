@@ -45,6 +45,9 @@ class EvaluationFramework:
         print("training:" + str(len(self.dataset.splitted_target['train'])))
         print("test:" + str(len(self.dataset.splitted_target['test'])))
 
+        #self.dataset.splitted_target['train'] = self.dataset.splitted_target['train'][0:100]
+        #self.dataset.splitted_values['train'] = self.dataset.splitted_values['train'][0:100]
+
     #rank and select features
     def random_select(self, k: int):
         arr = np.arange(len(self.candidates))
@@ -67,18 +70,7 @@ class EvaluationFramework:
 
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
     def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
-        parameters = self.grid_search_parameters
-
-
-        if not isinstance(candidate, CandidateFeature):
-            pipeline = Pipeline([('features', FeatureUnion(
-
-                        [(p.get_name(), p.pipeline) for p in candidate]
-                    )),
-                ('classifier', self.classifier)
-            ])
-        else:
-            pipeline = Pipeline([('features', FeatureUnion(
+        pipeline = Pipeline([('features', FeatureUnion(
                 [
                     (candidate.get_name(), candidate.pipeline)
                 ])),
@@ -87,7 +79,7 @@ class EvaluationFramework:
 
         result = {}
 
-        clf = GridSearchCV(pipeline, parameters, cv=self.preprocessed_folds, scoring=score, iid=False, error_score='raise')
+        clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=score, iid=False, error_score='raise')
         clf.fit(self.dataset.splitted_values['train'], self.current_target)
         result['score'] = clf.best_score_
         result['hyperparameters'] = clf.best_params_
