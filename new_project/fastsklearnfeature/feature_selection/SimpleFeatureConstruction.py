@@ -14,7 +14,9 @@ import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationFramework
 import warnings
-#warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
+#warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
 class SimpleFeatureConstruction(EvaluationFramework):
