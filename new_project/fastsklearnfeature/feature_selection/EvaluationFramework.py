@@ -1,10 +1,8 @@
-from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from typing import List, Dict, Set
 import numpy as np
 from fastsklearnfeature.reader.Reader import Reader
 from fastsklearnfeature.splitting.Splitter import Splitter
 import time
-from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
@@ -18,6 +16,7 @@ from fastsklearnfeature.configuration.Config import Config
 from sklearn.pipeline import FeatureUnion
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 import warnings
+from fastsklearnfeature.instance_selection.instance_selection_cnn import sample_data_by_cnn
 
 
 class EvaluationFramework:
@@ -45,8 +44,9 @@ class EvaluationFramework:
         print("training:" + str(len(self.dataset.splitted_target['train'])))
         print("test:" + str(len(self.dataset.splitted_target['test'])))
 
-        #self.dataset.splitted_target['train'] = self.dataset.splitted_target['train'][0:100]
-        #self.dataset.splitted_values['train'] = self.dataset.splitted_values['train'][0:100]
+        if bool(Config.get_default('instance.selection', False)):
+            self.dataset.splitted_values['train'], self.dataset.splitted_target['train'] = sample_data_by_cnn(self.dataset.splitted_values['train'], self.dataset.splitted_target['train'])
+            print("training:" + str(len(self.dataset.splitted_target['train'])))
 
     #rank and select features
     def random_select(self, k: int):
