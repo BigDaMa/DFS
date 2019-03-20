@@ -10,3 +10,12 @@ class NonCommutativeBinaryTransformation(BaseEstimator, TransformerMixin, Binary
 
     def transform(self, X):
         return np.reshape(self.method(X[:,0], X[:,1]), (len(X), 1))
+
+    def is_applicable(self, feature_combination):
+        #the aggregated column has to be numeric
+        for i in range(len(feature_combination)):
+            if not ('float' in str(feature_combination[i].properties['type']) \
+                or 'int' in str(feature_combination[i].properties['type']) \
+                or 'bool' in str(feature_combination[i].properties['type'])):
+                return False
+        return True

@@ -16,6 +16,7 @@ from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationF
 import warnings
 warnings.filterwarnings("ignore")
 #warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
+#warnings.filterwarnings("ignore", message="Data with input dtype object was converted to float64 by MinMaxScaler.")
 #warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
@@ -226,7 +227,13 @@ class SimpleFeatureConstruction(EvaluationFramework):
 
             #0th
             if c == 1:
-                current_layer.extend(self.raw_features)
+                cost_2_raw_features[c]: List[CandidateFeature] = []
+                for raw_f in self.raw_features:
+                    if raw_f.is_numeric():
+                        current_layer.append(raw_f)
+                    else:
+                        raw_f.runtime_properties['score'] = 0.0
+                        cost_2_raw_features[c].append(raw_f)
 
             # first unary
             # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
@@ -261,7 +268,8 @@ class SimpleFeatureConstruction(EvaluationFramework):
                 for bt in binary_transformations:
                     list_of_combinations = self.generate_merge(lists_for_each_element[0], lists_for_each_element[1], bt.parent_feature_order_matters, bt.parent_feature_repetition_is_allowed)
                     for combo in list_of_combinations:
-                        binary_candidates_to_be_applied.append(CandidateFeature(copy.deepcopy(bt), combo))
+                        if bt.is_applicable(combo):
+                            binary_candidates_to_be_applied.append(CandidateFeature(copy.deepcopy(bt), combo))
             current_layer.extend(binary_candidates_to_be_applied)
 
             #third: feature combinations
@@ -286,7 +294,8 @@ class SimpleFeatureConstruction(EvaluationFramework):
 
                 list_of_combinations = self.generate_merge_for_combination(lists_for_each_element[0], lists_for_each_element[1])
                 for combo in list_of_combinations:
-                    combinations_to_be_applied.append(CandidateFeature(IdentityTransformation(None), list(combo)))
+                    if IdentityTransformation(None).is_applicable(list(combo)):
+                        combinations_to_be_applied.append(CandidateFeature(IdentityTransformation(None), list(combo)))
             current_layer.extend(combinations_to_be_applied)
 
 
@@ -389,6 +398,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
     dataset = (Config.get('transfusion.csv'), 4)
+    #dataset = (Config.get('test_categorical.csv'), 4)
 
     start = time.time()
 

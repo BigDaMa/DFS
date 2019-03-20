@@ -16,8 +16,7 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
 
     #0th feature will be aggregated, 1th-nth = key attributes
     def fit(self, X, y=None):
-        #final_mapping = dict(npi.group_by(keys=X[:, 1], values=X[:, 0].astype(np.float64), reduction=self.method))
-        final_mapping = dict(npi.group_by(keys=X[:, 1], values=X[:, 0], reduction=self.method))
+        final_mapping = dict(npi.group_by(keys=X[:, 1], values=X[:, 0].astype(np.float64), reduction=self.method))
 
         self.keys = list(final_mapping.keys())
         self.values = list(final_mapping.values())
@@ -25,8 +24,7 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
         return self
 
     def transform(self, X):
-        #remapped_a = npi.remap(X[:, 1], self.keys, self.values).reshape(-1, 1).astype(np.float64)
-        remapped_a = npi.remap(X[:, 1], self.keys, self.values).reshape(-1, 1)
+        remapped_a = npi.remap(X[:, 1], self.keys, self.values).reshape(-1, 1).astype(np.float64)
         return remapped_a
 
     def is_applicable(self, feature_combination):

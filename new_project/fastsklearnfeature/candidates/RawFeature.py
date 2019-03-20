@@ -53,3 +53,12 @@ class RawFeature(CandidateFeature):
 
     def calculate_traceability(self):
         return 1.0
+
+    def is_numeric(self):
+        raw_type = str(self.properties['type'])
+        if 'float' in raw_type \
+            or 'int' in raw_type \
+            or 'bool' in raw_type:
+            return True
+
+        return False
