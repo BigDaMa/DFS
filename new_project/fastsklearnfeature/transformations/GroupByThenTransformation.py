@@ -56,5 +56,9 @@ class GroupByThenTransformation(BaseEstimator, TransformerMixin, Transformation)
 
         return itertools.chain(*iterable_collection)
 
+    def get_name(self, candidate_feature_names):
+        return "(" + self.method.__name__ + "(" + str(candidate_feature_names[0]) + ") GroupyBy " + str(candidate_feature_names[1]) +")"
+
+
 
 
