@@ -399,10 +399,11 @@ if __name__ == '__main__':
     #dataset = (Config.get('breastcancer.csv'), 0)
     dataset = (Config.get('transfusion.csv'), 4)
     #dataset = (Config.get('test_categorical.csv'), 4)
+    #dataset = ('../configuration/resources/data/transfusion.data', 4)
 
     start = time.time()
 
-    selector = SimpleFeatureConstruction(dataset, c_max=9, save_logs=True)
+    selector = SimpleFeatureConstruction(dataset, c_max=3, save_logs=True)
     selector.run()
 
     print(time.time() - start)
