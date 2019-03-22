@@ -2,6 +2,9 @@ from fastsklearnfeature.transformations.NumericUnaryTransformation import Numeri
 from sklearn.base import BaseEstimator, TransformerMixin
 import pandas as pd
 import numpy as np
+from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
+from typing import List
+
 
 class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransformation):
     def __init__(self, number_bins, qbucket=False):
@@ -22,3 +25,11 @@ class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUn
                                include_lowest=True).__array__()
         bucket_labels[np.isnan(bucket_labels)] = -1
         return np.reshape(bucket_labels, (len(X), 1))
+
+    def is_applicable(self, feature_combination: List[CandidateFeature]):
+        if not super(PandasDiscretizerTransformation, self).is_applicable(feature_combination):
+            return False
+        if isinstance(feature_combination[0].transformation, PandasDiscretizerTransformation):
+            return False
+
+        return True
