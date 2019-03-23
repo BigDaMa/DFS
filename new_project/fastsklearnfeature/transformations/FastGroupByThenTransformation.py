@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 import itertools
 import numpy_indexed as npi
+from typing import List, Dict, Set
+from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 
 
 class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformation):
@@ -27,12 +29,21 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
         remapped_a = npi.remap(X[:, 1], self.keys, self.values).reshape(-1, 1).astype(np.float64)
         return remapped_a
 
-    def is_applicable(self, feature_combination):
+    def is_applicable(self, feature_combination: List[CandidateFeature]):
+        #TODO: check whether feature_combination[0] has only distinct values
+
         #the aggregated column has to be numeric
         if 'float' in str(feature_combination[0].properties['type']) \
             or 'int' in str(feature_combination[0].properties['type']) \
             or 'bool' in str(feature_combination[0].properties['type']):
-            return True
+
+            # do not group twice with the same key
+            # e.g. max(max(a) groubBy B) groubBy B = max(a) groubBy B
+            if not(isinstance(feature_combination[0].transformation, FastGroupByThenTransformation) and
+                   str(feature_combination[0].parents[1]) == str(feature_combination[1]) and
+                   feature_combination[0].transformation.method == self.method
+                   ):
+                return True
 
         return False
 
