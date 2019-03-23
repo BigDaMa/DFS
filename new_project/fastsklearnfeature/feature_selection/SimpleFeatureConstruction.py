@@ -13,6 +13,9 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationFramework
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+
 import warnings
 warnings.filterwarnings("ignore")
 #warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
@@ -403,7 +406,15 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    selector = SimpleFeatureConstruction(dataset, c_max=3, save_logs=True)
+    selector = SimpleFeatureConstruction(dataset, c_max=5, save_logs=True)
+
+    '''
+    selector = SimpleFeatureConstruction(dataset,
+                                         classifier=KNeighborsClassifier(),
+                                         grid_search_parameters={'classifier__n_neighbors': np.arange(3,10), 'classifier__weights': ['uniform','distance'], 'classifier__metric': ['minkowski','euclidean','manhattan']},
+                                         c_max=3, save_logs=True)
+    '''
+
     selector.run()
 
     print(time.time() - start)
