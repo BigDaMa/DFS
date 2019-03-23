@@ -38,10 +38,10 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
             or 'bool' in str(feature_combination[0].properties['type']):
 
             # do not group twice with the same key
-            # e.g. max(max(a) groubBy B) groubBy B = max(a) groubBy B
+            # e.g. min(max(a) groubBy B) groubBy B = max(a) groubBy B!
+            # for std(max(a) groubBy B) groubBy B = null vector!
             if not(isinstance(feature_combination[0].transformation, FastGroupByThenTransformation) and
-                   str(feature_combination[0].parents[1]) == str(feature_combination[1]) and
-                   feature_combination[0].transformation.method == self.method
+                   str(feature_combination[0].parents[1]) == str(feature_combination[1])
                    ):
                 return True
 
