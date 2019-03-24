@@ -18,3 +18,10 @@ class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
                 or 'bool' in str(feature_combination[i].properties['type'])):
                 return False
         return True
+
+    def get_name(self, candidate_feature_names):
+        slist = ''
+        for name_i in candidate_feature_names:
+            slist += name_i + ", "
+        slist = slist[:-2]
+        return '{' + slist + '}'
