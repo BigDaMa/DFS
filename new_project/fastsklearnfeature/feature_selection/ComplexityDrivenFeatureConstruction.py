@@ -50,6 +50,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         self.name_to_training_all = {}
         self.name_to_one_test_set_transformed = {}
 
+        self.max_timestamp = None
         if type(max_seconds) != type(None):
             self.max_timestamp = time.time() + max_seconds
 
@@ -393,7 +394,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"))
                 pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"))
 
-            if time.time() >= self.max_timestamp:
+            if type(self.max_timestamp) != type(None) and time.time() >= self.max_timestamp:
                 break
 
 
@@ -424,7 +425,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=4, folds=10, max_seconds=25, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
 
 
     '''

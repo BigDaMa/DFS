@@ -100,7 +100,7 @@ class CachedEvaluationFramework(EvaluationFramework):
 
     def evaluate(self, candidate: CandidateFeature, score=make_scorer(f1_score, average='micro')):
 
-        if time.time() >= self.max_timestamp:
+        if type(self.max_timestamp) != type(None) and time.time() >= self.max_timestamp:
             raise RuntimeError('Out of time!')
 
         result = {}
