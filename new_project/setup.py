@@ -20,7 +20,7 @@ setup(
     license=license,
     package_data={'config': ['fastsklearnfeature/configuration/resources']},
     include_package_data=True,
-    install_requires=["numpy","pandas","scikit-learn","xgboost","matplotlib","numpy_indexed","imbalanced-learn","autofeat","joblib"],
+    install_requires=["numpy", "pandas", "scikit-learn", "xgboost", "matplotlib", "numpy_indexed", "imbalanced-learn", "autofeat", "joblib"],
     packages=find_packages(exclude=('tests', 'docs'))
 )
 

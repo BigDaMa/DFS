@@ -3,10 +3,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
-from sklearn.model_selection import GridSearchCV
-from sklearn.pipeline import Pipeline
 from fastsklearnfeature.configuration.Config import Config
-from sklearn.pipeline import FeatureUnion
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
 from fastsklearnfeature.candidates.RawFeature import RawFeature
@@ -34,7 +31,7 @@ class CachedEvaluationFramework(EvaluationFramework):
         super(CachedEvaluationFramework, self).__init__(dataset_config, classifier, grid_search_parameters, transformation_producer)
 
 
-    def generate_target(self, folds=10):
+    def generate_target(self):
         current_target = self.dataset.splitted_target['train']
 
         label_encoder = LabelEncoder()
@@ -48,12 +45,12 @@ class CachedEvaluationFramework(EvaluationFramework):
 
 
         self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=folds, random_state=42).split(self.dataset.splitted_values['train'],
+        for train, test in StratifiedKFold(n_splits=self.folds, random_state=42).split(self.dataset.splitted_values['train'],
                                                                                current_target):
             self.preprocessed_folds.append((train, test))
 
-        self.target_train_folds = [None] * folds
-        self.target_test_folds = [None] * folds
+        self.target_train_folds = [None] * self.folds
+        self.target_test_folds = [None] * self.folds
 
         for fold in range(len(self.preprocessed_folds)):
             self.target_train_folds[fold] = current_target[self.preprocessed_folds[fold][0]]
@@ -102,6 +99,10 @@ class CachedEvaluationFramework(EvaluationFramework):
 
 
     def evaluate(self, candidate: CandidateFeature, score=make_scorer(f1_score, average='micro')):
+
+        if time.time() >= self.max_timestamp:
+            raise RuntimeError('Out of time!')
+
         result = {}
         train_transformed = [None] * len(self.preprocessed_folds)
         test_transformed = [None] * len(self.preprocessed_folds)

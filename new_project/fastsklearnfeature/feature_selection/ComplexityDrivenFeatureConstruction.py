@@ -34,18 +34,24 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                  transformation_producer=get_transformation_for_feature_space,
                  epsilon=0.0,
                  c_max=2,
+                 folds=10,
+                 max_seconds=None,
                  save_logs=False
                  ):
         super(ComplexityDrivenFeatureConstruction, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
         self.epsilon = epsilon
         self.c_max = c_max
+        self.folds = folds
         self.save_logs = save_logs
 
         self.name_to_train_transformed = {}
         self.name_to_test_transformed = {}
         self.name_to_training_all = {}
         self.name_to_one_test_set_transformed = {}
+
+        if type(max_seconds) != type(None):
+            self.max_timestamp = time.time() + max_seconds
 
         #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
     def partition(self, number):
@@ -387,6 +393,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"))
                 pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"))
 
+            if time.time() >= self.max_timestamp:
+                break
+
 
 
 
@@ -415,7 +424,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=3, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=4, folds=10, max_seconds=25, save_logs=True)
 
 
     '''
