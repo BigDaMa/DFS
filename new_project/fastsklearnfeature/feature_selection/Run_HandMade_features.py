@@ -1,42 +1,18 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
-from fastsklearnfeature.transformations.Transformation import Transformation
-from fastsklearnfeature.transformations.feature_selection.SelectKBestTransformer import SelectKBestTransformer
-from fastsklearnfeature.transformations.feature_selection.FeatureEliminationTransformer import FeatureEliminationTransformer
-from fastsklearnfeature.transformations.feature_selection.SissoTransformer import SissoTransformer
 from typing import List
-import numpy as np
-from fastsklearnfeature.reader.Reader import Reader
-from fastsklearnfeature.splitting.Splitter import Splitter
 import time
-from fastsklearnfeature.candidate_generation.explorekit.Generator import Generator
-from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import make_scorer
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import f1_score
-from sklearn.preprocessing import LabelEncoder
 import numpy as np
-import pickle
-from sklearn.model_selection import GridSearchCV
-import multiprocessing as mp
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import StratifiedKFold
 from fastsklearnfeature.configuration.Config import Config
-from sklearn.pipeline import FeatureUnion
 import itertools
 
-
-from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
-from fastsklearnfeature.transformations.generators.HigherOrderCommutativeClassGenerator import HigherOrderCommutativeClassGenerator
-from fastsklearnfeature.transformations.generators.NumpyBinaryClassGenerator import NumpyBinaryClassGenerator
 from fastsklearnfeature.transformations.GroupByThenTransformation import GroupByThenTransformation
 from fastsklearnfeature.transformations.PandasDiscretizerTransformation import PandasDiscretizerTransformation
-from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
 from fastsklearnfeature.transformations.binary.NonCommutativeBinaryTransformation import NonCommutativeBinaryTransformation
 from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
 
-from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationFramework
+from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
 
 
 class ExploreKitSelection_iterative_search(EvaluationFramework):

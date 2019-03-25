@@ -12,9 +12,7 @@ from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransfor
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
-from fastsklearnfeature.feature_selection.EvaluationFramework import EvaluationFramework
-import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
+from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -225,6 +223,8 @@ class SimpleFeatureConstruction(EvaluationFramework):
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
         max_feature.runtime_properties['score'] = -2
 
+        self.name_to_transfomed = {}
+
         for c in range(1, limit_runs):
             current_layer: List[CandidateFeature] = []
 
@@ -406,7 +406,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    selector = SimpleFeatureConstruction(dataset, c_max=5, save_logs=True)
+    selector = SimpleFeatureConstruction(dataset, c_max=3, save_logs=True)
 
     '''
     selector = SimpleFeatureConstruction(dataset,

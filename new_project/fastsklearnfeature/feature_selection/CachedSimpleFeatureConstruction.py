@@ -12,10 +12,16 @@ from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransfor
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
-from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
+from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
+
+import warnings
+warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
+#warnings.filterwarnings("ignore", message="Data with input dtype object was converted to float64 by MinMaxScaler.")
+#warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
-class ExploreKitSelection_iterative_search(EvaluationFramework):
+class CachedSimpleFeatureConstruction(CachedEvaluationFramework):
     def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'classifier__solver': ['lbfgs'],
@@ -23,32 +29,23 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
                                                                                                 'classifier__max_iter': [10000],
                                                                                                 'classifier__multi_class':['auto']
                                                                                                 },
-                 transformation_producer=get_transformation_for_feature_space
+                 transformation_producer=get_transformation_for_feature_space,
+                 epsilon=0.0,
+                 c_max=2,
+                 save_logs=False
                  ):
-        self.dataset_config = dataset_config
-        self.classifier = classifier
-        self.grid_search_parameters = grid_search_parameters
-        self.transformation_producer = transformation_producer
+        super(CachedSimpleFeatureConstruction, self).__init__(dataset_config, classifier, grid_search_parameters,
+                                                        transformation_producer)
+        self.epsilon = epsilon
+        self.c_max = c_max
+        self.save_logs = save_logs
 
-    def evaluate_candidates1(self, candidates):
-        results = []
-        for c in candidates:
-            results.append(self.evaluate_single_candidate1(c))
-        return results
+        self.name_to_train_transformed = {}
+        self.name_to_test_transformed = {}
+        self.name_to_training_all = {}
+        self.name_to_one_test_set_transformed = {}
 
-
-    def evaluate_single_candidate1(self, candidate):
-        result = {}
-        time_start_gs = time.time()
-        result['score'] = 0.0
-        result['test_score'] = 0.0
-        result['hyperparameters'] = {}
-        result['candidate'] = candidate
-        result['execution_time'] = time.time() - time_start_gs
-        result['global_time'] = time.time() - self.global_starting_time
-        return result
-
-    #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
+        #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
     def partition(self, number):
         answer = set()
         answer.add((number,))
@@ -215,15 +212,15 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
         cost_2_dropped_evaluated_candidates: Dict[int, List[CandidateFeature]] = {}
 
-        complexity_delta = 1.0
+        self.complexity_delta = 1.0
 
-        epsilon = -10000 #0.02 #0.00
-        limit_runs = 9  # 5
+        epsilon = self.epsilon
+        limit_runs = self.c_max + 1  # 5
         unique_raw_combinations = False
 
 
         baseline_score = 0.0#self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
-        print("baseline: " + str(baseline_score))
+        #print("baseline: " + str(baseline_score))
 
 
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
@@ -234,7 +231,13 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
             #0th
             if c == 1:
-                current_layer.extend(self.raw_features)
+                cost_2_raw_features[c]: List[CandidateFeature] = []
+                for raw_f in self.raw_features:
+                    if raw_f.is_numeric():
+                        current_layer.append(raw_f)
+                    else:
+                        raw_f.runtime_properties['score'] = 0.0
+                        cost_2_raw_features[c].append(raw_f)
 
             # first unary
             # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
@@ -269,7 +272,8 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
                 for bt in binary_transformations:
                     list_of_combinations = self.generate_merge(lists_for_each_element[0], lists_for_each_element[1], bt.parent_feature_order_matters, bt.parent_feature_repetition_is_allowed)
                     for combo in list_of_combinations:
-                        binary_candidates_to_be_applied.append(CandidateFeature(copy.deepcopy(bt), combo))
+                        if bt.is_applicable(combo):
+                            binary_candidates_to_be_applied.append(CandidateFeature(copy.deepcopy(bt), combo))
             current_layer.extend(binary_candidates_to_be_applied)
 
             #third: feature combinations
@@ -294,7 +298,8 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
                 list_of_combinations = self.generate_merge_for_combination(lists_for_each_element[0], lists_for_each_element[1])
                 for combo in list_of_combinations:
-                    combinations_to_be_applied.append(CandidateFeature(IdentityTransformation(None), list(combo)))
+                    if IdentityTransformation(None).is_applicable(list(combo)):
+                        combinations_to_be_applied.append(CandidateFeature(IdentityTransformation(None), list(combo)))
             current_layer.extend(combinations_to_be_applied)
 
 
@@ -308,8 +313,8 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
             #now evaluate all from this layer
             #print(current_layer)
-            print("----------- Evaluation of " + str(len(current_layer)) + " features -----------")
-            results = self.evaluate_candidates1(current_layer)
+            print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
+            results = self.evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
 
             layer_end_time = time.time() - self.global_starting_time
@@ -321,7 +326,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
                 candidate.runtime_properties['test_score'] = result['test_score']
                 candidate.runtime_properties['execution_time'] = result['execution_time']
                 candidate.runtime_properties['global_time'] = result['global_time']
-                candidate.runtime_properties['hyperparameters'] = result['hyperparameters']
+                #candidate.runtime_properties['hyperparameters'] = result['hyperparameters']
                 candidate.runtime_properties['layer_end_time'] = layer_end_time
 
                 #print(str(candidate) + " -> " + str(candidate.score))
@@ -336,7 +341,13 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
                 accuracy_delta = result['score'] - original_score
 
-                if accuracy_delta / complexity_delta > epsilon:
+                if accuracy_delta / self.complexity_delta > self.epsilon:
+                    self.name_to_train_transformed[str(candidate)] = result['train_transformed']
+                    self.name_to_test_transformed[str(candidate)] = result['test_transformed']
+
+                    self.name_to_training_all[str(candidate)] = result['training_all']
+                    self.name_to_one_test_set_transformed[str(candidate)] = result['one_test_set_transformed']
+
                     if isinstance(candidate, RawFeature):
                         if not c in cost_2_raw_features:
                             cost_2_raw_features[c]: List[CandidateFeature] = []
@@ -361,25 +372,23 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
 
             if c in cost_2_dropped_evaluated_candidates:
-                print("From " + str(len(current_layer)) + " candidates, we dropped " + str(len(cost_2_dropped_evaluated_candidates[c])))
+                print("Of " + str(len(current_layer)) + " candidate representations, " + str(len(cost_2_dropped_evaluated_candidates[c])) + " did not satisfy the epsilon threshold.")
             else:
-                print("From " + str(len(current_layer)) + " candidates, we dropped 0")
+                print("Of " + str(len(current_layer)) + " candidate representations, all satisfied the epsilon threshold.")
 
 
-            print(max_feature)
+            print("Best representation found for complexity = " + str(c) + ": " + str(max_feature) + "\n")
 
-            pickle.dump(cost_2_raw_features, open(Config.get("tmp.folder") + "/data_raw.p", "wb"))
-            pickle.dump(cost_2_unary_transformed, open(Config.get("tmp.folder") + "/data_unary.p", "wb"))
-            pickle.dump(cost_2_binary_transformed, open(Config.get("tmp.folder") + "/data_binary.p", "wb"))
-            pickle.dump(cost_2_combination, open(Config.get("tmp.folder") + "/data_combination.p", "wb"))
-            pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get("tmp.folder") + "/data_dropped.p", "wb"))
-
-
-
+            if self.save_logs:
+                pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
+                pickle.dump(cost_2_unary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_unary.p", "wb"))
+                pickle.dump(cost_2_binary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_binary.p", "wb"))
+                pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"))
+                pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"))
 
 
-#statlog_heart.csv=/home/felix/datasets/ExploreKit/csv/dataset_53_heart-statlog_heart.csv
-#statlog_heart.target=13
+
+
 
 if __name__ == '__main__':
     #dataset = (Config.get('statlog_heart.csv'), 13)
@@ -399,11 +408,23 @@ if __name__ == '__main__':
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
     dataset = (Config.get('transfusion.csv'), 4)
+    #dataset = (Config.get('test_categorical.csv'), 4)
+    #dataset = ('../configuration/resources/data/transfusion.data', 4)
 
-    selector = ExploreKitSelection_iterative_search(dataset)
-    #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
+    start = time.time()
+
+    selector = CachedSimpleFeatureConstruction(dataset, c_max=5, save_logs=True)
+
+    '''
+    selector = SimpleFeatureConstruction(dataset,
+                                         classifier=KNeighborsClassifier(),
+                                         grid_search_parameters={'classifier__n_neighbors': np.arange(3,10), 'classifier__weights': ['uniform','distance'], 'classifier__metric': ['minkowski','euclidean','manhattan']},
+                                         c_max=3, save_logs=True)
+    '''
 
     selector.run()
+
+    print(time.time() - start)
 
 
 

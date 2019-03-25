@@ -62,7 +62,7 @@ class EvaluationFramework:
         np.random.shuffle(arr)
         return arr[0:k]
 
-    def generate_target(self):
+    def generate_target(self, folds=10):
         current_target = self.dataset.splitted_target['train']
 
         label_encoder = LabelEncoder()
@@ -76,12 +76,12 @@ class EvaluationFramework:
 
 
         self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'],
+        for train, test in StratifiedKFold(n_splits=folds, random_state=42).split(self.dataset.splitted_values['train'],
                                                                                self.current_target):
             self.preprocessed_folds.append((train, test))
 
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
-    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro'), folds=10):
+    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro')):
         pipeline = Pipeline([('features', FeatureUnion(
                 [
                     (candidate.get_name(), candidate.pipeline)
