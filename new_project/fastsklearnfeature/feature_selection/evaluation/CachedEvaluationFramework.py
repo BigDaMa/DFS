@@ -14,15 +14,20 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
 import time
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
+import itertools
+
+class hashabledict(dict):
+    def __hash__(self):
+        return hash(tuple(sorted(self.items())))
 
 
 class CachedEvaluationFramework(EvaluationFramework):
-    def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
-                                                                                                'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-                                                                                                'classifier__solver': ['lbfgs'],
-                                                                                                'classifier__class_weight': ['balanced'],
-                                                                                                'classifier__max_iter': [10000],
-                                                                                                'classifier__multi_class':['auto']
+    def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'penalty': ['l2'],
+                                                                                                'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+                                                                                                'solver': ['lbfgs'],
+                                                                                                'class_weight': ['balanced'],
+                                                                                                'max_iter': [10000],
+                                                                                                'multi_class':['auto']
                                                                                                 },
                  transformation_producer=get_transformation_for_feature_space
                  ):
@@ -59,14 +64,18 @@ class CachedEvaluationFramework(EvaluationFramework):
 
     def grid_search(self, train_transformed, test_transformed, training_all, one_test_set_transformed):
 
-        hyperparam_to_score_list: Dict[float, List[float]] = {}
-        for c in [0.001, 0.01, 0.1, 1, 10, 100, 1000]:
-            hyperparam_to_score_list[c] = []
+        hyperparam_to_score_list = {}
+
+        my_keys = list(self.grid_search_parameters.keys())
+
+        for parameter_combination in itertools.product(*[self.grid_search_parameters[k] for k in my_keys]):
+            parameter_set = hashabledict(zip(my_keys, parameter_combination))
+            hyperparam_to_score_list[parameter_set] = []
             for fold in range(len(train_transformed)):
-                clf = LogisticRegression(C=c, penalty='l2', solver='lbfgs', class_weight='balanced', max_iter=10000, multi_class='auto')
+                clf = self.classifier(**parameter_set)
                 clf.fit(train_transformed[fold], self.target_train_folds[fold])
                 y_pred = clf.predict(test_transformed[fold])
-                hyperparam_to_score_list[c].append(f1_score(self.target_test_folds[fold], y_pred, average='micro'))
+                hyperparam_to_score_list[parameter_set].append(f1_score(self.target_test_folds[fold], y_pred, average='micro'))
 
         best_param = None
         best_mean_cross_val_score = -1
@@ -79,15 +88,14 @@ class CachedEvaluationFramework(EvaluationFramework):
         test_score = None
         if Config.get_default('score.test', 'False') == 'True':
             # refit to entire training and test on test set
-            clf = LogisticRegression(C=best_param, penalty='l2', solver='lbfgs', class_weight='balanced', max_iter=10000,
-                                     multi_class='auto')
+            clf = self.classifier(**best_param)
             clf.fit(training_all, self.train_y_all_target)
             y_pred = clf.predict(one_test_set_transformed)
 
             test_score = f1_score(self.test_target, y_pred, average='micro')
 
 
-        return best_mean_cross_val_score, test_score
+        return best_mean_cross_val_score, test_score, best_param
 
 
 
@@ -130,7 +138,6 @@ class CachedEvaluationFramework(EvaluationFramework):
 
             #merge columns from parents
             for fold in range(len(self.preprocessed_folds)):
-                #TODO: replace hstack by feature union
                 train_transformed_input = np.hstack([self.name_to_train_transformed[str(p)][fold] for p in candidate.parents])
                 test_transformed_input = np.hstack([self.name_to_test_transformed[str(p)][fold] for p in candidate.parents])
 
@@ -139,7 +146,6 @@ class CachedEvaluationFramework(EvaluationFramework):
                 test_transformed[fold] = candidate.transformation.transform(test_transformed_input)
 
             if Config.get_default('score.test', 'False') == 'True':
-                # TODO: replace hstack by feature union
                 training_all_input = np.hstack(
                     [self.name_to_training_all[str(p)] for p in candidate.parents])
                 one_test_set_transformed_input = np.hstack(
@@ -149,7 +155,7 @@ class CachedEvaluationFramework(EvaluationFramework):
                 training_all = candidate.transformation.transform(training_all_input)
                 one_test_set_transformed = candidate.transformation.transform(one_test_set_transformed_input)
 
-        result['score'], result['test_score'] = self.grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed)
+        result['score'], result['test_score'], result['hyperparameters'] = self.grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed)
 
         if not isinstance(candidate, RawFeature):
             #only save the transformed data if we need it in the future
@@ -178,6 +184,8 @@ class CachedEvaluationFramework(EvaluationFramework):
         result['global_time'] = time.time() - self.global_starting_time
         return result
     '''
+
+
 
 
 

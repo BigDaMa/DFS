@@ -13,6 +13,8 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
+from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -21,20 +23,20 @@ warnings.filterwarnings("ignore")
 #warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
-class CachedSimpleFeatureConstruction(CachedEvaluationFramework):
-    def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
-                                                                                                'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-                                                                                                'classifier__solver': ['lbfgs'],
-                                                                                                'classifier__class_weight': ['balanced'],
-                                                                                                'classifier__max_iter': [10000],
-                                                                                                'classifier__multi_class':['auto']
+class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
+    def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'penalty': ['l2'],
+                                                                                                'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+                                                                                                'solver': ['lbfgs'],
+                                                                                                'class_weight': ['balanced'],
+                                                                                                'max_iter': [10000],
+                                                                                                'multi_class':['auto']
                                                                                                 },
                  transformation_producer=get_transformation_for_feature_space,
                  epsilon=0.0,
                  c_max=2,
                  save_logs=False
                  ):
-        super(CachedSimpleFeatureConstruction, self).__init__(dataset_config, classifier, grid_search_parameters,
+        super(ComplexityDrivenFeatureConstruction, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
         self.epsilon = epsilon
         self.c_max = c_max
@@ -214,7 +216,6 @@ class CachedSimpleFeatureConstruction(CachedEvaluationFramework):
 
         self.complexity_delta = 1.0
 
-        epsilon = self.epsilon
         limit_runs = self.c_max + 1  # 5
         unique_raw_combinations = False
 
@@ -326,7 +327,7 @@ class CachedSimpleFeatureConstruction(CachedEvaluationFramework):
                 candidate.runtime_properties['test_score'] = result['test_score']
                 candidate.runtime_properties['execution_time'] = result['execution_time']
                 candidate.runtime_properties['global_time'] = result['global_time']
-                #candidate.runtime_properties['hyperparameters'] = result['hyperparameters']
+                candidate.runtime_properties['hyperparameters'] = result['hyperparameters']
                 candidate.runtime_properties['layer_end_time'] = layer_end_time
 
                 #print(str(candidate) + " -> " + str(candidate.score))
@@ -410,17 +411,20 @@ if __name__ == '__main__':
     dataset = (Config.get('transfusion.csv'), 4)
     #dataset = (Config.get('test_categorical.csv'), 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
+    #dataset = (Config.get('test_categorical.csv'), 4)
 
     start = time.time()
 
-    selector = CachedSimpleFeatureConstruction(dataset, c_max=5, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=3, save_logs=True)
+
 
     '''
-    selector = SimpleFeatureConstruction(dataset,
-                                         classifier=KNeighborsClassifier(),
-                                         grid_search_parameters={'classifier__n_neighbors': np.arange(3,10), 'classifier__weights': ['uniform','distance'], 'classifier__metric': ['minkowski','euclidean','manhattan']},
+    selector = ComplexityDrivenFeatureConstruction(dataset,
+                                         classifier=KNeighborsClassifier,
+                                         grid_search_parameters={'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']},
                                          c_max=3, save_logs=True)
     '''
+
 
     selector.run()
 
