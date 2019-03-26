@@ -353,8 +353,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     self.name_to_train_transformed[str(candidate)] = result['train_transformed']
                     self.name_to_test_transformed[str(candidate)] = result['test_transformed']
 
-                    self.name_to_training_all[str(candidate)] = result['training_all']
-                    self.name_to_one_test_set_transformed[str(candidate)] = result['one_test_set_transformed']
+                    if Config.get_default('score.test', 'False') == 'True':
+                        self.name_to_training_all[str(candidate)] = result['training_all']
+                        self.name_to_one_test_set_transformed[str(candidate)] = result['one_test_set_transformed']
 
                     if isinstance(candidate, RawFeature):
                         if not c in cost_2_raw_features:
@@ -384,8 +385,12 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             else:
                 print("Of " + str(len(current_layer)) + " candidate representations, all satisfied the epsilon threshold.")
 
-
-            print("Best representation found for complexity = " + str(c) + ": " + str(max_feature) + "\n")
+            if Config.get_default('score.test', 'False') == 'True':
+                print("\nBest representation found for complexity = " + str(c) + ": " + str(max_feature) + "\nmean cross-validation score: " + "{0:.2f}".format(max_feature.runtime_properties['score']) + ", score on test: " + "{0:.2f}".format(max_feature.runtime_properties['test_score']) + "\n")
+            else:
+                print("\nBest representation found for complexity = " + str(c) + ": " + str(
+                    max_feature) + "\nmean cross-validation score: " + "{0:.2f}".format(
+                    max_feature.runtime_properties['score']) + "\n")
 
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
@@ -425,7 +430,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
 
 
     '''

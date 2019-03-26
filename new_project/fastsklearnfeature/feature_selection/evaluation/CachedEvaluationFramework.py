@@ -126,6 +126,9 @@ class CachedEvaluationFramework(EvaluationFramework):
 
             if Config.get_default('score.test', 'False') == 'True':
                 training_all = raw_feature
+                if Config.get_default('instance.selection', 'False') == 'True':
+                    candidate.fit(self.train_X_all)
+                    training_all = candidate.transform(self.train_X_all)
                 one_test_set_transformed = candidate.transform(self.dataset.splitted_values['test'])
                 result['training_all'] = training_all
                 result['one_test_set_transformed'] = one_test_set_transformed
