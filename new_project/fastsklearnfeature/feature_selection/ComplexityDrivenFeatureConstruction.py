@@ -385,12 +385,14 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             else:
                 print("Of " + str(len(current_layer)) + " candidate representations, all satisfied the epsilon threshold.")
 
-            if Config.get_default('score.test', 'False') == 'True':
-                print("\nBest representation found for complexity = " + str(c) + ": " + str(max_feature) + "\nmean cross-validation score: " + "{0:.2f}".format(max_feature.runtime_properties['score']) + ", score on test: " + "{0:.2f}".format(max_feature.runtime_properties['test_score']) + "\n")
-            else:
-                print("\nBest representation found for complexity = " + str(c) + ": " + str(
-                    max_feature) + "\nmean cross-validation score: " + "{0:.2f}".format(
-                    max_feature.runtime_properties['score']) + "\n")
+            if len(current_layer) > 0:
+                if Config.get_default('score.test', 'False') == 'True':
+                    print("\nBest representation found for complexity = " + str(c) + ": " + str(max_feature) + "\nmean cross-validation score: " + "{0:.2f}".format(max_feature.runtime_properties['score']) + ", score on test: " + "{0:.2f}".format(max_feature.runtime_properties['test_score']) + "\n")
+                else:
+                    print("\nBest representation found for complexity = " + str(c) + ": " + str(
+                        max_feature) + "\nmean cross-validation score: " + "{0:.2f}".format(
+                        max_feature.runtime_properties['score']) + "\n")
+                #print("hyper: " + str(max_feature.runtime_properties['hyperparameters']))
 
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
@@ -407,26 +409,23 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 if __name__ == '__main__':
-    #dataset = (Config.get('statlog_heart.csv'), 13)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
+    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_31_credit-g_german_credit.csv", 20)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
 
-
-    #dataset = (Config.get('iris.csv'), 4)
-    #dataset = (Config.get('banknote.csv'), 4)
-    #dataset = (Config.get('ecoli.csv'), 8)
-    #dataset = (Config.get('abalone.csv'), 8)
-    #dataset = (Config.get('breastcancer.csv'), 0)
-    dataset = (Config.get('transfusion.csv'), 4)
-    #dataset = (Config.get('test_categorical.csv'), 4)
+    #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
+    #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
+    #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
+    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
+    #dataset = (Config.get('data_path') + '/iris.data', 4)
+    #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
+    #dataset = (Config.get('data_path') + '/ecoli.data', 8)
+    #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
-    #dataset = (Config.get('test_categorical.csv'), 4)
 
     start = time.time()
 
@@ -439,6 +438,7 @@ if __name__ == '__main__':
                                          grid_search_parameters={'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']},
                                          c_max=3, save_logs=True)
     '''
+
 
 
     selector.run()

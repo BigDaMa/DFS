@@ -209,21 +209,23 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    #dataset = (Config.get('statlog_heart.csv'), 13)
-    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
-    #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
+    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
+    # dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
-    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_31_credit-g_german_credit.csv", 20)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
+    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
 
-
-    #dataset = (Config.get('iris.csv'), 4)
-    #dataset = (Config.get('banknote.csv'), 4)
-    #dataset = (Config.get('ecoli.csv'), 8)
-    dataset = (Config.get('transfusion.csv'), 4)
+    dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
+    # dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
+    # dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
+    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
+    # dataset = (Config.get('data_path') + '/iris.data', 4)
+    # dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
+    # dataset = (Config.get('data_path') + '/ecoli.data', 8)
+    #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
+    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    # dataset = (Config.get('data_path') + '/test_categorical.data', 4)
+    # dataset = ('../configuration/resources/data/transfusion.data', 4)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})

@@ -23,7 +23,7 @@ class Reader:
             properties['missing values'] = np.sum(np.isnan(data))
 
             # range properties
-            properties['negative'] = np.sum(data < 0.0)
+            #properties['negative'] = np.sum(data < 0.0)
         except:
             #was nonnumeric data
             pass
