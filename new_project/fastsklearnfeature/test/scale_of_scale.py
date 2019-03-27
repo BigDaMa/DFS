@@ -16,3 +16,9 @@ second = s.fit_transform(first)
 
 print(np.allclose(first, second))
 
+first = s.fit_transform(input)
+second = p.fit_transform(first)
+third = s.fit_transform(second)
+
+print(np.allclose(third, second))
+

@@ -3,8 +3,9 @@ from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 
 class NonCommutativeBinaryTransformation(BaseEstimator, TransformerMixin, BinaryTransformation):
-    def __init__(self, method):
+    def __init__(self, method, sympy_method):
         self.method = method
+        self.sympy_method = sympy_method
         BinaryTransformation.__init__(self, self.method.__name__, output_dimensions=1,
                  parent_feature_order_matters=True, parent_feature_repetition_is_allowed=False)
 
@@ -19,3 +20,6 @@ class NonCommutativeBinaryTransformation(BaseEstimator, TransformerMixin, Binary
                 or 'bool' in str(feature_combination[i].properties['type'])):
                 return False
         return True
+
+    def get_sympy_representation(self, input_attributes):
+        return self.sympy_method(*input_attributes)

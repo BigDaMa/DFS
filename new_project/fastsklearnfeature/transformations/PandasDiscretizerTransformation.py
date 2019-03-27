@@ -4,6 +4,10 @@ import pandas as pd
 import numpy as np
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from typing import List
+import sympy
+
+class discretize(sympy.Function):
+    nargs = (1)
 
 
 class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransformation):
@@ -33,3 +37,6 @@ class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUn
             return False
 
         return True
+
+    def get_sympy_representation(self, input_attributes):
+        return discretize(input_attributes[0])

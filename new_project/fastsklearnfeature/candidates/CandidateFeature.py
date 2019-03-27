@@ -7,6 +7,7 @@ from fastsklearnfeature.configuration.Config import Config
 import copy
 import time
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
+import sympy
 
 
 class CandidateFeature:
@@ -21,6 +22,8 @@ class CandidateFeature:
 
         self.runtime_properties: Dict[str, Any] = {}
         self.score = None #deprecated
+
+        self.sympy_representation = None
 
         self.pipeline = self.create_pipeline()
 
@@ -75,6 +78,13 @@ class CandidateFeature:
                 depths.append(p.get_transformation_depth() + 1)
             self.depth = max(depths)
         return self.depth
+
+    def get_sympy_representation(self):
+        if type(self.sympy_representation) == type(None):
+            if type(self.transformation) != type(None):
+                self.sympy_representation = sympy.factor(self.transformation.get_sympy_representation([p.get_sympy_representation() for p in self.parents]))
+
+        return self.sympy_representation
 
     def get_number_of_transformations(self):
         if self.number_of_transformations == None:

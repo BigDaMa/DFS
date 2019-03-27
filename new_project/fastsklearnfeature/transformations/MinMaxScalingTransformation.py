@@ -3,6 +3,10 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.base import BaseEstimator, TransformerMixin
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from typing import List
+import sympy
+
+class scale(sympy.Function):
+    nargs = (1)
 
 class MinMaxScalingTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransformation):
     def __init__(self):
@@ -24,3 +28,6 @@ class MinMaxScalingTransformation(BaseEstimator, TransformerMixin, NumericUnaryT
             return False
 
         return True
+
+    def get_sympy_representation(self, input_attributes):
+        return scale(input_attributes[0])

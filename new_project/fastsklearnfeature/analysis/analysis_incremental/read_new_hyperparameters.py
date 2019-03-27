@@ -32,9 +32,9 @@ def crawl_runtime(data: Dict[int, List[CandidateFeature]], name_to_runtime: Dict
     for key, my_list in data.items():
         for c in my_list:
             if c.runtime_properties['score'] >= 0.0:
-                name_to_runtime[str(c)] = c.runtime_properties['execution_time']
+                name_to_runtime[str(c)] = c.runtime_properties['hyperparameters']['C']
                 complexity.append(c.get_complexity())
-                runtime.append(c.runtime_properties['execution_time'])
+                runtime.append(c.runtime_properties['hyperparameters']['C'])
     return name_to_runtime
 
 

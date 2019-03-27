@@ -123,15 +123,11 @@ class EvaluationFramework:
 
     '''
     def evaluate_candidates(self, candidates):
-        self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'],
-                                                                               self.current_target):
-            self.preprocessed_folds.append((train, test))
-
         results = []
         for c in candidates:
             results.append(self.evaluate_single_candidate(c))
         return results
+
     '''
 
 

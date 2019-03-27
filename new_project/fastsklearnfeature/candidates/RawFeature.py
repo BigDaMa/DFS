@@ -14,6 +14,7 @@ class RawFeature(CandidateFeature):
         self.properties: Dict[str, Any] = properties
         self.parents = []
         self.transformation = None
+        self.sympy_representation = None
 
         self.runtime_properties: Dict[str, Any] = {}
 
@@ -35,6 +36,9 @@ class RawFeature(CandidateFeature):
             )
         ], memory=memory)
         return pipeline
+
+    def get_sympy_representation(self):
+        return self.sympy_representation
 
     def get_transformation_depth(self):
         return 0

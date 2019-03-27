@@ -1,5 +1,6 @@
 import itertools
 from typing import List
+import sympy
 
 class Transformation:
     """
@@ -28,6 +29,10 @@ class Transformation:
         return self
 
     def transform(self, data):
+        pass
+
+    def get_sympy_representation(self, input_attributes):
+        #return sympy.Function(self.name)(input_attributes[0])
         pass
 
     def get_name(self, candidate_feature_names):

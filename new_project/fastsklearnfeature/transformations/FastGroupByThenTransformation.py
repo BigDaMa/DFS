@@ -5,11 +5,12 @@ import itertools
 import numpy_indexed as npi
 from typing import List, Dict, Set
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
-
+import sympy
 
 class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformation):
-    def __init__(self, method):
+    def __init__(self, method, sympy_method):
         self.method = method
+        self.sympy_method = sympy_method
         Transformation.__init__(self, 'GroupByThen' + self.method.__name__,
                  number_parent_features=2,
                  output_dimensions=1,
@@ -57,7 +58,10 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
         return itertools.chain(*iterable_collection)
 
     def get_name(self, candidate_feature_names):
-        return "(" + self.method.__name__ + "(" + str(candidate_feature_names[0]) + ") GroupyBy " + str(candidate_feature_names[1]) +")"
+        return "(" + self.method.__name__ + "(" + str(candidate_feature_names[0]) + ") GroupyBy " + str(candidate_feature_names[1]) + ")"
+
+    def get_sympy_representation(self, input_attributes):
+        return self.sympy_method(input_attributes[0], input_attributes[1])
 
 
 

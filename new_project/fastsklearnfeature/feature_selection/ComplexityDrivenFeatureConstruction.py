@@ -15,6 +15,7 @@ from fastsklearnfeature.candidate_generation.feature_space.explorekit_transforma
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
+import sympy
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -115,13 +116,19 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         return list(itertools.chain(*results))
 
 
-    def generate_features(self, transformations: List[Transformation], features: List[CandidateFeature]) -> List[CandidateFeature]:
+    def generate_features(self, transformations: List[Transformation], features: List[CandidateFeature], all_evaluated_features: Set) -> List[CandidateFeature]:
         generated_features: List[CandidateFeature] = []
         for t_i in transformations:
             for f_i in t_i.get_combinations(features):
                 if t_i.is_applicable(f_i):
-                    generated_features.append(CandidateFeature(copy.deepcopy(t_i), f_i)) # do we need a deep copy here?
-                    #if output is multidimensional adapt here
+                    candidate = CandidateFeature(copy.deepcopy(t_i), f_i) # do we need a deep copy here?
+                    sympy_representation = candidate.get_sympy_representation()
+                    if len(sympy_representation.free_symbols) > 0: # if expression is not constant
+                        if not sympy_representation in all_evaluated_features:
+                            all_evaluated_features.add(sympy_representation)
+                            generated_features.append(candidate)
+                        else:
+                            print("skipped: " + str(sympy_representation))
         return generated_features
 
 
@@ -138,21 +145,21 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
     def generate_merge(self, a: List[CandidateFeature], b: List[CandidateFeature], order_matters=False, repetition_allowed=False) -> List[List[CandidateFeature]]:
         # e.g. sum
         if not order_matters and repetition_allowed:
-            return list(itertools.product(*[a, b]))
+            return set([frozenset([x, y]) if x != y else (x, x) for x, y in itertools.product(*[a, b])])
 
         # feature concat, but does not work
         if not order_matters and not repetition_allowed:
-            return [[x, y] for x, y in itertools.product(*[a, b]) if x != y]
+            return set([frozenset([x, y]) for x, y in itertools.product(*[a, b]) if x != y])
 
         if order_matters and repetition_allowed:
             order = set(list(itertools.product(*[a, b])))
             order = order.union(set(list(itertools.product(*[b, a]))))
-            return list(order)
+            return order
 
         # e.g. subtraction
         if order_matters and not repetition_allowed:
-            order = [[x, y] for x, y in itertools.product(*[a, b]) if x != y]
-            order.extend([[x, y] for x, y in itertools.product(*[b, a]) if x != y])
+            order = set([(x, y) for x, y in itertools.product(*[a, b]) if x != y])
+            order = order.union([(x, y) for x, y in itertools.product(*[b, a]) if x != y])
             return order
 
 
@@ -234,6 +241,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
         max_feature.runtime_properties['score'] = -2
 
+        all_evaluated_features = set()
+
         for c in range(1, limit_runs):
             current_layer: List[CandidateFeature] = []
 
@@ -241,6 +250,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             if c == 1:
                 cost_2_raw_features[c]: List[CandidateFeature] = []
                 for raw_f in self.raw_features:
+                    sympy_representation = sympy.Symbol('X' + str(raw_f.column_id))
+                    raw_f.sympy_representation = sympy_representation
+                    all_evaluated_features.add(sympy_representation)
                     if raw_f.is_numeric():
                         current_layer.append(raw_f)
                     else:
@@ -258,7 +270,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 unary_candidates_to_be_applied.extend(cost_2_binary_transformed[c - 1])
 
 
-            current_layer.extend(self.generate_features(unary_transformations, unary_candidates_to_be_applied))
+            current_layer.extend(self.generate_features(unary_transformations, unary_candidates_to_be_applied, all_evaluated_features))
 
             #second binary
             #get length 2 partitions for current cost
@@ -279,9 +291,18 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
                 for bt in binary_transformations:
                     list_of_combinations = self.generate_merge(lists_for_each_element[0], lists_for_each_element[1], bt.parent_feature_order_matters, bt.parent_feature_repetition_is_allowed)
+                    #print(list_of_combinations)
                     for combo in list_of_combinations:
                         if bt.is_applicable(combo):
-                            binary_candidates_to_be_applied.append(CandidateFeature(copy.deepcopy(bt), combo))
+                            bin_candidate = CandidateFeature(copy.deepcopy(bt), combo)
+                            sympy_representation = bin_candidate.get_sympy_representation()
+                            if len(sympy_representation.free_symbols) > 0:  # if expression is not constant
+                                if not sympy_representation in all_evaluated_features:
+                                    all_evaluated_features.add(sympy_representation)
+                                    binary_candidates_to_be_applied.append(bin_candidate)
+                                else:
+                                    #print(str(bin_candidate) + " skipped: " + str(sympy_representation))
+                                    pass
             current_layer.extend(binary_candidates_to_be_applied)
 
             #third: feature combinations
@@ -401,6 +422,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"))
                 pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"))
 
+            #print(all_evaluated_features)
+
             if type(self.max_timestamp) != type(None) and time.time() >= self.max_timestamp:
                 break
 
@@ -429,7 +452,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
 
 
     '''
