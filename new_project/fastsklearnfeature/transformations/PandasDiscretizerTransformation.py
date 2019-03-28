@@ -7,7 +7,10 @@ from typing import List
 import sympy
 
 class discretize(sympy.Function):
-    nargs = (1)
+    @classmethod
+    def eval(cls, x):
+        if isinstance(x, discretize): #idempotent
+            return x
 
 
 class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransformation):

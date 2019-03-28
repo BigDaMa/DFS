@@ -4,21 +4,30 @@ from typing import List
 import numpy as np
 import sympy
 
-class groupbythenmean(sympy.Function):
-    nargs = (1,2)
+class groupbythen(sympy.Function):
     is_commutative = False
+    nargs = 2
 
-class groupbythenmax(sympy.Function):
-    nargs = (1,2)
-    is_commutative = False
+class groupbythenIdempotentFunction(groupbythen):
+    @classmethod
+    def eval(cls, value, key):
+        if isinstance(value, groupbythen) and key == value.args[1]:  # conditional idempotent
+            return value
 
-class groupbythenmin(sympy.Function):
-    nargs = (1,2)
-    is_commutative = False
+class groupbythenmin(groupbythenIdempotentFunction):
+    nargs = 2
 
-class groupbythenstd(sympy.Function):
-    nargs = (1,2)
-    is_commutative = False
+class groupbythenmax(groupbythenIdempotentFunction):
+    nargs = 2
+
+class groupbythenmean(groupbythenIdempotentFunction):
+    nargs = 2
+
+class groupbythenstd(groupbythen):
+    @classmethod
+    def eval(cls, value, key):
+        if isinstance(value, groupbythen) and key == value.args[1]:  # idempotent
+            return 0
 
 class GroupByThenGenerator:
     def __init__(self, number_of_parents: int, methods=[np.mean,
@@ -33,7 +42,7 @@ class GroupByThenGenerator:
                                                         ],
                  sympy_methods=[groupbythenmean, groupbythenmax, groupbythenmin, groupbythenstd]
                  ):
-        self.number_of_parents = number_of_parents # Group X [1] BY Y,X,Z THEN method
+        self.number_of_parents = number_of_parents
         self.methods = methods
         self.sympy_methods = sympy_methods
 

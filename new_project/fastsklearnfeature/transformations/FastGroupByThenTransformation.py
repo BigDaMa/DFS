@@ -33,18 +33,14 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
     def is_applicable(self, feature_combination: List[CandidateFeature]):
         #TODO: check whether feature_combination[0] has only distinct values
 
+        #we handle conditional idempotence via sympy
+
         #the aggregated column has to be numeric
         if 'float' in str(feature_combination[0].properties['type']) \
             or 'int' in str(feature_combination[0].properties['type']) \
             or 'bool' in str(feature_combination[0].properties['type']):
 
-            # do not group twice with the same key
-            # e.g. min(max(a) groubBy B) groubBy B = max(a) groubBy B!
-            # for std(max(a) groubBy B) groubBy B = null vector!
-            if not(isinstance(feature_combination[0].transformation, FastGroupByThenTransformation) and
-                   str(feature_combination[0].parents[1]) == str(feature_combination[1])
-                   ):
-                return True
+            return True
 
         return False
 

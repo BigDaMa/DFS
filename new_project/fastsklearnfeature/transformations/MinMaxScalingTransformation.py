@@ -6,7 +6,10 @@ from typing import List
 import sympy
 
 class scale(sympy.Function):
-    nargs = (1)
+    @classmethod
+    def eval(cls, x):
+        if isinstance(x, scale): #idempotent
+            return x
 
 class MinMaxScalingTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransformation):
     def __init__(self):
