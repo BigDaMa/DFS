@@ -455,7 +455,7 @@ if __name__ == '__main__':
 
     start = time.time()
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=9, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=15, folds=10, max_seconds=None, save_logs=True)
 
 
     '''
