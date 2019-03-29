@@ -82,7 +82,7 @@ class CandidateFeature:
     def get_sympy_representation(self):
         if type(self.sympy_representation) == type(None):
             if type(self.transformation) != type(None):
-                self.sympy_representation = sympy.factor(self.transformation.get_sympy_representation([p.get_sympy_representation() for p in self.parents]))
+                self.sympy_representation = self.transformation.get_sympy_representation([p.get_sympy_representation() for p in self.parents])
 
         return self.sympy_representation
 

@@ -1,6 +1,7 @@
 from fastsklearnfeature.transformations.BinaryTransformation import BinaryTransformation
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
+import sympy
 
 class NonCommutativeBinaryTransformation(BaseEstimator, TransformerMixin, BinaryTransformation):
     def __init__(self, method, sympy_method):
@@ -22,4 +23,4 @@ class NonCommutativeBinaryTransformation(BaseEstimator, TransformerMixin, Binary
         return True
 
     def get_sympy_representation(self, input_attributes):
-        return self.sympy_method(*input_attributes)
+        return sympy.factor(self.sympy_method(*input_attributes))

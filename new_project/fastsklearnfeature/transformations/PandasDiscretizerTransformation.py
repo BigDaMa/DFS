@@ -17,7 +17,7 @@ class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUn
     def __init__(self, number_bins, qbucket=False):
         self.number_bins = number_bins
         self.qbucket = qbucket
-        name = 'Discretizer'
+        name = 'discretize'
         NumericUnaryTransformation.__init__(self, name)
 
     def fit(self, X, y=None):

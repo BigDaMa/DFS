@@ -121,14 +121,18 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         for t_i in transformations:
             for f_i in t_i.get_combinations(features):
                 if t_i.is_applicable(f_i):
-                    candidate = CandidateFeature(copy.deepcopy(t_i), f_i) # do we need a deep copy here?
-                    sympy_representation = candidate.get_sympy_representation()
-                    if len(sympy_representation.free_symbols) > 0: # if expression is not constant
-                        if not sympy_representation in all_evaluated_features:
-                            all_evaluated_features.add(sympy_representation)
-                            generated_features.append(candidate)
-                        else:
-                            print("skipped: " + str(sympy_representation))
+                    sympy_representation = t_i.get_sympy_representation([p.get_sympy_representation() for p in f_i])
+                    try:
+                        if len(sympy_representation.free_symbols) > 0: # if expression is not constant
+                            if not sympy_representation in all_evaluated_features:
+                                candidate = CandidateFeature(copy.deepcopy(t_i), f_i)  # do we need a deep copy here?
+                                all_evaluated_features.add(sympy_representation)
+                                generated_features.append(candidate)
+                            else:
+                                #print("skipped: " + str(sympy_representation))
+                                pass
+                    except:
+                        pass
         return generated_features
 
 
@@ -294,17 +298,21 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     #print(list_of_combinations)
                     for combo in list_of_combinations:
                         if bt.is_applicable(combo):
-                            bin_candidate = CandidateFeature(copy.deepcopy(bt), combo)
-                            sympy_representation = bin_candidate.get_sympy_representation()
-                            if len(sympy_representation.free_symbols) > 0:  # if expression is not constant
-                                if not sympy_representation in all_evaluated_features:
-                                    all_evaluated_features.add(sympy_representation)
-                                    binary_candidates_to_be_applied.append(bin_candidate)
+                            sympy_representation = bt.get_sympy_representation(
+                                [p.get_sympy_representation() for p in combo])
+                            try:
+                                if len(sympy_representation.free_symbols) > 0:  # if expression is not constant
+                                    if not sympy_representation in all_evaluated_features:
+                                        bin_candidate = CandidateFeature(copy.deepcopy(bt), combo)
+                                        all_evaluated_features.add(sympy_representation)
+                                        binary_candidates_to_be_applied.append(bin_candidate)
+                                    else:
+                                        #print(str(bin_candidate) + " skipped: " + str(sympy_representation))
+                                        pass
                                 else:
                                     #print(str(bin_candidate) + " skipped: " + str(sympy_representation))
                                     pass
-                            else:
-                                #print(str(bin_candidate) + " skipped: " + str(sympy_representation))
+                            except:
                                 pass
             current_layer.extend(binary_candidates_to_be_applied)
 
@@ -443,19 +451,19 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
 
     start = time.time()
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=15, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
 
 
     '''

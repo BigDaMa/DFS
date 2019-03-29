@@ -1,6 +1,7 @@
 from fastsklearnfeature.transformations.Transformation import Transformation
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
+import sympy
 
 class HigherOrderCommutativeTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, method, sympy_method, number_parent_features):
@@ -28,4 +29,4 @@ class HigherOrderCommutativeTransformation(BaseEstimator, TransformerMixin, Tran
         return True
 
     def get_sympy_representation(self, input_attributes):
-        return self.sympy_method(*input_attributes)
+        return sympy.factor(self.sympy_method(*input_attributes))
