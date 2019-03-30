@@ -126,6 +126,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         if len(sympy_representation.free_symbols) > 0: # if expression is not constant
                             if not sympy_representation in all_evaluated_features:
                                 candidate = CandidateFeature(copy.deepcopy(t_i), f_i)  # do we need a deep copy here?
+                                candidate.sympy_representation = copy.deepcopy(sympy_representation)
                                 all_evaluated_features.add(sympy_representation)
                                 generated_features.append(candidate)
                             else:
@@ -304,6 +305,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                                 if len(sympy_representation.free_symbols) > 0:  # if expression is not constant
                                     if not sympy_representation in all_evaluated_features:
                                         bin_candidate = CandidateFeature(copy.deepcopy(bt), combo)
+                                        bin_candidate.sympy_representation = copy.deepcopy(sympy_representation)
                                         all_evaluated_features.add(sympy_representation)
                                         binary_candidates_to_be_applied.append(bin_candidate)
                                     else:
