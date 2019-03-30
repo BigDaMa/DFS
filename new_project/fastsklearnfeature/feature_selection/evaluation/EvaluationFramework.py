@@ -112,9 +112,6 @@ class EvaluationFramework:
 
         return result
 
-
-
-
     def evaluate_candidates(self, candidates):
         pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
         results = pool.map(self.evaluate_single_candidate, candidates)
@@ -127,8 +124,9 @@ class EvaluationFramework:
         for c in candidates:
             results.append(self.evaluate_single_candidate(c))
         return results
-
     '''
+
+
 
 
 
@@ -144,28 +142,22 @@ class EvaluationFramework:
             result['score'] = -1.0
             result['test_score'] = -1.0
             result['hyperparameters'] = {}
-            pass
+            
         result['candidate'] = candidate
         result['execution_time'] = time.time() - time_start_gs
         result['global_time'] = time.time() - self.global_starting_time
         return result
 
 
-
-
     '''
     def evaluate_single_candidate(self, candidate):
-        result = {}
-        result['score'] = 0.0
+        time_start_gs = time.time()
+        result = self.evaluate(candidate)
+
         result['candidate'] = candidate
+        result['execution_time'] = time.time() - time_start_gs
+        result['global_time'] = time.time() - self.global_starting_time
         return result
-    '''
-
-    '''
-    def evaluate_single_candidate(self, candidate):
-        new_score = -1.0
-        new_score = self.evaluate(candidate)
-        return new_score
     '''
 
 

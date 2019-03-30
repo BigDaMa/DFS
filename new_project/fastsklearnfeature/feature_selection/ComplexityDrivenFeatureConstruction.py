@@ -211,6 +211,32 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         return filtered_list
 
 
+    def materialize_raw_features(self, candidate):
+        train_transformed = [None] * len(self.preprocessed_folds)
+        test_transformed = [None] * len(self.preprocessed_folds)
+
+        # test
+        training_all = None
+        one_test_set_transformed = None
+
+        candidate.fit(self.dataset.splitted_values['train'])
+        raw_feature = candidate.transform(self.dataset.splitted_values['train'])
+
+        for fold in range(len(self.preprocessed_folds)):
+            train_transformed[fold] = raw_feature[self.preprocessed_folds[fold][0]]
+            test_transformed[fold] = raw_feature[self.preprocessed_folds[fold][1]]
+
+        if Config.get_default('score.test', 'False') == 'True':
+            training_all = raw_feature
+            if Config.get_default('instance.selection', 'False') == 'True':
+                candidate.fit(self.train_X_all)
+                training_all = candidate.transform(self.train_X_all)
+            one_test_set_transformed = candidate.transform(self.dataset.splitted_values['test'])
+            self.name_to_training_all[str(candidate)] = training_all
+            self.name_to_one_test_set_transformed[str(candidate)] = one_test_set_transformed
+
+        self.name_to_train_transformed[str(candidate)] = train_transformed
+        self.name_to_test_transformed[str(candidate)] = test_transformed
 
 
     def run(self):
@@ -222,7 +248,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-        unary_transformations, binary_transformations = self.transformation_producer()
+        unary_transformations, binary_transformations = self.transformation_producer(self.train_X_all, self.raw_features)
 
 
 
@@ -263,6 +289,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     else:
                         raw_f.runtime_properties['score'] = 0.0
                         cost_2_raw_features[c].append(raw_f)
+
+                    self.materialize_raw_features(raw_f)
 
             # first unary
             # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
@@ -452,21 +480,23 @@ if __name__ == '__main__':
 
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
-    #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
+    dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
     #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
 
     start = time.time()
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
 
+    from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
 
     '''
     selector = ComplexityDrivenFeatureConstruction(dataset,

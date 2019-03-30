@@ -117,24 +117,12 @@ class CachedEvaluationFramework(EvaluationFramework):
 
         if isinstance(candidate, RawFeature):
 
-            candidate.fit(self.dataset.splitted_values['train'])
-            raw_feature = candidate.transform(self.dataset.splitted_values['train'])
-
-            for fold in range(len(self.preprocessed_folds)):
-                train_transformed[fold] = raw_feature[self.preprocessed_folds[fold][0]]
-                test_transformed[fold] = raw_feature[self.preprocessed_folds[fold][1]]
-
             if Config.get_default('score.test', 'False') == 'True':
-                training_all = raw_feature
-                if Config.get_default('instance.selection', 'False') == 'True':
-                    candidate.fit(self.train_X_all)
-                    training_all = candidate.transform(self.train_X_all)
-                one_test_set_transformed = candidate.transform(self.dataset.splitted_values['test'])
-                result['training_all'] = training_all
-                result['one_test_set_transformed'] = one_test_set_transformed
+                result['training_all'] = training_all = self.name_to_training_all[str(candidate)]
+                result['one_test_set_transformed'] = one_test_set_transformed = self.name_to_one_test_set_transformed[str(candidate)]
 
-            result['train_transformed'] = train_transformed
-            result['test_transformed'] = test_transformed
+            result['train_transformed'] = train_transformed = self.name_to_train_transformed[str(candidate)]
+            result['test_transformed'] = test_transformed = self.name_to_test_transformed[str(candidate)]
 
         else:
 

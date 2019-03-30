@@ -15,13 +15,17 @@ from fastsklearnfeature.transformations.generators.GroupByThenGenerator import g
 from fastsklearnfeature.transformations.generators.GroupByThenGenerator import groupbythenmean
 from fastsklearnfeature.transformations.generators.GroupByThenGenerator import groupbythenstd
 import sympy
+from fastsklearnfeature.transformations.generators.OneHotGenerator import OneHotGenerator
 
-def get_transformation_for_feature_space(train_X_all, raw_features):
+def get_transformation_for_cat_feature_space(train_X_all, raw_features):
+
     unary_transformations: List[UnaryTransformation] = []
+    binary_transformations: List[Transformation] = []
+
     unary_transformations.append(PandasDiscretizerTransformation(number_bins=10))
     unary_transformations.append(MinMaxScalingTransformation())
 
-    binary_transformations: List[Transformation] = []
+    
     binary_transformations.extend(HigherOrderCommutativeClassGenerator(2,
                                                                        methods=[np.nansum, np.nanprod],
                                                                        sympy_methods=[sympy.Add, sympy.Mul]).produce())
@@ -37,5 +41,7 @@ def get_transformation_for_feature_space(train_X_all, raw_features):
                                                                            groupbythenmean,
                                                                            groupbythenstd]
                                                        ).produce())
+
+    unary_transformations.extend(OneHotGenerator(train_X_all, raw_features).produce())
 
     return unary_transformations, binary_transformations
