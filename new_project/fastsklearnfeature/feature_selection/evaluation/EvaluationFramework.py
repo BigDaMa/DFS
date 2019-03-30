@@ -18,6 +18,7 @@ from fastsklearnfeature.candidate_generation.feature_space.explorekit_transforma
 import warnings
 from fastsklearnfeature.instance_selection.instance_selection_cnn import sample_data_by_cnn
 import copy
+from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 
 
 class EvaluationFramework:
@@ -131,7 +132,7 @@ class EvaluationFramework:
 
 
 
-    def evaluate_single_candidate(self, candidate):
+    def evaluate_single_candidate(self, candidate: CandidateFeature):
         result = {}
         time_start_gs = time.time()
         try:
@@ -139,6 +140,7 @@ class EvaluationFramework:
             #print("feature: " + str(candidate) + " -> " + str(new_score))
         except Exception as e:
             warnings.warn(str(candidate) + " -> " + str(e), RuntimeWarning)
+            candidate.runtime_properties['exception'] = e
             result['score'] = -1.0
             result['test_score'] = -1.0
             result['hyperparameters'] = {}

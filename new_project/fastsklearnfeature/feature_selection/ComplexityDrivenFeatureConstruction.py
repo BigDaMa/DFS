@@ -18,7 +18,7 @@ import numpy as np
 import sympy
 
 import warnings
-warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore")
 #warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
 #warnings.filterwarnings("ignore", message="Data with input dtype object was converted to float64 by MinMaxScaler.")
 #warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
