@@ -291,6 +291,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         cost_2_raw_features[c].append(raw_f)
 
                     self.materialize_raw_features(raw_f)
+                    raw_f.derive_properties(self.name_to_train_transformed[str(raw_f)][0])
 
             # first unary
             # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
@@ -416,7 +417,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     self.name_to_test_transformed[str(candidate)] = result['test_transformed']
 
                     #derive properties
-                    candidate.derive_properties(result['train_transformed'][0])
+                    if not isinstance(candidate, RawFeature):
+                        candidate.derive_properties(result['train_transformed'][0])
 
                     if Config.get_default('score.test', 'False') == 'True':
                         self.name_to_training_all[str(candidate)] = result['training_all']
