@@ -495,23 +495,25 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
+    dataset = (Config.get('data_path') + '/wine.data', 0)
 
     start = time.time()
 
-    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
 
     from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
+    #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
 
     '''
     selector = ComplexityDrivenFeatureConstruction(dataset,
-                                         classifier=KNeighborsClassifier,
-                                         grid_search_parameters={'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']},
-                                         c_max=3, save_logs=True)
+                                                   classifier=KNeighborsClassifier,
+                                                   grid_search_parameters={'n_neighbors': np.arange(3, 10),
+                                                                           'weights': ['uniform', 'distance'],
+                                                                           'metric': ['minkowski', 'euclidean',
+                                                                                      'manhattan']},
+                                                   c_max=3, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
     '''
-
-
-
     selector.run()
 
     print(time.time() - start)

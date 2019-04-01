@@ -30,15 +30,15 @@ class groupbythenstd(groupbythen):
             return 0
 
 class GroupByThenGenerator:
-    def __init__(self, number_of_parents: int, methods=[np.mean,
-                                                        np.max,
-                                                        np.min,
-                                                        np.std,
-                                                        np.var,
+    def __init__(self, number_of_parents: int, methods=[np.nanmean,
+                                                        np.nanmax,
+                                                        np.nanmin,
+                                                        np.nanstd,
+                                                        np.nanvar,
                                                         len,
-                                                        np.median,
-                                                        np.prod,
-                                                        np.sum
+                                                        np.nanmedian,
+                                                        np.nanprod,
+                                                        np.nansum
                                                         ],
                  sympy_methods=[groupbythenmean, groupbythenmax, groupbythenmin, groupbythenstd]
                  ):
