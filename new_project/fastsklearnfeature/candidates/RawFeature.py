@@ -6,6 +6,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from fastsklearnfeature.candidates.Identity import identity
 from fastsklearnfeature.configuration.Config import Config
+import numpy as np
+import pandas as pd
 
 class RawFeature(CandidateFeature):
     def __init__(self, name, column_id, properties):
@@ -57,6 +59,21 @@ class RawFeature(CandidateFeature):
 
     def calculate_traceability(self):
         return 1.0
+
+    def derive_properties(self, training_data):
+        try:
+            # missing values properties
+            self.properties['missing_values'] = pd.isnull(training_data).any()
+
+            # range properties
+            self.properties['has_zero'] = 0 in training_data
+            self.properties['min'] = np.nanmin(training_data)
+            self.properties['max'] = np.nanmax(training_data)
+        except Exception as e:
+            print(e)
+            #was nonnumeric data
+            pass
+        self.properties['number_distinct_values'] = len(np.unique(training_data))
 
     def is_numeric(self):
         raw_type = str(self.properties['type'])

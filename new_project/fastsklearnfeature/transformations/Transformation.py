@@ -1,6 +1,7 @@
 import itertools
 from typing import List
 import sympy
+import numpy as np
 
 class Transformation:
     """
@@ -41,6 +42,25 @@ class Transformation:
             slist += name_i + ","
         slist = slist[:-1]
         return self.name + "(" + slist + ")"
+
+    def derive_properties(self, training_data, parents):
+        properties = {}
+        # type properties
+        properties['type'] = training_data.dtype
+
+        try:
+            # missing values properties
+            properties['missing_values'] = np.sum(np.isnan(training_data))
+
+            # range properties
+            properties['has_zero'] = 0 in training_data
+            properties['min'] = np.nanmin(training_data)
+            properties['max'] = np.nanmax(training_data)
+        except:
+            # was nonnumeric data
+            pass
+        properties['number_distinct_values'] = len(np.unique(training_data))
+        return properties
 
 
     def is_applicable(self, feature_combination):

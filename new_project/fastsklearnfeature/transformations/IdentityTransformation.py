@@ -1,5 +1,6 @@
 from fastsklearnfeature.transformations.Transformation import Transformation
 from sklearn.base import BaseEstimator, TransformerMixin
+import numpy as np
 
 class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, number_parent_features):
@@ -25,3 +26,8 @@ class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
             slist += name_i + ", "
         slist = slist[:-2]
         return '{' + slist + '}'
+
+    def derive_properties(self, training_data, parents):
+        properties = {}
+        properties['type'] = np.float
+        return properties

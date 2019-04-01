@@ -415,6 +415,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     self.name_to_train_transformed[str(candidate)] = result['train_transformed']
                     self.name_to_test_transformed[str(candidate)] = result['test_transformed']
 
+                    #derive properties
+                    candidate.derive_properties(result['train_transformed'][0])
+
                     if Config.get_default('score.test', 'False') == 'True':
                         self.name_to_training_all[str(candidate)] = result['training_all']
                         self.name_to_one_test_set_transformed[str(candidate)] = result['one_test_set_transformed']
@@ -480,7 +483,7 @@ if __name__ == '__main__':
 
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
-    dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
+    #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
     #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
@@ -489,14 +492,14 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
     #dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
-    #dataset = ('../configuration/resources/data/transfusion.data', 4)
+    dataset = ('../configuration/resources/data/transfusion.data', 4)
 
     start = time.time()
 
-    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
 
-    from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
+    #from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
 
     '''
     selector = ComplexityDrivenFeatureConstruction(dataset,

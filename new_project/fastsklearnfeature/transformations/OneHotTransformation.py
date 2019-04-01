@@ -47,5 +47,24 @@ class OneHotTransformation(BaseEstimator, TransformerMixin, Transformation):
     def get_sympy_representation(self, input_attributes):
         return equals_string(input_attributes[0], sympy.Symbol('X' + str(self.raw_feature.column_id) + 'S' + str(self.value_id)))
 
+    def derive_properties(self, training_data, parents: List[CandidateFeature]):
+        properties = {}
+        # type properties
+        properties['type'] = np.bool
+
+        try:
+            # missing values properties
+            properties['missing_values'] = False
+
+            # range properties
+            properties['has_zero'] = True
+            properties['min'] = 0.0
+            properties['max'] = 1.0
+        except:
+            # was nonnumeric data
+            pass
+        properties['number_distinct_values'] = 2
+        return properties
+
 
 

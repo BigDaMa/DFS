@@ -2,6 +2,8 @@ from fastsklearnfeature.transformations.Transformation import Transformation
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 import sympy
+from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
+from typing import List
 
 class HigherOrderCommutativeTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, method, sympy_method, number_parent_features):
@@ -30,3 +32,25 @@ class HigherOrderCommutativeTransformation(BaseEstimator, TransformerMixin, Tran
 
     def get_sympy_representation(self, input_attributes):
         return sympy.factor(self.sympy_method(*input_attributes))
+
+    def derive_properties(self, training_data, parents: List[CandidateFeature]):
+        properties = {}
+        # type properties
+        properties['type'] = training_data.dtype
+
+        try:
+            # missing values properties
+            properties['missing_values'] = False
+
+            if self.method == np.nanprod:
+                properties['has_zero'] = any([p.properties['has_zero'] for p in parents])
+            else:
+                properties['has_zero'] = 0 in training_data
+
+            properties['min'] = np.nanmin(training_data)
+            properties['max'] = np.nanmax(training_data)
+        except:
+            # was nonnumeric data
+            pass
+        properties['number_distinct_values'] = len(np.unique(training_data))
+        return properties

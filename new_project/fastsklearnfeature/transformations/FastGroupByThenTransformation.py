@@ -31,8 +31,6 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
         return remapped_a
 
     def is_applicable(self, feature_combination: List[CandidateFeature]):
-        #TODO: check whether feature_combination[0] has only distinct values
-
         #we handle conditional idempotence via sympy
 
         #the aggregated column has to be numeric
@@ -41,6 +39,8 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
             or 'bool' in str(feature_combination[0].properties['type']):
 
             return True
+
+
 
         return False
 
@@ -58,6 +58,38 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
 
     def get_sympy_representation(self, input_attributes):
         return self.sympy_method(input_attributes[0], input_attributes[1])
+
+    def derive_properties(self, training_data, parents: List[CandidateFeature]):
+        properties = {}
+        # type properties
+        properties['type'] = training_data.dtype
+
+        try:
+            # missing values properties
+            properties['missing_values'] = False # for np.nanFunctions
+
+            # range properties
+            if (parents[0].properties['min'] == 0.0 and self.method == np.nanmin) or \
+               (parents[0].properties['max'] == 0.0 and self.method == np.nanmax):
+                properties['has_zero'] = True
+            else:
+                properties['has_zero'] = 0 in training_data
+
+            if self.method == np.nanmin:
+                properties['min'] = parents[0].properties['min']
+            else:
+                properties['min'] = np.nanmin(training_data)
+
+
+            if self.method == np.nanmax:
+                properties['max'] = parents[0].properties['max']
+            else:
+                properties['max'] = np.nanmax(training_data)
+        except:
+            # was nonnumeric data
+            pass
+        properties['number_distinct_values'] = parents[1].properties['number_distinct_values']
+        return properties
 
 
 

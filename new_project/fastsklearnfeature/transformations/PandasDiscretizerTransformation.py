@@ -38,8 +38,36 @@ class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUn
             return False
         if isinstance(feature_combination[0].transformation, PandasDiscretizerTransformation):
             return False
+        if feature_combination[0].properties['number_distinct_values'] <= self.number_bins:
+            return False
 
         return True
 
     def get_sympy_representation(self, input_attributes):
         return discretize(input_attributes[0])
+
+    def derive_properties(self, training_data, parents: List[CandidateFeature]):
+        properties = {}
+        # type properties
+        properties['type'] = training_data.dtype
+
+        try:
+            # missing values properties
+            properties['missing_values'] = False #nan -> -1
+
+            # range properties
+            properties['has_zero'] = True
+
+            if parents[0].properties['missing_values'] == True:
+                properties['min'] = -1
+            else:
+                properties['min'] = 0
+            properties['max'] = self.number_bins - 1
+        except:
+            # was nonnumeric data
+            pass
+        if parents[0].properties['missing_values'] == True:
+            properties['number_distinct_values'] = self.number_bins + 1
+        else:
+            properties['number_distinct_values'] = self.number_bins
+        return properties

@@ -27,8 +27,6 @@ class CandidateFeature:
 
         self.pipeline = self.create_pipeline()
 
-        self.derive_properties()
-
 
     def create_pipeline(self):
         #parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents], n_jobs=Config.get('feature.union.parallelism'))
@@ -56,13 +54,11 @@ class CandidateFeature:
         return self.pipeline.transform(X)
 
 
-    def derive_properties(self):
-        self.properties = {}
-        # type properties
-        self.properties['type'] = str('float64')
+    def derive_properties(self, training_data):
+        self.properties = self.transformation.derive_properties(training_data, self.parents)
 
 
-    #todo implement this in the transformation class
+
     def get_name(self):
         if self.name == '':
             name_list: List[str] = []

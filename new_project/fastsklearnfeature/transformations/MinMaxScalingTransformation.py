@@ -4,6 +4,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from typing import List
 import sympy
+import numpy
 
 class scale(sympy.Function):
     @classmethod
@@ -29,8 +30,29 @@ class MinMaxScalingTransformation(BaseEstimator, TransformerMixin, NumericUnaryT
             return False
         if isinstance(feature_combination[0].transformation, MinMaxScalingTransformation):
             return False
+        if feature_combination[0].properties['min'] == 0.0 and feature_combination[0].properties['max'] == 1.0:
+            return False
 
         return True
 
     def get_sympy_representation(self, input_attributes):
         return scale(input_attributes[0])
+
+    def derive_properties(self, training_data, parents: List[CandidateFeature]):
+        properties = {}
+        # type properties
+        properties['type'] = training_data.dtype
+
+        try:
+            # missing values properties
+            properties['missing_values'] = parents[0].properties['missing_values']
+
+            # range properties
+            properties['has_zero'] = True
+            properties['min'] = 0.0
+            properties['max'] = 1.0
+        except:
+            # was nonnumeric data
+            pass
+        properties['number_distinct_values'] = parents[0].properties['number_distinct_values']
+        return properties

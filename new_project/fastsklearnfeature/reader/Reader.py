@@ -16,17 +16,6 @@ class Reader:
         properties = {}
         # type properties
         properties['type'] = self.dataframe.dtypes.values[column_id]
-        #print(self.dataframe.dtypes.values)
-
-        try:
-            # missing values properties
-            properties['missing values'] = np.sum(np.isnan(data))
-
-            # range properties
-            #properties['negative'] = np.sum(data < 0.0)
-        except:
-            #was nonnumeric data
-            pass
 
         return properties
 
