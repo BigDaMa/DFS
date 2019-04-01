@@ -58,16 +58,25 @@ class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUn
             # range properties
             properties['has_zero'] = True
 
-            if parents[0].properties['missing_values'] == True:
-                properties['min'] = -1
+            if 'missing_values' in parents[0].properties:
+                if parents[0].properties['missing_values'] == True:
+                    properties['min'] = -1
+                else:
+                    properties['min'] = 0
             else:
-                properties['min'] = 0
+                properties['min'] = np.nanmin(training_data)
+
             properties['max'] = self.number_bins - 1
         except:
             # was nonnumeric data
             pass
-        if parents[0].properties['missing_values'] == True:
-            properties['number_distinct_values'] = self.number_bins + 1
+
+        if 'missing_values' in parents[0].properties:
+            if parents[0].properties['missing_values'] == True:
+                properties['number_distinct_values'] = self.number_bins + 1
+            else:
+                properties['number_distinct_values'] = self.number_bins
         else:
-            properties['number_distinct_values'] = self.number_bins
+            properties['number_distinct_values'] = self.number_bins #estimate
+
         return properties

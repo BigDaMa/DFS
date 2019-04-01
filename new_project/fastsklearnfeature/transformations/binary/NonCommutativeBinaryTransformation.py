@@ -38,7 +38,7 @@ class NonCommutativeBinaryTransformation(BaseEstimator, TransformerMixin, Binary
 
         try:
             # missing values properties
-            properties['missing_values'] = any([parents[0].properties['missing_values'],parents[1].properties['missing_values']])
+            #properties['missing_values'] = any([parents[0].properties['missing_values'],parents[1].properties['missing_values']])
 
             if self.method == np.divide:
                 properties['has_zero'] = False

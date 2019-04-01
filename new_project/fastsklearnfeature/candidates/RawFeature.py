@@ -63,7 +63,7 @@ class RawFeature(CandidateFeature):
     def derive_properties(self, training_data):
         try:
             # missing values properties
-            self.properties['missing_values'] = pd.isnull(training_data).any()
+            #self.properties['missing_values'] = pd.isnull(training_data).any()
 
             # range properties
             self.properties['has_zero'] = 0 in training_data

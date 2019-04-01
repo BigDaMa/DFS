@@ -45,7 +45,8 @@ class MinMaxScalingTransformation(BaseEstimator, TransformerMixin, NumericUnaryT
 
         try:
             # missing values properties
-            properties['missing_values'] = parents[0].properties['missing_values']
+            if 'missing_values' in parents[0].properties:
+                properties['missing_values'] = parents[0].properties['missing_values']
 
             # range properties
             properties['has_zero'] = True

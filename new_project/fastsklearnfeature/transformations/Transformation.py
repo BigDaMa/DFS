@@ -50,7 +50,7 @@ class Transformation:
 
         try:
             # missing values properties
-            properties['missing_values'] = np.sum(np.isnan(training_data))
+            #properties['missing_values'] = np.sum(np.isnan(training_data))
 
             # range properties
             properties['has_zero'] = 0 in training_data
