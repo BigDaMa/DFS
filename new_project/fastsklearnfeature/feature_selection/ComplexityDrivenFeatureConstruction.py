@@ -490,9 +490,9 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
-    dataset = ('../configuration/resources/data/transfusion.data', 4)
+    #dataset = ('../configuration/resources/data/transfusion.data', 4)
 
     start = time.time()
 
