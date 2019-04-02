@@ -141,13 +141,13 @@ class EvaluationFramework:
         except Exception as e:
             warnings.warn(str(candidate) + " -> " + str(e), RuntimeWarning)
             candidate.runtime_properties['exception'] = e
-            result['score'] = -1.0
-            result['test_score'] = -1.0
-            result['hyperparameters'] = {}
-            
+            candidate.runtime_properties['score'] = -1.0
+            candidate.runtime_properties['test_score'] = -1.0
+            candidate.runtime_properties['hyperparameters'] = {}
+
+        candidate.runtime_properties['execution_time'] = time.time() - time_start_gs
+        candidate.runtime_properties['global_time'] = time.time() - self.global_starting_time
         result['candidate'] = candidate
-        result['execution_time'] = time.time() - time_start_gs
-        result['global_time'] = time.time() - self.global_starting_time
         return result
 
 

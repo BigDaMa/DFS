@@ -393,11 +393,6 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             #calculate whether we drop the evaluated candidate
             for result in results:
                 candidate: CandidateFeature = result['candidate']
-                candidate.runtime_properties['score'] = result['score']
-                candidate.runtime_properties['test_score'] = result['test_score']
-                candidate.runtime_properties['execution_time'] = result['execution_time']
-                candidate.runtime_properties['global_time'] = result['global_time']
-                candidate.runtime_properties['hyperparameters'] = result['hyperparameters']
                 candidate.runtime_properties['layer_end_time'] = layer_end_time
 
                 #print(str(candidate) + " -> " + str(candidate.score))
@@ -410,15 +405,11 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 if not isinstance(candidate, RawFeature):
                     original_score = max([p.runtime_properties['score'] for p in candidate.parents])
 
-                accuracy_delta = result['score'] - original_score
+                accuracy_delta = candidate.runtime_properties['score'] - original_score
 
                 if accuracy_delta / self.complexity_delta > self.epsilon:
                     self.name_to_train_transformed[str(candidate)] = result['train_transformed']
                     self.name_to_test_transformed[str(candidate)] = result['test_transformed']
-
-                    #derive properties
-                    if not isinstance(candidate, RawFeature):
-                        candidate.derive_properties(result['train_transformed'][0])
 
                     if Config.get_default('score.test', 'False') == 'True':
                         self.name_to_training_all[str(candidate)] = result['training_all']
@@ -485,17 +476,17 @@ if __name__ == '__main__':
 
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
-    dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
+    #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
     #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
-    dataset = (Config.get('data_path') + '/wine.data', 0)
+    #dataset = (Config.get('data_path') + '/wine.data', 0)
 
     start = time.time()
 

@@ -92,7 +92,7 @@ class CachedEvaluationFramework(EvaluationFramework):
             test_score = f1_score(self.test_target, y_pred, average='micro')
 
 
-        return best_mean_cross_val_score, test_score, best_param
+        return best_mean_cross_val_score, test_score, best_param, y_pred
 
 
 
@@ -147,18 +147,26 @@ class CachedEvaluationFramework(EvaluationFramework):
                 training_all = candidate.transformation.transform(training_all_input)
                 one_test_set_transformed = candidate.transformation.transform(one_test_set_transformed_input)
 
-        result['score'], result['test_score'], result['hyperparameters'] = self.grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed)
+        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred = self.grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed)
+
+        if Config.get_default('store.predictions', 'False') == 'True':
+            candidate.runtime_properties['predictions'] = y_pred
 
         if not isinstance(candidate, RawFeature):
             #only save the transformed data if we need it in the future
             max_parent = np.max([p.runtime_properties['score'] for p in candidate.parents])
-            accuracy_delta = result['score'] - max_parent
+            accuracy_delta = candidate.runtime_properties['score'] - max_parent
             if accuracy_delta / self.complexity_delta > self.epsilon:
+
                 result['train_transformed'] = train_transformed
                 result['test_transformed'] = test_transformed
 
                 result['training_all'] = training_all
                 result['one_test_set_transformed'] = one_test_set_transformed
+
+                # derive properties
+                if not isinstance(candidate, RawFeature):
+                    candidate.derive_properties(result['train_transformed'][0])
 
 
         return result
