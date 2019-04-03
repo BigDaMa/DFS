@@ -11,14 +11,14 @@ import matplotlib.pyplot as plt
 #path = '/home/felix/phd/fastfeatures/results/11_03_incremental_construction'
 #path = '/home/felix/phd/fastfeatures/results/12_03_incremental_03_threshold'
 #path = '/home/felix/phd/fastfeatures/results/12_03_incremental_02_threshold'
-#path = '/tmp'
+path = '/tmp'
 #path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion'
 #path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion_node1'
 #path = '/home/felix/phd/fastfeatures/results/16_03_test_transfusion_me'
 #path = '/home/felix/phd/fastfeatures/results/18_03_banknote'
 #path = '/home/felix/phd/fastfeatures/results/18_03_iris'
 #path = '/home/felix/phd/fastfeatures/results/20_03_transfusion'
-path = '/home/felix/phd/fastfeatures/results/1_4_german_credit'
+#path = '/home/felix/phd/fastfeatures/results/1_4_german_credit'
 
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
@@ -70,7 +70,7 @@ def getSimplicityScore(current: CandidateFeature, complexity):
     count_all = 0
 
     for c in range(1, complexity + 1):
-        if c >= current.get_number_of_transformations():
+        if c >= current.get_complexity():
             count_greater_or_equal_v += len(cost_2_raw_features[c])
             count_greater_or_equal_v += len(cost_2_unary_transformed[c])
             count_greater_or_equal_v += len(cost_2_binary_transformed[c])
@@ -111,7 +111,8 @@ binary_dropped = {}
 combination_dropped = {}
 
 #sort dropped by type:
-for cost in range(1,8):
+cost = 1
+while True:
     unary_dropped[cost] = []
     combination_dropped[cost] = []
     raw_dropped[cost] = []
@@ -155,12 +156,22 @@ for cost in range(1,8):
     print("From " + str(len(cost_2_unary_transformed[cost]) + len(unary_dropped[cost])) + " Unary Candidates " + str(len(unary_dropped[cost])) + "  dropped")
     print("From " + str(len(cost_2_binary_transformed[cost]) + len(binary_dropped[cost])) + " Binary Candidates " + str(len(binary_dropped[cost])) + " dropped")
     print("From " + str(len(cost_2_combination[cost]) + len(combination_dropped[cost])) + " Combination Candidates " + str(len(combination_dropped[cost])) + " dropped")
+    cost += 1
+
+    if not cost in cost_2_raw_features and \
+       not cost in cost_2_unary_transformed and \
+       not cost in cost_2_binary_transformed and \
+       not cost in cost_2_combination:
+        break
 
 print("\n")
 
 best_pro_cost = {}
 
-for c in range(1, 8):
+best_pro_cost_real = {}
+
+c = 1
+while True:
     best_candidate = cost_2_raw_features[1][0]
 
     best_candidate = get_max_candidate(cost_2_raw_features, c, best_candidate)
@@ -169,6 +180,13 @@ for c in range(1, 8):
     best_candidate = get_max_candidate(cost_2_combination, c, best_candidate)
 
     best_pro_cost[c] = copy.deepcopy(best_candidate)
+    if (c-1) in best_pro_cost_real and best_pro_cost_real[c-1].runtime_properties['score'] >= best_pro_cost[c].runtime_properties['score']:
+        best_pro_cost_real[c] = copy.deepcopy(best_pro_cost_real[c-1])
+    else:
+        best_pro_cost_real[c] = best_pro_cost[c]
+
+    best_candidate = best_pro_cost_real[c]
+
 
     #print(best_candidate.runtime_properties)
     print("\ncomplexity: " + str(c) + " " + \
@@ -179,10 +197,48 @@ for c in range(1, 8):
           " real time: " + str(best_candidate.runtime_properties['global_time'])
           )
 
+    '''
+    acc_score = getAccuracyScore(best_pro_cost[c], c)
+    simplicity_score = getSimplicityScore(best_pro_cost[c], c)
 
-plot_accuracy_histogram(4, 'yellow')
-plot_accuracy_histogram(3, 'green')
-plot_accuracy_histogram(2, 'red')
-plot_accuracy_histogram(1, 'blue')
+    print("acc: " + str(acc_score))
+    print("simplicity: " + str(simplicity_score))
+    print("Harmonic mean: " + str(harmonic_mean(simplicity_score, acc_score)))
+    '''
 
-plt.show()
+    c += 1
+    if not c in cost_2_raw_features and \
+       not c in cost_2_unary_transformed and \
+       not c in cost_2_binary_transformed and \
+       not c in cost_2_combination:
+        break
+
+
+print("\n\n\n")
+
+c = 1
+while True:
+    print("Complexity: " + str(c))
+    print("------------------------------------------------------")
+    for i in range(1, c+1):
+        acc_score = getAccuracyScore(best_pro_cost_real[i], c)
+        simplicity_score = getSimplicityScore(best_pro_cost_real[i], c)
+
+        print('candidate:' + str(best_pro_cost_real[i]))
+        print("acc: " + str(acc_score))
+        print("simplicity: " + str(simplicity_score))
+        print("harmonic mean: " + str(harmonic_mean(simplicity_score, acc_score)))
+        print("\n")
+
+    print("\n\n\n")
+
+    c += 1
+    if not c in cost_2_raw_features and \
+            not c in cost_2_unary_transformed and \
+            not c in cost_2_binary_transformed and \
+            not c in cost_2_combination:
+        break
+
+
+
+
