@@ -7,18 +7,11 @@ from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransfor
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 from fastsklearnfeature.candidates.RawFeature import RawFeature
 import matplotlib.pyplot as plt
+import numpy as np
 
-#path = '/home/felix/phd/fastfeatures/results/11_03_incremental_construction'
-#path = '/home/felix/phd/fastfeatures/results/12_03_incremental_03_threshold'
-#path = '/home/felix/phd/fastfeatures/results/12_03_incremental_02_threshold'
-path = '/tmp'
-#path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion'
-#path = '/home/felix/phd/fastfeatures/results/15_03_timed_transfusion_node1'
-#path = '/home/felix/phd/fastfeatures/results/16_03_test_transfusion_me'
-#path = '/home/felix/phd/fastfeatures/results/18_03_banknote'
-#path = '/home/felix/phd/fastfeatures/results/18_03_iris'
-#path = '/home/felix/phd/fastfeatures/results/20_03_transfusion'
+#path = '/tmp'
 #path = '/home/felix/phd/fastfeatures/results/1_4_german_credit'
+path = '/home/felix/phd/fastfeatures/results/2_4_transfusion_with_predictions'
 
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
@@ -38,23 +31,54 @@ def get_max_candidate(candidates: Dict[int, List[CandidateFeature]], complexity,
     return new_best_candidate
 
 
-def count_smaller_or_equal(candidates: List[CandidateFeature], current_candidate: CandidateFeature):
+def count_smaller_or_equal(candidates: List[CandidateFeature], current_score):
     count_smaller_or_equal = 0
     for c in candidates:
-        if c.runtime_properties['score'] <= current_candidate.runtime_properties['score']:
+        if c.runtime_properties['score'] <= current_score:
             count_smaller_or_equal += 1
     return count_smaller_or_equal
 
 
+def extract_accuracy(my_list: Dict[int, List[CandidateFeature]]):
+    accuracy_list: List[float] = []
+    for k,v in my_list.items():
+        accuracy_list.extend([rep.runtime_properties['score'] for rep in v])
+    return accuracy_list
+
+def get_all_accuracy():
+    accuracy_list: List[float] = []
+
+    accuracy_list.extend(extract_accuracy(cost_2_raw_features))
+    accuracy_list.extend(extract_accuracy(cost_2_unary_transformed))
+    accuracy_list.extend(extract_accuracy(cost_2_binary_transformed))
+    accuracy_list.extend(extract_accuracy(cost_2_combination))
+    return accuracy_list
+
+def extract_complexity(my_list: Dict[int, List[CandidateFeature]]):
+    accuracy_list: List[float] = []
+    for k,v in my_list.items():
+        accuracy_list.extend([rep.get_complexity() for rep in v])
+    return accuracy_list
+
+def get_all_complexity():
+    accuracy_list: List[float] = []
+
+    accuracy_list.extend(extract_complexity(cost_2_raw_features))
+    accuracy_list.extend(extract_complexity(cost_2_unary_transformed))
+    accuracy_list.extend(extract_complexity(cost_2_binary_transformed))
+    accuracy_list.extend(extract_complexity(cost_2_combination))
+    return accuracy_list
+
+
 #P(Accuracy <= current) -> 1.0 = highest accuracy
-def getAccuracyScore(current: CandidateFeature, complexity):
+def getAccuracyScore(current_score, complexity):
     count_smaller_or_equal_v = 0
     count_all = 0
     for c in range(1, complexity+1):
-        count_smaller_or_equal_v += count_smaller_or_equal(cost_2_raw_features[c], current)
-        count_smaller_or_equal_v += count_smaller_or_equal(cost_2_unary_transformed[c], current)
-        count_smaller_or_equal_v += count_smaller_or_equal(cost_2_binary_transformed[c], current)
-        count_smaller_or_equal_v += count_smaller_or_equal(cost_2_combination[c], current)
+        count_smaller_or_equal_v += count_smaller_or_equal(cost_2_raw_features[c], current_score)
+        count_smaller_or_equal_v += count_smaller_or_equal(cost_2_unary_transformed[c], current_score)
+        count_smaller_or_equal_v += count_smaller_or_equal(cost_2_binary_transformed[c], current_score)
+        count_smaller_or_equal_v += count_smaller_or_equal(cost_2_combination[c], current_score)
 
         count_all += len(cost_2_raw_features[c])
         count_all += len(cost_2_unary_transformed[c])
@@ -65,12 +89,12 @@ def getAccuracyScore(current: CandidateFeature, complexity):
     return count_smaller_or_equal_v / float(count_all)
 
 #P(Complexity >= current) -> 1.0 = lowest complexity
-def getSimplicityScore(current: CandidateFeature, complexity):
+def getSimplicityScore(current_complexity, complexity):
     count_greater_or_equal_v = 0
     count_all = 0
 
     for c in range(1, complexity + 1):
-        if c >= current.get_complexity():
+        if c >= current_complexity:
             count_greater_or_equal_v += len(cost_2_raw_features[c])
             count_greater_or_equal_v += len(cost_2_unary_transformed[c])
             count_greater_or_equal_v += len(cost_2_binary_transformed[c])
@@ -218,16 +242,25 @@ print("\n\n\n")
 
 c = 1
 while True:
+    best_harmonic_mean = -1
+    best_harmonic_rep = None
+
     print("Complexity: " + str(c))
     print("------------------------------------------------------")
     for i in range(1, c+1):
-        acc_score = getAccuracyScore(best_pro_cost_real[i], c)
-        simplicity_score = getSimplicityScore(best_pro_cost_real[i], c)
+        acc_score = getAccuracyScore(best_pro_cost_real[i].runtime_properties['score'], c)
+        #acc_score = best_pro_cost_real[i].runtime_properties['score']
+        simplicity_score = getSimplicityScore(best_pro_cost_real[i].get_complexity(), c)
+
+        h = harmonic_mean(simplicity_score, acc_score)
+        if h > best_harmonic_mean:
+            best_harmonic_mean = h
+            best_harmonic_rep = best_pro_cost_real[i]
 
         print('candidate:' + str(best_pro_cost_real[i]))
         print("acc: " + str(acc_score))
         print("simplicity: " + str(simplicity_score))
-        print("harmonic mean: " + str(harmonic_mean(simplicity_score, acc_score)))
+        print("harmonic mean: " + str(h))
         print("\n")
 
     print("\n\n\n")
@@ -240,5 +273,50 @@ while True:
         break
 
 
+print("Best harmonic representation: " + str(best_harmonic_rep))
+
+# plot distributions
+last_c = c -1
+
+acc_range = np.arange(0.01, 1.0, 0.01)
+acc_score = [getAccuracyScore(score, last_c) for score in acc_range]
 
 
+plt.suptitle('Harmonic mean: ' + str(best_harmonic_rep))
+plt.subplot(2, 2, 1)
+plt.plot(acc_range, acc_score)
+plt.axvline(x=best_harmonic_rep.runtime_properties['score'], color='red')
+plt.xlabel('Accuracy(F1)')
+plt.ylabel('Accuracy Score: P(Accuracy <= x)')
+plt.xlim((0.0, 1.0))
+
+complexity_range = np.arange(1, c+1, 1)
+simplicity_score = [getSimplicityScore(complexity, last_c) for complexity in complexity_range]
+plt.subplot(2, 2, 2)
+plt.plot(complexity_range*-1, simplicity_score)
+plt.axvline(x=best_harmonic_rep.get_complexity()*-1, color='red')
+plt.xlabel('-1 * Complexity')
+plt.ylabel('Simplicity Score: P(Complexity >= x)')
+plt.xlim((-6, -1))
+
+
+plt.subplot(2, 2, 3)
+plt.hist(get_all_accuracy(), 50, density=True, facecolor='g', alpha=0.75)
+plt.xlabel('F1')
+plt.ylabel('Count')
+plt.title('Histogram of Accuracy')
+plt.grid(True)
+plt.xlim((0.0, 1.0))
+plt.axvline(x=best_harmonic_rep.runtime_properties['score'], color='red')
+
+
+
+plt.subplot(2, 2, 4)
+plt.hist(np.array(get_all_complexity())*-1, 50, density=True, facecolor='g', alpha=0.75)
+plt.xlabel('Complexity')
+plt.ylabel('Count')
+plt.title('Histogram of Complexity')
+plt.grid(True)
+plt.axvline(x=best_harmonic_rep.get_complexity()*-1, color='red')
+plt.xlim((-6, -1))
+plt.show()

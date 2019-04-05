@@ -91,6 +91,8 @@ class CachedEvaluationFramework(EvaluationFramework):
 
             test_score = f1_score(self.test_target, y_pred, average='micro')
 
+            #np.save('/tmp/true_predictions', self.test_target)
+
 
         return best_mean_cross_val_score, test_score, best_param, y_pred
 
