@@ -19,6 +19,7 @@ import warnings
 from fastsklearnfeature.instance_selection.instance_selection_cnn import sample_data_by_cnn
 import copy
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
+import tqdm
 
 
 class EvaluationFramework:
@@ -116,8 +117,13 @@ class EvaluationFramework:
 
 
     def evaluate_candidates(self, candidates):
+        #pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
+        #results = pool.map(self.evaluate_single_candidate, candidates)
+        results = []
         pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
-        results = pool.map(self.evaluate_single_candidate, candidates)
+        for x in tqdm.tqdm(pool.imap_unordered(self.evaluate_single_candidate, candidates), total=len(candidates)):
+            results.append(x)
+
         return results
 
 
