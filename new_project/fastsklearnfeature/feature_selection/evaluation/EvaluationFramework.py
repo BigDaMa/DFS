@@ -117,12 +117,14 @@ class EvaluationFramework:
 
 
     def evaluate_candidates(self, candidates):
-        #pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
-        #results = pool.map(self.evaluate_single_candidate, candidates)
+        pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
+        results = pool.map(self.evaluate_single_candidate, candidates)
+        '''
         results = []
         pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
         for x in tqdm.tqdm(pool.imap_unordered(self.evaluate_single_candidate, candidates), total=len(candidates)):
             results.append(x)
+        '''
 
         return results
 
