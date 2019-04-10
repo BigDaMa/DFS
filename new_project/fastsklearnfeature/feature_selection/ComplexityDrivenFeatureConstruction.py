@@ -19,8 +19,8 @@ import sympy
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import r2_score
+from sklearn.metrics.scorer import r2_scorer
+from sklearn.metrics.scorer import neg_mean_squared_error_scorer
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -264,7 +264,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         cost_2_binary_transformed: Dict[int, List[CandidateFeature]] = {}
         cost_2_combination: Dict[int, List[CandidateFeature]] = {}
 
-        cost_2_dropped_evaluated_candidates: Dict[int, List[CandidateFeature]] = {}
+        if self.save_logs:
+            cost_2_dropped_evaluated_candidates: Dict[int, List[CandidateFeature]] = {}
 
         self.complexity_delta = 1.0
 
@@ -441,16 +442,30 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                             cost_2_binary_transformed[c]: List[CandidateFeature] = []
                         cost_2_binary_transformed[c].append(candidate)
                 else:
-                    if not c in cost_2_dropped_evaluated_candidates:
-                        cost_2_dropped_evaluated_candidates[c]: List[CandidateFeature] = []
-                    cost_2_dropped_evaluated_candidates[c].append(candidate)
+                    if self.save_logs:
+                        if not c in cost_2_dropped_evaluated_candidates:
+                            cost_2_dropped_evaluated_candidates[c]: List[CandidateFeature] = []
+                        cost_2_dropped_evaluated_candidates[c].append(candidate)
             
 
 
-            if c in cost_2_dropped_evaluated_candidates:
-                print("Of " + str(len(current_layer)) + " candidate representations, " + str(len(cost_2_dropped_evaluated_candidates[c])) + " did not satisfy the epsilon threshold.")
-            else:
-                print("Of " + str(len(current_layer)) + " candidate representations, all satisfied the epsilon threshold.")
+            satisfied_count = 0
+            if c in cost_2_raw_features:
+                satisfied_count += len(cost_2_raw_features[c])
+            if c in cost_2_unary_transformed:
+                satisfied_count += len(cost_2_unary_transformed[c])
+            if c in cost_2_binary_transformed:
+                satisfied_count += len(cost_2_binary_transformed[c])
+            if c in cost_2_combination:
+                satisfied_count += len(cost_2_combination[c])
+
+            all_count = len(current_layer)
+            if c == 1:
+                all_count = len(cost_2_raw_features[c])
+
+
+            print("Of " + str(all_count) + " candidate representations, " + str(satisfied_count) + " did satisfy the epsilon threshold.")
+
 
             if len(current_layer) > 0:
                 if Config.get_default('score.test', 'False') == 'True':
@@ -508,13 +523,23 @@ if __name__ == '__main__':
     start = time.time()
 
 
+    '''
     selector = ComplexityDrivenFeatureConstruction(dataset,
                                                    classifier=LinearRegression,
                                                    grid_search_parameters={'fit_intercept': [True, False],
                                                                            'normalize': [True, False]},
-                                                   score=make_scorer(r2_score, greater_is_better=True),
+                                                   score=r2_scorer,
                                                    c_max=5,
-                                                   save_logs=True)  # ,transformation_producer=get_transformation_for_cat_feature_space)
+                                                   save_logs=True)
+    '''
+
+    selector = ComplexityDrivenFeatureConstruction(dataset,
+                                                   classifier=LinearRegression,
+                                                   grid_search_parameters={'fit_intercept': [True, False],
+                                                                           'normalize': [True, False]},
+                                                   score=r2_scorer,
+                                                   c_max=5,
+                                                   save_logs=True)
 
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)

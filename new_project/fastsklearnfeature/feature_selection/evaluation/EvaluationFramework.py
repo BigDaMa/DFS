@@ -124,7 +124,6 @@ class EvaluationFramework:
         return result
 
 
-
     def evaluate_candidates(self, candidates):
         pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
         if Config.get_default("show_progess", 'True') == 'True':
@@ -143,11 +142,8 @@ class EvaluationFramework:
         for c in candidates:
             results.append(self.evaluate_single_candidate(c))
         return results
+
     '''
-
-
-
-
 
 
 
@@ -180,6 +176,7 @@ class EvaluationFramework:
         result['global_time'] = time.time() - self.global_starting_time
         return result
     '''
+
 
 
 

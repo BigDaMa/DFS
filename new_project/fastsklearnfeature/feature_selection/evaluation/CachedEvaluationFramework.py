@@ -93,7 +93,7 @@ class CachedEvaluationFramework(EvaluationFramework):
                 hyperparam_to_score_list[parameter_set].append(self.score._sign * self.score._score_func(self.target_test_folds[fold], y_pred, **self.score._kwargs))
 
         best_param = None
-        best_mean_cross_val_score = -1
+        best_mean_cross_val_score = -float("inf")
         for parameter_config, score_list in hyperparam_to_score_list.items():
             mean_score = np.mean(score_list)
             if mean_score > best_mean_cross_val_score:
@@ -189,21 +189,6 @@ class CachedEvaluationFramework(EvaluationFramework):
 
 
         return result
-
-
-    '''
-    def evaluate_single_candidate(self, candidate):
-        result = {}
-        time_start_gs = time.time()
-        result = self.evaluate(candidate)
-        #print("feature: " + str(candidate) + " -> " + str(new_score))
-
-        result['candidate'] = candidate
-        result['execution_time'] = time.time() - time_start_gs
-        result['global_time'] = time.time() - self.global_starting_time
-        return result
-    '''
-
 
 
 
