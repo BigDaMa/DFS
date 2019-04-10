@@ -37,7 +37,6 @@ class CachedEvaluationFramework(EvaluationFramework):
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
 
-
         if isinstance(self.classifier(), ClassifierMixin):
             label_encoder = LabelEncoder()
             label_encoder.fit(current_target)
