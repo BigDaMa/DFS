@@ -20,6 +20,7 @@ from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -509,7 +510,7 @@ if __name__ == '__main__':
                                                    classifier=LinearRegression,
                                                    grid_search_parameters={'fit_intercept': [True, False],
                                                                            'normalize': [True, False]},
-                                                   score=make_scorer(mean_squared_error),
+                                                   score=make_scorer(r2_score),
                                                    c_max=5,
                                                    save_logs=True)  # ,transformation_producer=get_transformation_for_cat_feature_space)
 
