@@ -47,12 +47,14 @@ class Reader:
 
 
 if __name__ == '__main__':
-    from fastfeature.splitting.Splitter import Splitter
+    from fastsklearnfeature.splitting.RandomSplitter import RandomSplitter
+    from fastsklearnfeature.configuration.Config import Config
 
-    s = Splitter()
+    s = RandomSplitter()
 
-    dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_53_heart-statlog_heart.csv", 13)
+    dataset = (Config.get('data_path') + '/house_price.csv', 79)
     r = Reader(dataset[0], dataset[1], s)
     r.read()
 
-    print(str(r.raw_features))
+    for rf in r.raw_features:
+        print(str(rf) + ": " + str(rf.properties))

@@ -245,6 +245,68 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         self.name_to_train_transformed[str(candidate)] = train_transformed
         self.name_to_test_transformed[str(candidate)] = test_transformed
 
+    def count_smaller_or_equal(self, candidates: List[CandidateFeature], current_score):
+        count_smaller_or_equal = 0
+        for c in candidates:
+            if c.runtime_properties['score'] <= current_score:
+                count_smaller_or_equal += 1
+        return count_smaller_or_equal
+
+    # P(Accuracy <= current) -> 1.0 = highest accuracy
+    def getAccuracyScore(self, current_score, complexity, cost_2_raw_features, cost_2_unary_transformed, cost_2_binary_transformed, cost_2_combination):
+        count_smaller_or_equal_v = 0
+        count_all = 0
+        for c in range(1, complexity + 1):
+            if c in cost_2_raw_features:
+                count_smaller_or_equal_v += self.count_smaller_or_equal(cost_2_raw_features[c], current_score)
+            if c in cost_2_unary_transformed:
+                count_smaller_or_equal_v += self.count_smaller_or_equal(cost_2_unary_transformed[c], current_score)
+            if c in cost_2_binary_transformed:
+                count_smaller_or_equal_v += self.count_smaller_or_equal(cost_2_binary_transformed[c], current_score)
+            if c in cost_2_combination:
+                count_smaller_or_equal_v += self.count_smaller_or_equal(cost_2_combination[c], current_score)
+
+            if c in cost_2_raw_features:
+                count_all += len(cost_2_raw_features[c])
+            if c in cost_2_unary_transformed:
+                count_all += len(cost_2_unary_transformed[c])
+            if c in cost_2_binary_transformed:
+                count_all += len(cost_2_binary_transformed[c])
+            if c in cost_2_combination:
+                count_all += len(cost_2_combination[c])
+
+        return count_smaller_or_equal_v / float(count_all)
+
+    # P(Complexity >= current) -> 1.0 = lowest complexity
+    def getSimplicityScore(self, current_complexity, complexity, cost_2_raw_features, cost_2_unary_transformed, cost_2_binary_transformed, cost_2_combination):
+        count_greater_or_equal_v = 0
+        count_all = 0
+
+        for c in range(1, complexity + 1):
+            if c >= current_complexity:
+                if c in cost_2_raw_features:
+                    count_greater_or_equal_v += len(cost_2_raw_features[c])
+                if c in cost_2_unary_transformed:
+                    count_greater_or_equal_v += len(cost_2_unary_transformed[c])
+                if c in cost_2_binary_transformed:
+                    count_greater_or_equal_v += len(cost_2_binary_transformed[c])
+                if c in cost_2_combination:
+                    count_greater_or_equal_v += len(cost_2_combination[c])
+
+            if c in cost_2_raw_features:
+                count_all += len(cost_2_raw_features[c])
+            if c in cost_2_unary_transformed:
+                count_all += len(cost_2_unary_transformed[c])
+            if c in cost_2_binary_transformed:
+                count_all += len(cost_2_binary_transformed[c])
+            if c in cost_2_combination:
+                count_all += len(cost_2_combination[c])
+
+        return count_greater_or_equal_v / float(count_all)
+
+    def harmonic_mean(self, complexity, accuracy):
+        return (2 * complexity * accuracy) / (complexity + accuracy)
+
 
     def run(self):
 
@@ -269,7 +331,6 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
         self.complexity_delta = 1.0
 
-        limit_runs = self.c_max + 1  # 5
         unique_raw_combinations = False
 
 
@@ -280,23 +341,29 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
         max_feature.runtime_properties['score'] = -float("inf")
 
+        max_feature_per_complexity: Dict[int, CandidateFeature] = {}
+
         all_evaluated_features = set()
 
-        for c in range(1, limit_runs):
+        c = 1
+        while(True):
             current_layer: List[CandidateFeature] = []
 
             #0th
             if c == 1:
                 cost_2_raw_features[c]: List[CandidateFeature] = []
+                #print(self.raw_features)
                 for raw_f in self.raw_features:
                     sympy_representation = sympy.Symbol('X' + str(raw_f.column_id))
                     raw_f.sympy_representation = sympy_representation
                     all_evaluated_features.add(sympy_representation)
                     if raw_f.is_numeric():
                         current_layer.append(raw_f)
+                        #print("numeric: " + str(raw_f))
                     else:
                         raw_f.runtime_properties['score'] = 0.0
                         cost_2_raw_features[c].append(raw_f)
+                        #print("nonnumeric: " + str(raw_f))
 
                     self.materialize_raw_features(raw_f)
                     raw_f.derive_properties(self.name_to_train_transformed[str(raw_f)][0])
@@ -403,7 +470,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 candidate: CandidateFeature = result['candidate']
                 candidate.runtime_properties['layer_end_time'] = layer_end_time
 
-                #print(str(candidate) + " -> " + str(candidate.score))
+                #print(str(candidate) + " -> " + str(candidate.runtime_properties['score']))
 
 
                 if candidate.runtime_properties['score'] > max_feature.runtime_properties['score']:
@@ -483,9 +550,36 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"))
                 pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"))
 
-            #print(all_evaluated_features)
+            max_feature_per_complexity[c] = max_feature
+
+
+            if type(self.c_max) == type(None) and c > 1:
+                # calculate harmonic mean
+                simplicity_cum_score_now = self.getSimplicityScore(max_feature_per_complexity[c].get_complexity(), c, cost_2_raw_features, cost_2_unary_transformed,
+                                   cost_2_binary_transformed, cost_2_combination)
+                accuracy_cum_score_now = self.getAccuracyScore(max_feature_per_complexity[c].runtime_properties['score'], c, cost_2_raw_features, cost_2_unary_transformed, cost_2_binary_transformed, cost_2_combination)
+
+                simplicity_cum_score_last = self.getSimplicityScore(max_feature_per_complexity[c-1].get_complexity(), c,
+                                                                   cost_2_raw_features, cost_2_unary_transformed,
+                                                                   cost_2_binary_transformed, cost_2_combination)
+                accuracy_cum_score_last = self.getAccuracyScore(max_feature_per_complexity[c-1].runtime_properties['score'], c,
+                                                               cost_2_raw_features, cost_2_unary_transformed,
+                                                               cost_2_binary_transformed, cost_2_combination)
+
+                harmonic_mean_score_now = self.harmonic_mean(simplicity_cum_score_now, accuracy_cum_score_now)
+                harmonic_mean_score_last = self.harmonic_mean(simplicity_cum_score_last, accuracy_cum_score_last)
+
+                if max_feature_per_complexity[c-1] != max_feature_per_complexity[c] and harmonic_mean_score_now < harmonic_mean_score_last:
+                    print("Best Harmonic Mean: " + str(max_feature_per_complexity[c-1]))
+                    break
+
 
             if type(self.max_timestamp) != type(None) and time.time() >= self.max_timestamp:
+                break
+
+            c += 1
+
+            if type(self.c_max) != type(None) and self.c_max < c:
                 break
 
 
@@ -505,7 +599,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
     #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
-    #dataset = (Config.get('data_path') + '/iris.data', 4)
+    dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
@@ -514,7 +608,7 @@ if __name__ == '__main__':
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    dataset = (Config.get('data_path') + '/house_price.csv', 79)
+    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
 
 
 
@@ -533,6 +627,7 @@ if __name__ == '__main__':
                                                    save_logs=True)
     '''
 
+    '''
     selector = ComplexityDrivenFeatureConstruction(dataset,
                                                    classifier=LinearRegression,
                                                    grid_search_parameters={'fit_intercept': [True, False],
@@ -540,9 +635,10 @@ if __name__ == '__main__':
                                                    score=r2_scorer,
                                                    c_max=5,
                                                    save_logs=True)
+    '''
 
 
-    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=None, folds=10, max_seconds=None, save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
