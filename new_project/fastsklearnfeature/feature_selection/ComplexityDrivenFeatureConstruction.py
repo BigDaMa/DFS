@@ -277,7 +277,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
-        max_feature.runtime_properties['score'] = -2
+        max_feature.runtime_properties['score'] = -float("inf")
 
         all_evaluated_features = set()
 
@@ -404,8 +404,10 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
                 #print(str(candidate) + " -> " + str(candidate.score))
 
+
                 if candidate.runtime_properties['score'] > max_feature.runtime_properties['score']:
                     max_feature = candidate
+
 
                 #calculate original score
                 original_score = baseline_score #or zero??
@@ -510,7 +512,7 @@ if __name__ == '__main__':
                                                    classifier=LinearRegression,
                                                    grid_search_parameters={'fit_intercept': [True, False],
                                                                            'normalize': [True, False]},
-                                                   score=make_scorer(r2_score),
+                                                   score=make_scorer(r2_score, greater_is_better=True),
                                                    c_max=5,
                                                    save_logs=True)  # ,transformation_producer=get_transformation_for_cat_feature_space)
 
