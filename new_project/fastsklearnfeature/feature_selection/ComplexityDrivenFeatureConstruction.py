@@ -11,11 +11,15 @@ from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 import copy
-from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
+from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 import sympy
+from sklearn.metrics import make_scorer
+from sklearn.metrics import f1_score
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -32,10 +36,11 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                                                                                                 'max_iter': [10000],
                                                                                                 'multi_class':['auto']
                                                                                                 },
-                 transformation_producer=get_transformation_for_feature_space,
+                 transformation_producer=get_transformation_for_cat_feature_space,
                  epsilon=0.0,
                  c_max=2,
                  folds=10,
+                 score=make_scorer(f1_score, average='micro'),
                  max_seconds=None,
                  save_logs=False
                  ):
@@ -44,6 +49,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         self.epsilon = epsilon
         self.c_max = c_max
         self.folds = folds
+        self.score = score
         self.save_logs = save_logs
 
         self.name_to_train_transformed = {}
@@ -479,24 +485,37 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
+
+    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
+
+
 
 
 
     start = time.time()
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
+    
+    selector = ComplexityDrivenFeatureConstruction(dataset,
+                                                   classifier=LinearRegression,
+                                                   grid_search_parameters={'fit_intercept': [True, False],
+                                                                           'normalize': [True, False]},
+                                                   score=make_scorer(mean_squared_error),
+                                                   c_max=5,
+                                                   save_logs=True)  # ,transformation_producer=get_transformation_for_cat_feature_space)
 
-    from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
+
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
+
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
 

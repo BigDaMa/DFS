@@ -6,13 +6,17 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 from fastsklearnfeature.configuration.Config import Config
 import itertools
+import sympy
 
-from fastsklearnfeature.transformations.GroupByThenTransformation import GroupByThenTransformation
 from fastsklearnfeature.transformations.PandasDiscretizerTransformation import PandasDiscretizerTransformation
 from fastsklearnfeature.transformations.binary.NonCommutativeBinaryTransformation import NonCommutativeBinaryTransformation
 from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
+from fastsklearnfeature.transformations.FastGroupByThenTransformation import FastGroupByThenTransformation
 
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
+
+from fastsklearnfeature.transformations.generators.GroupByThenGenerator import groupbythenmin
+from fastsklearnfeature.transformations.generators.NumpyBinaryClassGenerator import sympy_divide
 
 
 class ExploreKitSelection_iterative_search(EvaluationFramework):
@@ -187,6 +191,36 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
         all_f = CandidateFeature(IdentityTransformation(len(sisso_features)), sisso_features)
         return [all_f]
 
+    def nested(self, name2feature):
+        nested_features = []
+        nested_features.append(name2feature["chest"])
+        nested_features.append(CandidateFeature(IdentityTransformation(2), [name2feature["exercise_induced_angina"], name2feature["number_of_major_vessels"]]))
+        nested_features.append(CandidateFeature(IdentityTransformation(3), [name2feature["slope"], name2feature["chest"],
+                                                                            name2feature["number_of_major_vessels"]]))
+        nested_features.append(
+            CandidateFeature(IdentityTransformation(3), [name2feature["slope"], name2feature["chest"], name2feature["resting_electrocardiographic_results"],
+                                                         name2feature["number_of_major_vessels"]]))
+
+        nested_features.append(
+            CandidateFeature(IdentityTransformation(3), [name2feature["sex"], name2feature["chest"],
+                                                         CandidateFeature(HigherOrderCommutativeTransformation(np.nansum, sympy.Add, 2), [name2feature["slope"], name2feature["number_of_major_vessels"]])]))
+        return nested_features
+
+    def nested_transfusion(self, name2feature):
+
+        group_by = CandidateFeature(FastGroupByThenTransformation(np.nanmin, groupbythenmin), [name2feature["Time"], name2feature["Recency"]])
+
+        my_sum = CandidateFeature(HigherOrderCommutativeTransformation(np.nansum, sympy.Add, 2),
+                         [name2feature["Recency"], group_by])
+
+        return [CandidateFeature(NonCommutativeBinaryTransformation(np.divide, sympy_divide), [my_sum, name2feature["Monetary"]])]
+
+
+
+
+
+
+
     def run(self):
         self.global_starting_time = time.time()
 
@@ -206,7 +240,9 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
         #my_list = self.explorekit_heart_features(name2feature)
 
-        my_list = self.sisso_transfusion_features_new(name2feature)
+        #my_list = self.sisso_transfusion_features_new(name2feature)
+        #my_list = self.nested(name2feature)
+        my_list = self.nested_transfusion(name2feature)
 
         results = self.evaluate_candidates(my_list)
 
@@ -224,17 +260,19 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    #dataset = (Config.get('statlog_heart.csv'), int(Config.get('statlog_heart.target')))
-    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
-    #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/phpOJxGL9_indianliver.csv", 10)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
-    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_31_credit-g_german_credit.csv", 20)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
-
-    dataset = (Config.get('transfusion.csv'), 4)
+    # dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
+    # dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
+    # dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
+    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    # dataset = (Config.get('data_path') + '/ILPD.csv', 10)
+    # dataset = (Config.get('data_path') + '/iris.data', 4)
+    # dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
+    # dataset = (Config.get('data_path') + '/ecoli.data', 8)
+    # dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    # dataset = (Config.get('data_path') + '/test_categorical.data', 4)
+    # dataset = ('../configuration/resources/data/transfusion.data', 4)
+    # dataset = (Config.get('data_path') + '/wine.data', 0)
 
     selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})

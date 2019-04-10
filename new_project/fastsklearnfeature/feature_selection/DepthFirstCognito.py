@@ -1,36 +1,61 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
-from typing import List, Set
+from typing import List, Dict, Set
 import time
+from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.linear_model import LogisticRegression
+import pickle
 import multiprocessing as mp
 from fastsklearnfeature.configuration.Config import Config
 import itertools
 from fastsklearnfeature.transformations.Transformation import Transformation
+from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
-from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
+from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
+from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
+import sympy
+
+import warnings
+warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
+#warnings.filterwarnings("ignore", message="Data with input dtype object was converted to float64 by MinMaxScaler.")
+#warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
-
-class ExploreKitSelection_iterative_search(EvaluationFramework):
-    def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
-                                                                                                'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
-                                                                                                'classifier__solver': ['lbfgs'],
-                                                                                                'classifier__class_weight': ['balanced'],
-                                                                                                'classifier__max_iter': [10000],
-                                                                                                'classifier__multi_class':['auto']
+class DepthFirstCognito(CachedEvaluationFramework):
+    def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'penalty': ['l2'],
+                                                                                                'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
+                                                                                                'solver': ['lbfgs'],
+                                                                                                'class_weight': ['balanced'],
+                                                                                                'max_iter': [10000],
+                                                                                                'multi_class':['auto']
                                                                                                 },
-                 transformation_producer=get_transformation_for_feature_space
+                 transformation_producer=get_transformation_for_feature_space,
+                 epsilon=0.0,
+                 c_max=2,
+                 folds=10,
+                 max_seconds=None,
+                 save_logs=False
                  ):
-        self.dataset_config = dataset_config
-        self.classifier = classifier
-        self.grid_search_parameters = grid_search_parameters
-        self.transformation_producer = transformation_producer
+        super(DepthFirstCognito, self).__init__(dataset_config, classifier, grid_search_parameters,
+                                                        transformation_producer)
+        self.epsilon = epsilon
+        self.c_max = c_max
+        self.folds = folds
+        self.save_logs = save_logs
 
+        self.name_to_train_transformed = {}
+        self.name_to_test_transformed = {}
+        self.name_to_training_all = {}
+        self.name_to_one_test_set_transformed = {}
 
+        self.max_timestamp = None
+        if type(max_seconds) != type(None):
+            self.max_timestamp = time.time() + max_seconds
 
-    #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
+        #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
     def partition(self, number):
         answer = set()
         answer.add((number,))
@@ -91,13 +116,19 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
         return list(itertools.chain(*results))
 
 
-    def generate_features(self, transformations: List[Transformation], features: List[CandidateFeature]) -> List[CandidateFeature]:
+    def generate_features(self, transformations: List[Transformation], features: List[CandidateFeature], all_evaluated_features: Set) -> List[CandidateFeature]:
         generated_features: List[CandidateFeature] = []
         for t_i in transformations:
             for f_i in t_i.get_combinations(features):
                 if t_i.is_applicable(f_i):
-                    generated_features.append(CandidateFeature(copy.deepcopy(t_i), f_i)) # do we need a deep copy here?
-                    #if output is multidimensional adapt here
+                    candidate = CandidateFeature(copy.deepcopy(t_i), f_i) # do we need a deep copy here?
+                    sympy_representation = candidate.get_sympy_representation()
+                    if len(sympy_representation.free_symbols) > 0: # if expression is not constant
+                        if not sympy_representation in all_evaluated_features:
+                            all_evaluated_features.add(sympy_representation)
+                            generated_features.append(candidate)
+                        else:
+                            print("skipped: " + str(sympy_representation))
         return generated_features
 
 
@@ -114,21 +145,21 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
     def generate_merge(self, a: List[CandidateFeature], b: List[CandidateFeature], order_matters=False, repetition_allowed=False) -> List[List[CandidateFeature]]:
         # e.g. sum
         if not order_matters and repetition_allowed:
-            return list(itertools.product(*[a, b]))
+            return set([frozenset([x, y]) if x != y else (x, x) for x, y in itertools.product(*[a, b])])
 
         # feature concat, but does not work
         if not order_matters and not repetition_allowed:
-            return [[x, y] for x, y in itertools.product(*[a, b]) if x != y]
+            return set([frozenset([x, y]) for x, y in itertools.product(*[a, b]) if x != y])
 
         if order_matters and repetition_allowed:
             order = set(list(itertools.product(*[a, b])))
             order = order.union(set(list(itertools.product(*[b, a]))))
-            return list(order)
+            return order
 
         # e.g. subtraction
         if order_matters and not repetition_allowed:
-            order = [[x, y] for x, y in itertools.product(*[a, b]) if x != y]
-            order.extend([[x, y] for x, y in itertools.product(*[b, a]) if x != y])
+            order = set([(x, y) for x, y in itertools.product(*[a, b]) if x != y])
+            order = order.union([(x, y) for x, y in itertools.product(*[b, a]) if x != y])
             return order
 
 
@@ -178,6 +209,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
 
     def run(self):
+
         self.global_starting_time = time.time()
 
         # generate all candidates
@@ -185,53 +217,76 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
-        numeric_features = []
-        for r in self.raw_features:
-            if 'float' in str(r.properties['type']) \
-                    or 'int' in str(r.properties['type']) \
-                    or 'bool' in str(r.properties['type']):
-                numeric_features.append(r)
-
-        print(len(numeric_features))
-
-        combo = CandidateFeature(IdentityTransformation(len(numeric_features)), numeric_features)
-
-        results = self.evaluate_candidates([combo])
-
-        print(results)
+        unary_transformations, binary_transformations = self.transformation_producer()
 
 
 
+        cost_2_raw_features: Dict[int, List[CandidateFeature]] = {}
+        cost_2_unary_transformed: Dict[int, List[CandidateFeature]] = {}
+        cost_2_binary_transformed: Dict[int, List[CandidateFeature]] = {}
+        cost_2_combination: Dict[int, List[CandidateFeature]] = {}
+
+        cost_2_dropped_evaluated_candidates: Dict[int, List[CandidateFeature]] = {}
+
+        self.complexity_delta = 1.0
+
+        limit_runs = self.c_max + 1  # 5
+        unique_raw_combinations = False
+
+
+        baseline_score = 0.0#self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
+        #print("baseline: " + str(baseline_score))
+
+
+        max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
+        max_feature.runtime_properties['score'] = -2
+
+        all_evaluated_features = set()
+
+        starting_feature = self.raw_features[np.random.randint(len(self.raw_features))]
+
+        #apply all possible transformations
 
 
 
-#statlog_heart.csv=/home/felix/datasets/ExploreKit/csv/dataset_53_heart-statlog_heart.csv
-#statlog_heart.target=13
+
 
 if __name__ == '__main__':
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
-    # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
+    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
+    #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
+    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
+    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
 
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
-    # dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
+    #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
-    # dataset = (Config.get('data_path') + '/iris.data', 4)
-    # dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
-    # dataset = (Config.get('data_path') + '/ecoli.data', 8)
+    #dataset = (Config.get('data_path') + '/iris.data', 4)
+    #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
+    #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
-    # dataset = (Config.get('data_path') + '/test_categorical.data', 4)
-    # dataset = ('../configuration/resources/data/transfusion.data', 4)
-    #dataset = (Config.get('data_path') + '/wine.data', 0)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
+    #dataset = ('../configuration/resources/data/transfusion.data', 4)
 
-    selector = ExploreKitSelection_iterative_search(dataset)
-    #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
+    start = time.time()
+
+    selector = DepthFirstCognito(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
+
+
+    '''
+    selector = ComplexityDrivenFeatureConstruction(dataset,
+                                         classifier=KNeighborsClassifier,
+                                         grid_search_parameters={'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']},
+                                         c_max=3, save_logs=True)
+    '''
+
+
 
     selector.run()
+
+    print(time.time() - start)
 
 
 

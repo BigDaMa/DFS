@@ -21,7 +21,7 @@ class Reader:
 
 
     def read(self):
-        self.dataframe = pd.read_csv(self.file_name)
+        self.dataframe = pd.read_csv(self.file_name, na_filter=False)
 
         # get target
         self.target_values = self.dataframe[self.dataframe.columns[self.target_column_id]].values

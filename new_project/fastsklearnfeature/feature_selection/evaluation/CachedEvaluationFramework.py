@@ -9,9 +9,12 @@ from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import 
 from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
 import time
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import itertools
+from sklearn.base import ClassifierMixin
+from sklearn.base import RegressorMixin
 
 class hashabledict(dict):
     def __hash__(self):
@@ -34,20 +37,35 @@ class CachedEvaluationFramework(EvaluationFramework):
     def generate_target(self):
         current_target = self.dataset.splitted_target['train']
 
-        label_encoder = LabelEncoder()
-        label_encoder.fit(current_target)
 
-        current_target = label_encoder.transform(current_target)
+        if isinstance(self.classifier(), ClassifierMixin):
+            label_encoder = LabelEncoder()
+            label_encoder.fit(current_target)
 
-        if Config.get_default('score.test', 'False') == 'True':
-            self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
-            self.train_y_all_target = label_encoder.transform(self.train_y_all)
+            current_target = label_encoder.transform(current_target)
+
+            if Config.get_default('score.test', 'False') == 'True':
+                self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
+                self.train_y_all_target = label_encoder.transform(self.train_y_all)
 
 
-        self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=self.folds, random_state=42).split(self.dataset.splitted_values['train'],
-                                                                               current_target):
-            self.preprocessed_folds.append((train, test))
+            self.preprocessed_folds = []
+            for train, test in StratifiedKFold(n_splits=self.folds, random_state=42).split(self.dataset.splitted_values['train'],
+                                                                                   current_target):
+                self.preprocessed_folds.append((train, test))
+        elif isinstance(self.classifier(), RegressorMixin):
+
+            if Config.get_default('score.test', 'False') == 'True':
+                self.test_target = self.dataset.splitted_target['test']
+                self.train_y_all_target = self.train_y_all
+
+            self.preprocessed_folds = []
+            for train, test in KFold(n_splits=self.folds, random_state=42).split(
+                    self.dataset.splitted_values['train'],
+                    current_target):
+                self.preprocessed_folds.append((train, test))
+        else:
+            pass
 
         self.target_train_folds = [None] * self.folds
         self.target_test_folds = [None] * self.folds
@@ -73,7 +91,7 @@ class CachedEvaluationFramework(EvaluationFramework):
                 clf = self.classifier(**parameter_set)
                 clf.fit(train_transformed[fold], self.target_train_folds[fold])
                 y_pred = clf.predict(test_transformed[fold])
-                hyperparam_to_score_list[parameter_set].append(f1_score(self.target_test_folds[fold], y_pred, average='micro'))
+                hyperparam_to_score_list[parameter_set].append(self.score._sign * self.score._score_func(self.target_test_folds[fold], y_pred, **self.score._kwargs))
 
         best_param = None
         best_mean_cross_val_score = -1
@@ -89,8 +107,7 @@ class CachedEvaluationFramework(EvaluationFramework):
             clf = self.classifier(**best_param)
             clf.fit(training_all, self.train_y_all_target)
             y_pred = clf.predict(one_test_set_transformed)
-
-            test_score = f1_score(self.test_target, y_pred, average='micro')
+            test_score = self.score._sign * self.score._score_func(self.test_target, y_pred, **self.score._kwargs)
 
             #np.save('/tmp/true_predictions', self.test_target)
 
@@ -101,7 +118,7 @@ class CachedEvaluationFramework(EvaluationFramework):
 
 
 
-    def evaluate(self, candidate: CandidateFeature, score=make_scorer(f1_score, average='micro')):
+    def evaluate(self, candidate: CandidateFeature):
 
         if type(self.max_timestamp) != type(None) and time.time() >= self.max_timestamp:
             raise RuntimeError('Out of time!')

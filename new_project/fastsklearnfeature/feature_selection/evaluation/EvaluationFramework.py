@@ -2,6 +2,7 @@ from typing import List, Dict, Set
 import numpy as np
 from fastsklearnfeature.reader.Reader import Reader
 from fastsklearnfeature.splitting.Splitter import Splitter
+from fastsklearnfeature.splitting.RandomSplitter import RandomSplitter
 import time
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer
@@ -20,6 +21,8 @@ from fastsklearnfeature.instance_selection.instance_selection_cnn import sample_
 import copy
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import tqdm
+from sklearn.base import ClassifierMixin
+from sklearn.base import RegressorMixin
 
 
 class EvaluationFramework:
@@ -39,7 +42,13 @@ class EvaluationFramework:
 
     #generate all possible combinations of features
     def generate(self):
-        s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
+        s = None
+        if isinstance(self.classifier(), ClassifierMixin):
+            s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
+        elif isinstance(self.classifier(), RegressorMixin):
+            s = RandomSplitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
+        else:
+            pass
 
         self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
         self.raw_features = self.dataset.read()
@@ -83,7 +92,7 @@ class EvaluationFramework:
             self.preprocessed_folds.append((train, test))
 
     #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
-    def evaluate(self, candidate, score=make_scorer(f1_score, average='micro')):
+    def evaluate(self, candidate):
         pipeline = Pipeline([('features', FeatureUnion(
                 [
                     (candidate.get_name(), candidate.pipeline)
@@ -97,7 +106,7 @@ class EvaluationFramework:
         if Config.get_default('score.test', 'False') == 'True' and not Config.get_default('instance.selection', 'False') == 'True':
             refit = True
 
-        clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=score, iid=False, error_score='raise', refit=refit)
+        clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=self.score, iid=False, error_score='raise', refit=refit)
         clf.fit(self.dataset.splitted_values['train'], self.current_target)
         result['score'] = clf.best_score_
         result['hyperparameters'] = clf.best_params_

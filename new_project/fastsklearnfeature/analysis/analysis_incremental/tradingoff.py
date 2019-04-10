@@ -10,8 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #path = '/tmp'
-#path = '/home/felix/phd/fastfeatures/results/1_4_german_credit'
-path = '/home/felix/phd/fastfeatures/results/2_4_transfusion_with_predictions'
+path = '/home/felix/phd/fastfeatures/results/1_4_german_credit'
+#path = '/home/felix/phd/fastfeatures/results/2_4_transfusion_with_predictions'
+#path = '/home/felix/phd/fastfeatures/results/5_4_heart'
 
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
@@ -301,7 +302,7 @@ plt.xlim((-6, -1))
 
 
 plt.subplot(2, 2, 3)
-plt.hist(get_all_accuracy(), 50, density=True, facecolor='g', alpha=0.75)
+plt.hist(get_all_accuracy(), 50, facecolor='g', alpha=0.75)
 plt.xlabel('F1')
 plt.ylabel('Count')
 plt.title('Histogram of Accuracy')
@@ -312,7 +313,7 @@ plt.axvline(x=best_harmonic_rep.runtime_properties['score'], color='red')
 
 
 plt.subplot(2, 2, 4)
-plt.hist(np.array(get_all_complexity())*-1, 50, density=True, facecolor='g', alpha=0.75)
+plt.hist(np.array(get_all_complexity())*-1, 50, facecolor='g', alpha=0.75)
 plt.xlabel('Complexity')
 plt.ylabel('Count')
 plt.title('Histogram of Complexity')
