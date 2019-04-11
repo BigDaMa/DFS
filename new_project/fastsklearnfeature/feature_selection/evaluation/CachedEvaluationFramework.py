@@ -74,7 +74,6 @@ def evaluate(candidate: CandidateFeature, global_starting_time,
     if type(max_timestamp) != type(None) and time.time() >= max_timestamp:
         raise RuntimeError('Out of time!')
 
-    result = {}
     train_transformed = [None] * len(preprocessed_folds)
     test_transformed = [None] * len(preprocessed_folds)
 
@@ -120,12 +119,12 @@ def evaluate(candidate: CandidateFeature, global_starting_time,
     if Config.get_default('store.predictions', 'False') == 'True':
         candidate.runtime_properties['predictions'] = y_pred
 
-    if not isinstance(candidate, RawFeature):
-        #only save the transformed data if we need it in the future
-        max_parent = np.max([p.runtime_properties['score'] for p in candidate.parents])
-        accuracy_delta = candidate.runtime_properties['score'] - max_parent
-        if accuracy_delta / complexity_delta > epsilon:
 
+    #only save the transformed data if we need it in the future
+    candidate.runtime_properties['passed'] = False
+    if isinstance(candidate, RawFeature) or candidate.runtime_properties['score'] - np.max([p.runtime_properties['score'] for p in candidate.parents]) / complexity_delta > epsilon:
+        candidate.runtime_properties['passed'] = True
+        if not isinstance(candidate, RawFeature):
             candidate.runtime_properties['train_transformed'] = train_transformed
             candidate.runtime_properties['test_transformed'] = test_transformed
 
@@ -137,19 +136,15 @@ def evaluate(candidate: CandidateFeature, global_starting_time,
             if not isinstance(candidate, RawFeature):
                 candidate.derive_properties(candidate.runtime_properties['train_transformed'][0])
 
-            # remove parents' materialization
-            '''
-            for p in candidate.parents:
-                del p.runtime_properties['train_transformed']
-                del p.runtime_properties['test_transformed']
 
-                if Config.get_default('score.test', 'False') == 'True':
-                    del p.runtime_properties['training_all']
-                    del p.runtime_properties['one_test_set_transformed']
-            '''
+        # remove parents' materialization
+        candidate.get_name()
+        candidate.get_features_from_identity_candidate()
+        candidate.parents = None
+        return candidate
 
 
-    return candidate
+    return None
 
 
 def evaluate_catch(candidate: CandidateFeature, global_starting_time,
@@ -157,21 +152,25 @@ def evaluate_catch(candidate: CandidateFeature, global_starting_time,
              test_target,
              max_timestamp, preprocessed_folds, epsilon, complexity_delta
              ):
+    result = None
     time_start_gs = time.time()
     try:
-        evaluate(candidate, global_starting_time, grid_search_parameters, score, classifier, target_train_folds, target_test_folds, train_y_all_target,
+        result = evaluate(candidate, global_starting_time, grid_search_parameters, score, classifier, target_train_folds, target_test_folds, train_y_all_target,
              test_target, max_timestamp, preprocessed_folds, epsilon, complexity_delta)
     except Exception as e:
         warnings.warn(str(candidate) + " -> " + str(e), RuntimeWarning)
+        '''
         candidate.runtime_properties['exception'] = e
         candidate.runtime_properties['score'] = -1.0
         candidate.runtime_properties['test_score'] = -1.0
         candidate.runtime_properties['hyperparameters'] = {}
+        '''
 
-    candidate.runtime_properties['execution_time'] = time.time() - time_start_gs
-    candidate.runtime_properties['global_time'] = time.time() - global_starting_time
+    if type(result) != type(None):
+        result.runtime_properties['execution_time'] = time.time() - time_start_gs
+        result.runtime_properties['global_time'] = time.time() - global_starting_time
 
-    return candidate
+    return result
 
 def evaluate_no_catch(candidate: CandidateFeature, global_starting_time,
              grid_search_parameters, score, classifier, target_train_folds, target_test_folds, train_y_all_target,

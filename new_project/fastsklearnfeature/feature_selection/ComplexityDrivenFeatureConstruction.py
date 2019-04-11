@@ -174,17 +174,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 
-    def get_features_from_identity_candidate(self, identity: CandidateFeature):
-        my_list = set()
-        if not isinstance(identity.transformation, IdentityTransformation):
-            return set([str(identity)])
 
-        for p in identity.parents:
-            if not isinstance(p.transformation, IdentityTransformation):
-                my_list.add(str(p))
-            else:
-                my_list = my_list.union(self.get_features_from_identity_candidate(p))
-        return my_list
 
 
     def generate_merge_for_combination(self, a: List[CandidateFeature], b: List[CandidateFeature]) -> Set[Set[CandidateFeature]]:
@@ -197,8 +187,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             for b_i in range(len(b)):
                 #we have to check whether they intersect or not
                 #so we climb down the transformation pipeline and gather all concatenated features
-                set_a = self.get_features_from_identity_candidate(a[a_i])
-                set_b = self.get_features_from_identity_candidate(b[b_i])
+                set_a = a[a_i].get_features_from_identity_candidate()
+                set_b = b[b_i].get_features_from_identity_candidate()
                 if len(set_a.intersection(set_b)) == 0:
                     result_list.add(frozenset([a[a_i], b[b_i]]))
 
@@ -477,44 +467,38 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
             #calculate whether we drop the evaluated candidate
             for candidate in results:
-                candidate.runtime_properties['layer_end_time'] = layer_end_time
+                if type(candidate) != type(None):
+                    candidate.runtime_properties['layer_end_time'] = layer_end_time
 
-                #print(str(candidate) + " -> " + str(candidate.runtime_properties['score']))
-
-
-                if candidate.runtime_properties['score'] > max_feature.runtime_properties['score']:
-                    max_feature = candidate
+                    #print(str(candidate) + " -> " + str(candidate.runtime_properties['score']))
 
 
-                #calculate original score
-                original_score = baseline_score #or zero??
-                if not isinstance(candidate, RawFeature):
-                    original_score = max([p.runtime_properties['score'] for p in candidate.parents])
+                    if candidate.runtime_properties['score'] > max_feature.runtime_properties['score']:
+                        max_feature = candidate
 
-                accuracy_delta = candidate.runtime_properties['score'] - original_score
 
-                if accuracy_delta / self.complexity_delta > self.epsilon:
-                    if isinstance(candidate, RawFeature):
-                        if not c in cost_2_raw_features:
-                            cost_2_raw_features[c]: List[CandidateFeature] = []
-                        cost_2_raw_features[c].append(candidate)
-                    elif isinstance(candidate.transformation, UnaryTransformation):
-                        if not c in cost_2_unary_transformed:
-                            cost_2_unary_transformed[c]: List[CandidateFeature] = []
-                        cost_2_unary_transformed[c].append(candidate)
-                    elif isinstance(candidate.transformation, IdentityTransformation):
-                        if not c in cost_2_combination:
-                            cost_2_combination[c]: List[CandidateFeature] = []
-                        cost_2_combination[c].append(candidate)
+                    if candidate.runtime_properties['passed']:
+                        if isinstance(candidate, RawFeature):
+                            if not c in cost_2_raw_features:
+                                cost_2_raw_features[c]: List[CandidateFeature] = []
+                            cost_2_raw_features[c].append(candidate)
+                        elif isinstance(candidate.transformation, UnaryTransformation):
+                            if not c in cost_2_unary_transformed:
+                                cost_2_unary_transformed[c]: List[CandidateFeature] = []
+                            cost_2_unary_transformed[c].append(candidate)
+                        elif isinstance(candidate.transformation, IdentityTransformation):
+                            if not c in cost_2_combination:
+                                cost_2_combination[c]: List[CandidateFeature] = []
+                            cost_2_combination[c].append(candidate)
+                        else:
+                            if not c in cost_2_binary_transformed:
+                                cost_2_binary_transformed[c]: List[CandidateFeature] = []
+                            cost_2_binary_transformed[c].append(candidate)
                     else:
-                        if not c in cost_2_binary_transformed:
-                            cost_2_binary_transformed[c]: List[CandidateFeature] = []
-                        cost_2_binary_transformed[c].append(candidate)
-                else:
-                    if self.save_logs:
-                        if not c in cost_2_dropped_evaluated_candidates:
-                            cost_2_dropped_evaluated_candidates[c]: List[CandidateFeature] = []
-                        cost_2_dropped_evaluated_candidates[c].append(candidate)
+                        if self.save_logs:
+                            if not c in cost_2_dropped_evaluated_candidates:
+                                cost_2_dropped_evaluated_candidates[c]: List[CandidateFeature] = []
+                            cost_2_dropped_evaluated_candidates[c].append(candidate)
             
 
 

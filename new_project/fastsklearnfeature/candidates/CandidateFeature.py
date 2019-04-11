@@ -24,6 +24,7 @@ class CandidateFeature:
         self.score = None #deprecated
 
         self.sympy_representation = None
+        self.identity_features = None
 
         self.pipeline = self.create_pipeline()
 
@@ -66,6 +67,21 @@ class CandidateFeature:
                 name_list.append(p.get_name())
             self.name = self.transformation.get_name(name_list)
         return self.name
+
+
+    def get_features_from_identity_candidate(self):
+        if type(self.identity_features) == type(None):
+            self.identity_features = set()
+            if not isinstance(self.transformation, IdentityTransformation):
+                return set([str(self)])
+
+            for p in self.parents:
+                if not isinstance(p.transformation, IdentityTransformation):
+                    self.identity_features.add(str(p))
+                else:
+                    self.identity_features = self.identity_features.union(p.get_features_from_identity_candidate())
+        return self.identity_features
+
 
     def get_transformation_depth(self):
         if self.depth == None:

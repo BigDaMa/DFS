@@ -19,6 +19,7 @@ class RawFeature(CandidateFeature):
         self.sympy_representation = None
 
         self.runtime_properties: Dict[str, Any] = {}
+        self.identity_features = None
 
         self.pipeline = self.create_pipeline()
 
