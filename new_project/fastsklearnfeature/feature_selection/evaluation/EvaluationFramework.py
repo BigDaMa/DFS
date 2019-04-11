@@ -23,6 +23,45 @@ from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import tqdm
 from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
+from functools import partial
+
+'''
+def evaluate(candidate):
+    pipeline = Pipeline([('features', FeatureUnion(
+        [
+            (candidate.get_name(), candidate.pipeline)
+        ])),
+                         ('classifier', self.classifier)
+                         ])
+
+    result = {}
+
+    refit = False
+    if Config.get_default('score.test', 'False') == 'True' and not Config.get_default('instance.selection',
+                                                                                      'False') == 'True':
+        refit = True
+
+    clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=self.score, iid=False,
+                       error_score='raise', refit=refit)
+    clf.fit(self.dataset.splitted_values['train'], self.current_target)
+    result['score'] = clf.best_score_
+    result['hyperparameters'] = clf.best_params_
+
+    if Config.get_default('score.test', 'False') == 'True':
+        if Config.get_default('instance.selection', 'False') == 'True':
+            clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=score,
+                               iid=False, error_score='raise', refit=True)
+
+            clf.fit(self.train_X_all, self.train_y_all_target)
+        result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
+    else:
+        result['test_score'] = 0.0
+
+    return result
+'''
+
+
+
 
 
 class EvaluationFramework:
@@ -91,49 +130,23 @@ class EvaluationFramework:
                                                                                self.current_target):
             self.preprocessed_folds.append((train, test))
 
-    #def evaluate(self, candidate, score=make_scorer(roc_auc_score, average='micro'), folds=10):
-    def evaluate(self, candidate):
-        pipeline = Pipeline([('features', FeatureUnion(
-                [
-                    (candidate.get_name(), candidate.pipeline)
-                ])),
-                 ('classifier', self.classifier)
-                 ])
-
-        result = {}
-
-        refit = False
-        if Config.get_default('score.test', 'False') == 'True' and not Config.get_default('instance.selection', 'False') == 'True':
-            refit = True
-
-        clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=self.score, iid=False, error_score='raise', refit=refit)
-        clf.fit(self.dataset.splitted_values['train'], self.current_target)
-        result['score'] = clf.best_score_
-        result['hyperparameters'] = clf.best_params_
-
-        if Config.get_default('score.test', 'False') == 'True':
-            if Config.get_default('instance.selection', 'False') == 'True':
-                clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=score,
-                                   iid=False, error_score='raise', refit=True)
-
-                clf.fit(self.train_X_all, self.train_y_all_target)
-            result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
-        else:
-            result['test_score'] = 0.0
-
-        return result
-
-
-    def evaluate_candidates(self, candidates):
+    '''
+    def evaluate_candidates(self, candidates, global_starting_time):
         pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
+
+        my_function = partial(evaluate_single_candidate, global_starting_time=global_starting_time)
+
+
         if Config.get_default("show_progess", 'True') == 'True':
             results = []
-            for x in tqdm.tqdm(pool.imap_unordered(self.evaluate_single_candidate, candidates), total=len(candidates)):
+            for x in tqdm.tqdm(pool.imap_unordered(my_function, candidates), total=len(candidates)):
                 results.append(x)
         else:
-            results = pool.map(self.evaluate_single_candidate, candidates)
+            results = pool.map(my_function, candidates)
+
 
         return results
+    '''
 
 
     '''
@@ -144,39 +157,6 @@ class EvaluationFramework:
         return results
 
     '''
-
-
-
-    def evaluate_single_candidate(self, candidate: CandidateFeature):
-        result = {}
-        time_start_gs = time.time()
-        try:
-            result = self.evaluate(candidate)
-            #print("feature: " + str(candidate) + " -> " + str(new_score))
-        except Exception as e:
-            warnings.warn(str(candidate) + " -> " + str(e), RuntimeWarning)
-            candidate.runtime_properties['exception'] = e
-            candidate.runtime_properties['score'] = -1.0
-            candidate.runtime_properties['test_score'] = -1.0
-            candidate.runtime_properties['hyperparameters'] = {}
-
-        candidate.runtime_properties['execution_time'] = time.time() - time_start_gs
-        candidate.runtime_properties['global_time'] = time.time() - self.global_starting_time
-        result['candidate'] = candidate
-        return result
-
-
-    '''
-    def evaluate_single_candidate(self, candidate):
-        time_start_gs = time.time()
-        result = self.evaluate(candidate)
-
-        result['candidate'] = candidate
-        result['execution_time'] = time.time() - time_start_gs
-        result['global_time'] = time.time() - self.global_starting_time
-        return result
-    '''
-
 
 
 

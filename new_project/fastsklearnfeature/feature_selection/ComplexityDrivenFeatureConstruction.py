@@ -13,6 +13,7 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
+from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import evaluate_candidates
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 import sympy
@@ -21,6 +22,7 @@ from sklearn.metrics import f1_score
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics.scorer import r2_scorer
 from sklearn.metrics.scorer import neg_mean_squared_error_scorer
+
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -52,11 +54,6 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         self.folds = folds
         self.score = score
         self.save_logs = save_logs
-
-        self.name_to_train_transformed = {}
-        self.name_to_test_transformed = {}
-        self.name_to_training_all = {}
-        self.name_to_one_test_set_transformed = {}
 
         self.max_timestamp = None
         if type(max_seconds) != type(None):
@@ -239,11 +236,12 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 candidate.fit(self.train_X_all)
                 training_all = candidate.transform(self.train_X_all)
             one_test_set_transformed = candidate.transform(self.dataset.splitted_values['test'])
-            self.name_to_training_all[str(candidate)] = training_all
-            self.name_to_one_test_set_transformed[str(candidate)] = one_test_set_transformed
 
-        self.name_to_train_transformed[str(candidate)] = train_transformed
-        self.name_to_test_transformed[str(candidate)] = test_transformed
+            candidate.runtime_properties['training_all'] = training_all
+            candidate.runtime_properties['one_test_set_transformed'] = one_test_set_transformed
+
+        candidate.runtime_properties['train_transformed'] = train_transformed
+        candidate.runtime_properties['test_transformed'] = test_transformed
 
     def count_smaller_or_equal(self, candidates: List[CandidateFeature], current_score):
         count_smaller_or_equal = 0
@@ -366,7 +364,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         #print("nonnumeric: " + str(raw_f))
 
                     self.materialize_raw_features(raw_f)
-                    raw_f.derive_properties(self.name_to_train_transformed[str(raw_f)][0])
+                    raw_f.derive_properties(raw_f.runtime_properties['train_transformed'][0])
 
             # first unary
             # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
@@ -460,14 +458,25 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             #now evaluate all from this layer
             #print(current_layer)
             print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
-            results = self.evaluate_candidates(current_layer)
+            results = evaluate_candidates(current_layer,
+                                          global_starting_time=self.global_starting_time,
+                                          grid_search_parameters=self.grid_search_parameters,
+                                          score = self.score,
+                                          classifier = self.classifier,
+                                          target_train_folds = self.target_train_folds,
+                                          target_test_folds = self.target_test_folds,
+                                          train_y_all_target = self.train_y_all_target,
+                                          test_target = self.test_target,
+                                          max_timestamp = self.max_timestamp,
+                                          preprocessed_folds = self.preprocessed_folds,
+                                          epsilon = self.epsilon,
+                                          complexity_delta = self.complexity_delta)
             print("----------- Evaluation Finished -----------")
 
             layer_end_time = time.time() - self.global_starting_time
 
             #calculate whether we drop the evaluated candidate
-            for result in results:
-                candidate: CandidateFeature = result['candidate']
+            for candidate in results:
                 candidate.runtime_properties['layer_end_time'] = layer_end_time
 
                 #print(str(candidate) + " -> " + str(candidate.runtime_properties['score']))
@@ -485,13 +494,6 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 accuracy_delta = candidate.runtime_properties['score'] - original_score
 
                 if accuracy_delta / self.complexity_delta > self.epsilon:
-                    self.name_to_train_transformed[str(candidate)] = result['train_transformed']
-                    self.name_to_test_transformed[str(candidate)] = result['test_transformed']
-
-                    if Config.get_default('score.test', 'False') == 'True':
-                        self.name_to_training_all[str(candidate)] = result['training_all']
-                        self.name_to_one_test_set_transformed[str(candidate)] = result['one_test_set_transformed']
-
                     if isinstance(candidate, RawFeature):
                         if not c in cost_2_raw_features:
                             cost_2_raw_features[c]: List[CandidateFeature] = []
