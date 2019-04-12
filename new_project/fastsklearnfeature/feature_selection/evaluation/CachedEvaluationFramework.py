@@ -140,6 +140,7 @@ def evaluate(candidate: CandidateFeature, global_starting_time,
         # remove parents' materialization
         candidate.get_name()
         candidate.get_features_from_identity_candidate()
+        candidate.get_complexity()
         candidate.parents = None
         return candidate
 
@@ -159,6 +160,7 @@ def evaluate_catch(candidate: CandidateFeature, global_starting_time,
              test_target, max_timestamp, preprocessed_folds, epsilon, complexity_delta)
     except Exception as e:
         warnings.warn(str(candidate) + " -> " + str(e), RuntimeWarning)
+
         '''
         candidate.runtime_properties['exception'] = e
         candidate.runtime_properties['score'] = -1.0

@@ -589,12 +589,12 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    dataset = (Config.get('data_path') + '/house_price.csv', 79)
+    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
 
 
 
@@ -603,7 +603,7 @@ if __name__ == '__main__':
     start = time.time()
 
 
-
+    '''
     selector = ComplexityDrivenFeatureConstruction(dataset,
                                                    classifier=LinearRegression,
                                                    grid_search_parameters={'fit_intercept': [True, False],
@@ -611,9 +611,9 @@ if __name__ == '__main__':
                                                    score=r2_scorer,
                                                    c_max=5,
                                                    save_logs=True)
+    '''
 
-
-    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=6, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=None, folds=10, max_seconds=None, save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

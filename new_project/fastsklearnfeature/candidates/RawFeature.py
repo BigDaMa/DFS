@@ -21,6 +21,8 @@ class RawFeature(CandidateFeature):
         self.runtime_properties: Dict[str, Any] = {}
         self.identity_features = None
 
+        self.complexity_score = 1
+
         self.pipeline = self.create_pipeline()
 
 

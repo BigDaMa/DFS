@@ -25,6 +25,7 @@ class CandidateFeature:
 
         self.sympy_representation = None
         self.identity_features = None
+        self.complexity_score = None
 
         self.pipeline = self.create_pipeline()
 
@@ -173,12 +174,14 @@ class CandidateFeature:
     '''
 
     def get_complexity(self):
-        if self.transformation == None:
-            return 1
-        elif isinstance(self.transformation, IdentityTransformation):
-            return np.sum(np.array([f.get_complexity() for f in self.parents]))
-        else:
-            return np.sum(np.array([f.get_complexity() for f in self.parents])) + 1
+        if self.complexity_score == None:
+            if self.transformation == None:
+                self.complexity_score = 1
+            elif isinstance(self.transformation, IdentityTransformation):
+                self.complexity_score = np.sum(np.array([f.get_complexity() for f in self.parents]))
+            else:
+                self.complexity_score = np.sum(np.array([f.get_complexity() for f in self.parents])) + 1
+        return self.complexity_score
 
 
 
