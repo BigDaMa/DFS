@@ -22,6 +22,7 @@ from sklearn.metrics import f1_score
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics.scorer import r2_scorer
 from sklearn.metrics.scorer import neg_mean_squared_error_scorer
+import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 
 
 import warnings
@@ -333,6 +334,23 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
         all_evaluated_features = set()
 
+        my_globale_module.global_starting_time_global = self.global_starting_time
+        my_globale_module.grid_search_parameters_global = self.grid_search_parameters
+        my_globale_module.score_global = self.score
+        my_globale_module.classifier_global = self.classifier
+        my_globale_module.target_train_folds_global = self.target_train_folds
+        my_globale_module.target_test_folds_global = self.target_test_folds
+        my_globale_module.train_y_all_target_global = self.train_y_all_target
+        my_globale_module.test_target_global = self.test_target
+        my_globale_module.max_timestamp_global = self.max_timestamp
+        my_globale_module.preprocessed_folds_global = self.preprocessed_folds
+        my_globale_module.epsilon_global = self.epsilon
+        my_globale_module.complexity_delta_global = self.complexity_delta
+
+
+
+
+
         c = 1
         while(True):
             current_layer: List[CandidateFeature] = []
@@ -448,19 +466,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             #now evaluate all from this layer
             #print(current_layer)
             print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
-            results = evaluate_candidates(current_layer,
-                                          global_starting_time=self.global_starting_time,
-                                          grid_search_parameters=self.grid_search_parameters,
-                                          score = self.score,
-                                          classifier = self.classifier,
-                                          target_train_folds = self.target_train_folds,
-                                          target_test_folds = self.target_test_folds,
-                                          train_y_all_target = self.train_y_all_target,
-                                          test_target = self.test_target,
-                                          max_timestamp = self.max_timestamp,
-                                          preprocessed_folds = self.preprocessed_folds,
-                                          epsilon = self.epsilon,
-                                          complexity_delta = self.complexity_delta)
+            results = evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
 
             layer_end_time = time.time() - self.global_starting_time
