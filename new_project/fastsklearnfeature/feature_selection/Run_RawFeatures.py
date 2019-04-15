@@ -10,23 +10,28 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
+from sklearn.metrics import make_scorer
+from sklearn.metrics import f1_score
 
 
 
-class ExploreKitSelection_iterative_search(EvaluationFramework):
-    def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
+class Run_RawFeatures(EvaluationFramework):
+    def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'classifier__penalty': ['l2'],
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'classifier__solver': ['lbfgs'],
                                                                                                 'classifier__class_weight': ['balanced'],
                                                                                                 'classifier__max_iter': [10000],
                                                                                                 'classifier__multi_class':['auto']
                                                                                                 },
-                 transformation_producer=get_transformation_for_feature_space
+                 transformation_producer=get_transformation_for_feature_space,
+                 score=make_scorer(f1_score, average='micro')
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
         self.transformation_producer = transformation_producer
+        self.score = score
+
 
 
 
@@ -198,7 +203,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
         results = self.evaluate_candidates([combo])
 
-        print(results)
+        print(results[0].runtime_properties)
 
 
 
@@ -228,7 +233,7 @@ if __name__ == '__main__':
     # dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    selector = ExploreKitSelection_iterative_search(dataset)
+    selector = Run_RawFeatures(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()

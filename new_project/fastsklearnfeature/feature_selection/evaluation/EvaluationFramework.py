@@ -25,47 +25,45 @@ from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
 from functools import partial
 
-'''
-def evaluate(candidate):
+
+def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, preprocessed_folds, score, train_data, current_target, train_X_all, train_y_all_target, test_data, test_target):
     pipeline = Pipeline([('features', FeatureUnion(
         [
             (candidate.get_name(), candidate.pipeline)
         ])),
-                         ('classifier', self.classifier)
+                         ('classifier', classifier())
                          ])
-
-    result = {}
 
     refit = False
     if Config.get_default('score.test', 'False') == 'True' and not Config.get_default('instance.selection',
                                                                                       'False') == 'True':
         refit = True
 
-    clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=self.score, iid=False,
+    clf = GridSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score, iid=False,
                        error_score='raise', refit=refit)
-    clf.fit(self.dataset.splitted_values['train'], self.current_target)
-    result['score'] = clf.best_score_
-    result['hyperparameters'] = clf.best_params_
+    clf.fit(train_data, current_target) #dataset.splitted_values['train']
+    candidate.runtime_properties['score'] = clf.best_score_
+    candidate.runtime_properties['hyperparameters'] = clf.best_params_
 
     if Config.get_default('score.test', 'False') == 'True':
         if Config.get_default('instance.selection', 'False') == 'True':
-            clf = GridSearchCV(pipeline, self.grid_search_parameters, cv=self.preprocessed_folds, scoring=score,
+            clf = GridSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score,
                                iid=False, error_score='raise', refit=True)
 
-            clf.fit(self.train_X_all, self.train_y_all_target)
-        result['test_score'] = clf.score(self.dataset.splitted_values['test'], self.test_target)
+            clf.fit(train_X_all, train_y_all_target)
+        candidate.runtime_properties['test_score'] = clf.score(test_data, test_target) #self.dataset.splitted_values['test']
     else:
-        result['test_score'] = 0.0
+        candidate.runtime_properties['test_score'] = 0.0
 
-    return result
-'''
+    return candidate
+
 
 
 
 
 
 class EvaluationFramework:
-    def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
+    def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'classifier__penalty': ['l2'],
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'classifier__solver': ['lbfgs'],
                                                                                                 'classifier__class_weight': ['balanced'],
@@ -130,11 +128,22 @@ class EvaluationFramework:
                                                                                self.current_target):
             self.preprocessed_folds.append((train, test))
 
-    '''
-    def evaluate_candidates(self, candidates, global_starting_time):
+
+    def evaluate_candidates(self, candidates: List[CandidateFeature]) -> List[CandidateFeature]:
         pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
 
-        my_function = partial(evaluate_single_candidate, global_starting_time=global_starting_time)
+
+
+        my_function = partial(evaluate, classifier=self.classifier,
+                              grid_search_parameters=self.grid_search_parameters,
+                              preprocessed_folds=self.preprocessed_folds,
+                              score=self.score,
+                              train_data=self.dataset.splitted_values['train'],
+                              current_target=self.current_target,
+                              train_X_all=self.train_X_all,
+                              train_y_all_target=self.train_y_all_target,
+                              test_data=self.dataset.splitted_values['test'],
+                              test_target=self.test_target)
 
 
         if Config.get_default("show_progess", 'True') == 'True':
@@ -146,7 +155,7 @@ class EvaluationFramework:
 
 
         return results
-    '''
+
 
 
     '''
