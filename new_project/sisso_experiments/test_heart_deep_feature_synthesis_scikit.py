@@ -221,7 +221,7 @@ class SissoExperiment:
 #statlog_heart.target=13
 
 if __name__ == '__main__':
-    dataset = (Config.get('statlog_heart.csv'), int(Config.get('statlog_heart.target')))
+    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
 
     selector = SissoExperiment(dataset)
 

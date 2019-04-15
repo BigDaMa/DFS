@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #path = '/tmp'
-path = '/home/felix/phd/fastfeatures/results/1_4_german_credit'
+#path = '/home/felix/phd/fastfeatures/results/1_4_german_credit'
 #path = '/home/felix/phd/fastfeatures/results/2_4_transfusion_with_predictions'
-#path = '/home/felix/phd/fastfeatures/results/5_4_heart'
+path = '/home/felix/phd/fastfeatures/results/5_4_heart'
 
 
 cost_2_raw_features = pickle.load(open(path + "/data_raw.p", "rb"))
@@ -248,10 +248,15 @@ while True:
 
     print("Complexity: " + str(c))
     print("------------------------------------------------------")
+    acc_scores_plot = []
+    simplicity_scores_plot = []
     for i in range(1, c+1):
         acc_score = getAccuracyScore(best_pro_cost_real[i].runtime_properties['score'], c)
         #acc_score = best_pro_cost_real[i].runtime_properties['score']
         simplicity_score = getSimplicityScore(best_pro_cost_real[i].get_complexity(), c)
+
+        acc_scores_plot.append(acc_score)
+        simplicity_scores_plot.append(simplicity_score)
 
         h = harmonic_mean(simplicity_score, acc_score)
         if h > best_harmonic_mean:
@@ -273,6 +278,11 @@ while True:
             not c in cost_2_combination:
         break
 
+
+plt.plot(simplicity_scores_plot, acc_scores_plot)
+plt.xlabel('P(Complexity >= x)')
+plt.ylabel('P(Accuracy <= x)')
+plt.show()
 
 print("Best harmonic representation: " + str(best_harmonic_rep))
 
