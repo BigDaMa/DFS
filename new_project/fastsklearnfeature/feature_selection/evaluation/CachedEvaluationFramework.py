@@ -183,7 +183,7 @@ def evaluate_candidates(candidates):
     pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
 
 
-    my_function = evaluate_no_catch
+    my_function = evaluate_catch
     candidates_ids = list(range(len(candidates)))
 
     if Config.get_default("show_progess", 'True') == 'True':
