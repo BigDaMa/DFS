@@ -1,6 +1,28 @@
 from fastsklearnfeature.transformations.Transformation import Transformation
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
+import sympy
+
+class ConcatenationFunction(sympy.Function):
+    def __init__(self, *args):
+        self.arguments = args
+
+    @classmethod
+    def eval(cls, *args):
+        all_arguments = set()
+        for argument in args:
+            if isinstance(argument, ConcatenationFunction):
+                all_arguments = all_arguments.union(argument.arguments)
+            else:
+                all_arguments.add(argument)
+        arguments = list(sympy.ordered(all_arguments))
+
+        if len(arguments)==1:
+            return arguments[0]
+
+        if arguments != list(args):
+            return cls(*arguments)
+
 
 class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, number_parent_features):
@@ -31,3 +53,6 @@ class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
         properties = {}
         properties['type'] = np.float
         return properties
+
+    def get_sympy_representation(self, input_attributes):
+        return ConcatenationFunction(*input_attributes)

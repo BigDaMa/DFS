@@ -178,22 +178,21 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 
-    def generate_merge_for_combination(self, a: List[CandidateFeature], b: List[CandidateFeature]) -> Set[Set[CandidateFeature]]:
-        # feature concat, but does not work
-        #if not order_matters and not repetition_allowed:
-        #    return [[x, y] for x, y in itertools.product(*[a, b]) if x != y]
-        result_list: Set[Set[CandidateFeature]] = set()
-
+    def generate_merge_for_combination(self, all_evaluated_features, a: List[CandidateFeature], b: List[CandidateFeature]) -> Set[Set[CandidateFeature]]:
+        cat_candidates_to_be_applied = []
+        id_t = IdentityTransformation(None)
         for a_i in range(len(a)):
             for b_i in range(len(b)):
-                #we have to check whether they intersect or not
-                #so we climb down the transformation pipeline and gather all concatenated features
-                set_a = a[a_i].get_features_from_identity_candidate()
-                set_b = b[b_i].get_features_from_identity_candidate()
-                if len(set_a.intersection(set_b)) == 0:
-                    result_list.add(frozenset([a[a_i], b[b_i]]))
+                combo = [a[a_i], b[b_i]]
+                if id_t.is_applicable(combo):
+                    sympy_representation = id_t.get_sympy_representation([p.get_sympy_representation() for p in combo])
+                    if not sympy_representation in all_evaluated_features:
+                        cat_candidate = CandidateFeature(copy.deepcopy(id_t), combo)
+                        cat_candidate.sympy_representation = copy.deepcopy(sympy_representation)
+                        all_evaluated_features.add(sympy_representation)
+                        cat_candidates_to_be_applied.append(cat_candidate)
 
-        return result_list
+        return cat_candidates_to_be_applied
 
 
     # filter candidates that use one raw feature twice
@@ -447,11 +446,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     if p[element] in cost_2_combination:
                         lists_for_each_element[element].extend(cost_2_combination[p[element]])
 
-
-                list_of_combinations = self.generate_merge_for_combination(lists_for_each_element[0], lists_for_each_element[1])
-                for combo in list_of_combinations:
-                    if IdentityTransformation(None).is_applicable(list(combo)):
-                        combinations_to_be_applied.append(CandidateFeature(IdentityTransformation(None), list(combo)))
+                combinations_to_be_applied = self.generate_merge_for_combination(all_evaluated_features, lists_for_each_element[0], lists_for_each_element[1])
             current_layer.extend(combinations_to_be_applied)
 
 
@@ -590,7 +585,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
@@ -601,7 +596,7 @@ if __name__ == '__main__':
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
+    dataset = (Config.get('data_path') + '/house_price.csv', 79)
 
 
 
@@ -612,10 +607,10 @@ if __name__ == '__main__':
 
 
     #regression
-    #selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=3,save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=3,save_logs=True)
 
     #classification
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
