@@ -186,7 +186,7 @@ class Run_RawFeatures(EvaluationFramework):
         self.global_starting_time = time.time()
 
         # generate all candidates
-        self.generate()
+        self.generate(42)
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
@@ -222,13 +222,13 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     # dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     # dataset = (Config.get('data_path') + '/iris.data', 4)
     # dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     # dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
     # dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     # dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)

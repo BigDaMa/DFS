@@ -13,7 +13,6 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
-from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import evaluate_candidates
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 import sympy
@@ -23,6 +22,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics.scorer import r2_scorer
 from sklearn.metrics.scorer import neg_mean_squared_error_scorer
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
+from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates
 
 
 import warnings
@@ -334,18 +334,18 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
         all_evaluated_features = set()
 
-        my_globale_module.global_starting_time_global = self.global_starting_time
-        my_globale_module.grid_search_parameters_global = self.grid_search_parameters
-        my_globale_module.score_global = self.score
-        my_globale_module.classifier_global = self.classifier
-        my_globale_module.target_train_folds_global = self.target_train_folds
-        my_globale_module.target_test_folds_global = self.target_test_folds
-        my_globale_module.train_y_all_target_global = self.train_y_all_target
-        my_globale_module.test_target_global = self.test_target
-        my_globale_module.max_timestamp_global = self.max_timestamp
-        my_globale_module.preprocessed_folds_global = self.preprocessed_folds
-        my_globale_module.epsilon_global = self.epsilon
-        my_globale_module.complexity_delta_global = self.complexity_delta
+        my_globale_module.global_starting_time_global = copy.deepcopy(self.global_starting_time)
+        my_globale_module.grid_search_parameters_global = copy.deepcopy(self.grid_search_parameters)
+        my_globale_module.score_global = copy.deepcopy(self.score)
+        my_globale_module.classifier_global = copy.deepcopy(self.classifier)
+        my_globale_module.target_train_folds_global = copy.deepcopy(self.target_train_folds)
+        my_globale_module.target_test_folds_global = copy.deepcopy(self.target_test_folds)
+        my_globale_module.train_y_all_target_global = copy.deepcopy(self.train_y_all_target)
+        my_globale_module.test_target_global = copy.deepcopy(self.test_target)
+        my_globale_module.max_timestamp_global = copy.deepcopy(self.max_timestamp)
+        my_globale_module.preprocessed_folds_global = copy.deepcopy(self.preprocessed_folds)
+        my_globale_module.epsilon_global = copy.deepcopy(self.epsilon)
+        my_globale_module.complexity_delta_global = copy.deepcopy(self.complexity_delta)
 
 
 
@@ -558,6 +558,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                                                                cost_2_raw_features, cost_2_unary_transformed,
                                                                cost_2_binary_transformed, cost_2_combination)
 
+
                 harmonic_mean_score_now = self.harmonic_mean(simplicity_cum_score_now, accuracy_cum_score_now)
                 harmonic_mean_score_last = self.harmonic_mean(simplicity_cum_score_last, accuracy_cum_score_last)
 
@@ -589,7 +590,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
@@ -600,7 +601,7 @@ if __name__ == '__main__':
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    dataset = (Config.get('data_path') + '/house_price.csv', 79)
+    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
 
 
 
@@ -610,16 +611,11 @@ if __name__ == '__main__':
 
 
 
-    selector = ComplexityDrivenFeatureConstruction(dataset,
-                                                   classifier=LinearRegression,
-                                                   grid_search_parameters={'fit_intercept': [True, False],
-                                                                           'normalize': [True, False]},
-                                                   score=r2_scorer,
-                                                   c_max=5,
-                                                   save_logs=True)
+    #regression
+    #selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=3,save_logs=True)
 
-
-    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
+    #classification
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

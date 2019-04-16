@@ -78,12 +78,12 @@ class EvaluationFramework:
         self.transformation_producer = transformation_producer
 
     #generate all possible combinations of features
-    def generate(self):
+    def generate(self, seed=42):
         s = None
         if isinstance(self.classifier(), ClassifierMixin):
-            s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
+            s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=seed)
         elif isinstance(self.classifier(), RegressorMixin):
-            s = RandomSplitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=42)
+            s = RandomSplitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=seed)
         else:
             pass
 
