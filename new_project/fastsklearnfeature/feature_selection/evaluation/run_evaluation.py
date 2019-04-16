@@ -9,9 +9,6 @@ import warnings
 import tqdm
 import multiprocessing as mp
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
-import os
-import psutil
-import sys
 
 class hashabledict(dict):
     def __hash__(self):
