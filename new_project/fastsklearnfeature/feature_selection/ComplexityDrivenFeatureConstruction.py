@@ -552,6 +552,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                                                                    cost_2_binary_transformed, cost_2_combination)
 
                     harmonic_means[h_i] = self.harmonic_mean(simplicity_cum_score, accuracy_cum_score)
+                    #print(str(max_feature_per_complexity[c-h_i]) + ": " + str(harmonic_means[h_i]) + " h: " + str(h_i))
 
                 if harmonic_means[2] >= harmonic_means[1] and harmonic_means[2] >= harmonic_means[0]:
                     print("Best Harmonic Mean: " + str(max_feature_per_complexity[c-2]))
