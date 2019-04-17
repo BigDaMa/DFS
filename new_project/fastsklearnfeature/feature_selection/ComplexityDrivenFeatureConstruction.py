@@ -540,25 +540,21 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             max_feature_per_complexity[c] = max_feature
 
 
-            if type(self.c_max) == type(None) and c > 1:
+            if type(self.c_max) == type(None) and c > 2:
                 # calculate harmonic mean
-                simplicity_cum_score_now = self.getSimplicityScore(max_feature_per_complexity[c].get_complexity(), c, cost_2_raw_features, cost_2_unary_transformed,
-                                   cost_2_binary_transformed, cost_2_combination)
-                accuracy_cum_score_now = self.getAccuracyScore(max_feature_per_complexity[c].runtime_properties['score'], c, cost_2_raw_features, cost_2_unary_transformed, cost_2_binary_transformed, cost_2_combination)
-
-                simplicity_cum_score_last = self.getSimplicityScore(max_feature_per_complexity[c-1].get_complexity(), c,
+                harmonic_means = [0.0]*3
+                for h_i in range(len(harmonic_means)):
+                    simplicity_cum_score = self.getSimplicityScore(max_feature_per_complexity[c-h_i].get_complexity(), c,
+                                                                       cost_2_raw_features, cost_2_unary_transformed,
+                                                                       cost_2_binary_transformed, cost_2_combination)
+                    accuracy_cum_score = self.getAccuracyScore(max_feature_per_complexity[c-h_i].runtime_properties['score'], c,
                                                                    cost_2_raw_features, cost_2_unary_transformed,
                                                                    cost_2_binary_transformed, cost_2_combination)
-                accuracy_cum_score_last = self.getAccuracyScore(max_feature_per_complexity[c-1].runtime_properties['score'], c,
-                                                               cost_2_raw_features, cost_2_unary_transformed,
-                                                               cost_2_binary_transformed, cost_2_combination)
 
+                    harmonic_means[h_i] = self.harmonic_mean(simplicity_cum_score, accuracy_cum_score)
 
-                harmonic_mean_score_now = self.harmonic_mean(simplicity_cum_score_now, accuracy_cum_score_now)
-                harmonic_mean_score_last = self.harmonic_mean(simplicity_cum_score_last, accuracy_cum_score_last)
-
-                if max_feature_per_complexity[c-1] != max_feature_per_complexity[c] and harmonic_mean_score_now < harmonic_mean_score_last:
-                    print("Best Harmonic Mean: " + str(max_feature_per_complexity[c-1]))
+                if harmonic_means[2] >= harmonic_means[1] and harmonic_means[2] >= harmonic_means[0]:
+                    print("Best Harmonic Mean: " + str(max_feature_per_complexity[c-2]))
                     break
 
 
@@ -583,7 +579,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
@@ -594,7 +590,7 @@ if __name__ == '__main__':
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    dataset = (Config.get('data_path') + '/house_price.csv', 79)
+    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
 
 
 
@@ -605,10 +601,10 @@ if __name__ == '__main__':
 
 
     #regression
-    selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=5,save_logs=True)
+    #selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=5,save_logs=True)
 
     #classification
-    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=None, folds=10, max_seconds=None, save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
