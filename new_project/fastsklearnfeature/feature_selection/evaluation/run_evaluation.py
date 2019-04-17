@@ -112,7 +112,9 @@ def evaluate(candidate_id: int):
 
     #only save the transformed data if we need it in the future
     candidate.runtime_properties['passed'] = False
-    if isinstance(candidate, RawFeature) or ((candidate.runtime_properties['score'] - np.max([p.runtime_properties['score'] for p in candidate.parents])) / my_globale_module.complexity_delta_global)*my_globale_module.score_global._sign > my_globale_module.epsilon_global:
+
+
+    if isinstance(candidate, RawFeature) or ((candidate.runtime_properties['score'] - np.max([p.runtime_properties['score'] for p in candidate.parents])) / my_globale_module.complexity_delta_global) * my_globale_module.score_global._sign > my_globale_module.epsilon_global:
         candidate.runtime_properties['passed'] = True
         if not isinstance(candidate, RawFeature):
             candidate.runtime_properties['train_transformed'] = train_transformed
