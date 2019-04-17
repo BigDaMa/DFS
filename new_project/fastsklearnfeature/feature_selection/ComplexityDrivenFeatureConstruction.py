@@ -575,8 +575,6 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 if __name__ == '__main__':
-    from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
-
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)

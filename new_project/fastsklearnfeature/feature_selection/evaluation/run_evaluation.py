@@ -129,7 +129,6 @@ def evaluate(candidate_id: int):
 
         # remove parents' materialization
         candidate.get_name()
-        candidate.get_features_from_identity_candidate()
         candidate.get_complexity()
         candidate.parents = None
         return candidate

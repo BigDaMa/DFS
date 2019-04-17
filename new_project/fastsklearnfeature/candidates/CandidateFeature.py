@@ -70,20 +70,6 @@ class CandidateFeature:
         return self.name
 
 
-    def get_features_from_identity_candidate(self):
-        if type(self.identity_features) == type(None):
-            self.identity_features = set()
-            if not isinstance(self.transformation, IdentityTransformation):
-                return set([str(self)])
-
-            for p in self.parents:
-                if not isinstance(p.transformation, IdentityTransformation):
-                    self.identity_features.add(str(p))
-                else:
-                    self.identity_features = self.identity_features.union(p.get_features_from_identity_candidate())
-        return self.identity_features
-
-
     def get_transformation_depth(self):
         if self.depth == None:
             depths: List[int] = []
