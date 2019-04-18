@@ -171,7 +171,7 @@ def evaluate_no_catch(candidate_id: int):
 
     return result
 
-def evaluate_candidates(candidates):
+def evaluate_candidates(candidates: List[CandidateFeature]) -> List[CandidateFeature]:
 
     my_globale_module.candidate_list_global = candidates
 
