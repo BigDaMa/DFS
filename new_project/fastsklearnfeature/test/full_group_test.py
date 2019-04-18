@@ -1,6 +1,6 @@
 from fastsklearnfeature.transformations.FastGroupByThenTransformation import FastGroupByThenTransformation
-from fastsklearnfeature.transformations.GroupByThenTransformation import GroupByThenTransformation
 import numpy as np
+from fastsklearnfeature.transformations.generators.GroupByThenGenerator import groupbythenmax
 
 #input = np.random.randint(1000, size=(10000, 2))
 
@@ -24,15 +24,9 @@ input = np.array([[1, 'a'],
 print(input)
 print(input.shape)
 
-fast_group = FastGroupByThenTransformation(np.max)
+fast_group = FastGroupByThenTransformation(np.max, groupbythenmax)
 fast_group.fit(input)
 fast_transformed = fast_group.transform(input)
 
-group = GroupByThenTransformation(np.max, 2)
-group.fit(input)
-transformed = group.transform(input)
 
 print(fast_transformed)
-print(transformed)
-
-assert np.allclose(fast_transformed, transformed), "Group != FastGroup"

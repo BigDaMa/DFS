@@ -591,8 +591,8 @@ if __name__ == '__main__':
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
-    dataset = (Config.get('data_path') + '/synthetic_data.csv', 3)
+    dataset = (Config.get('data_path') + '/house_price.csv', 79)
+    #dataset = (Config.get('data_path') + '/synthetic_data.csv', 3)
 
 
 
@@ -603,7 +603,7 @@ if __name__ == '__main__':
 
 
     #regression
-    selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=15,save_logs=True, epsilon=-1000)
+    selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=15,save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=neg_mean_squared_error_scorer, c_max=5, save_logs=True)
 

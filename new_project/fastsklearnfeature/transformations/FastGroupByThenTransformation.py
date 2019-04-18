@@ -6,6 +6,7 @@ import numpy_indexed as npi
 from typing import List, Dict, Set
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import sympy
+import copy
 
 class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, method, sympy_method):
@@ -19,16 +20,24 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
 
     #0th feature will be aggregated, 1th-nth = key attributes
     def fit(self, X, y=None):
-        final_mapping = dict(npi.group_by(keys=X[:, 1], values=X[:, 0].astype(np.float64), reduction=self.method))
-
-        self.keys = list(final_mapping.keys())
-        self.values = list(final_mapping.values())
-
+        self.final_mapping = dict(npi.group_by(keys=X[:, 1], values=X[:, 0].astype(np.float64), reduction=self.method))
         return self
 
     def transform(self, X):
-        remapped_a = npi.remap(X[:, 1], self.keys, self.values).reshape(-1, 1).astype(np.float64)
-        return remapped_a
+        #initialize result
+        n = None
+        if self.method == np.nanstd:
+            n = np.zeros((X.shape[0], 1))
+        elif self.method == len:
+            n = np.ones((X.shape[0], 1))
+        else:
+            n = copy.deepcopy(X[:, 0]).reshape(-1, 1).astype(np.float64)
+
+        #apply mapping
+        for k in self.final_mapping:
+            n[X[:, 1] == k] = self.final_mapping[k]
+        return n
+
 
     def is_applicable(self, feature_combination: List[CandidateFeature]):
         #we handle conditional idempotence via sympy
