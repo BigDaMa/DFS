@@ -55,4 +55,4 @@ class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
         return properties
 
     def get_sympy_representation(self, input_attributes):
-        return ConcatenationFunction(*input_attributes)
+        return ConcatenationFunction.eval(*input_attributes)
