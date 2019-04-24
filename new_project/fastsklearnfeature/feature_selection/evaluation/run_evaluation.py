@@ -9,6 +9,7 @@ import warnings
 import tqdm
 import multiprocessing as mp
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
+from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
 
 class hashabledict(dict):
     def __hash__(self):
@@ -114,7 +115,8 @@ def evaluate(candidate_id: int):
     candidate.runtime_properties['passed'] = False
 
 
-    if isinstance(candidate, RawFeature) or ((candidate.runtime_properties['score'] - np.max([p.runtime_properties['score'] for p in candidate.parents])) / my_globale_module.complexity_delta_global) * my_globale_module.score_global._sign > my_globale_module.epsilon_global:
+    #TODO: why minus?
+    if isinstance(candidate, RawFeature) or isinstance(candidate.transformation, MinusTransformation) or ((candidate.runtime_properties['score'] - np.max([p.runtime_properties['score'] for p in candidate.parents])) / my_globale_module.complexity_delta_global) * my_globale_module.score_global._sign > my_globale_module.epsilon_global:
         candidate.runtime_properties['passed'] = True
         if not isinstance(candidate, RawFeature):
             candidate.runtime_properties['train_transformed'] = train_transformed

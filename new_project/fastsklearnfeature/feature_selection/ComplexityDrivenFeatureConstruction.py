@@ -605,7 +605,11 @@ if __name__ == '__main__':
 
 
     #regression
-    selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=15,save_logs=True, epsilon=-np.inf)
+    #selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=15,save_logs=True, epsilon=-np.inf)
+    selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression,
+                                                   grid_search_parameters={'fit_intercept': [True, False],
+                                                                           'normalize': [True, False]}, score=r2_scorer,
+                                                   c_max=15, save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=neg_mean_squared_error_scorer, c_max=5, save_logs=True)
 
