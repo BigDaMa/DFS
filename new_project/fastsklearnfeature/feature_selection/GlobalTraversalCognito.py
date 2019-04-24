@@ -26,13 +26,13 @@ from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evalu
 
 
 import warnings
-#warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore")
 #warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
 #warnings.filterwarnings("ignore", message="Data with input dtype object was converted to float64 by MinMaxScaler.")
 #warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
-class DepthFirstCognito(CachedEvaluationFramework):
+class GlobalTraversalCognito(CachedEvaluationFramework):
     def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'penalty': ['l2'],
                                                                                                 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'solver': ['lbfgs'],
@@ -49,7 +49,7 @@ class DepthFirstCognito(CachedEvaluationFramework):
                  save_logs=False,
                  lambda_threshold=2
                  ):
-        super(DepthFirstCognito, self).__init__(dataset_config, classifier, grid_search_parameters,
+        super(GlobalTraversalCognito, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
         self.epsilon = -np.inf
         self.c_max = c_max
@@ -135,6 +135,7 @@ class DepthFirstCognito(CachedEvaluationFramework):
                                 candidate = CandidateFeature(copy.deepcopy(t_i), f_i)  # do we need a deep copy here?
                                 candidate.sympy_representation = copy.deepcopy(sympy_representation)
                                 generated_features.append(candidate)
+                                all_evaluated_features.add(sympy_representation)
                             else:
                                 #print("skipped: " + str(sympy_representation))
                                 pass
@@ -190,7 +191,7 @@ class DepthFirstCognito(CachedEvaluationFramework):
                     if not sympy_representation in all_evaluated_features:
                         cat_candidate = CandidateFeature(copy.deepcopy(id_t), combo)
                         cat_candidate.sympy_representation = copy.deepcopy(sympy_representation)
-                        #all_evaluated_features.add(sympy_representation)
+                        all_evaluated_features.add(sympy_representation)
                         cat_candidates_to_be_applied.append(cat_candidate)
 
         return cat_candidates_to_be_applied
@@ -320,17 +321,8 @@ class DepthFirstCognito(CachedEvaluationFramework):
 
         self.complexity_delta = 1.0
 
-        unique_raw_combinations = False
-
-
-        baseline_score = 0.0#self.evaluate_candidates([CandidateFeature(DummyOneTransformation(None), [self.raw_features[0]])])[0]['score']
-        #print("baseline: " + str(baseline_score))
-
-
         max_feature = CandidateFeature(IdentityTransformation(None), [self.raw_features[0]])
         max_feature.runtime_properties['score'] = -float("inf")
-
-        max_feature_per_complexity: Dict[int, CandidateFeature] = {}
 
         all_evaluated_features = set()
 
@@ -421,23 +413,38 @@ class DepthFirstCognito(CachedEvaluationFramework):
 
         #select next representation
 
-        #next_id = np.argmax([rf.runtime_properties['score'] for rf in cost_2_raw_features[1]])
-        next_id = np.random.randint(len(cost_2_raw_features[1]))
+        next_id = np.argmax([rf.runtime_properties['score'] for rf in cost_2_raw_features[1]])
         next_rep = cost_2_raw_features[c][next_id]
 
         max_rep = next_rep
 
-        current_lambda = 0
-
         number_runs= 200
 
-        rep_succesion = []
+        all_representations = []
+        all_representations.extend(cost_2_raw_features[c])
 
         for runs in range(number_runs):
-            rep_succesion.append(next_rep)
-            #print('next: ' + str(next_rep))
+            #get next
 
-            #######################
+            current_max_rep = all_representations[0]
+            for rep in all_representations:
+                if rep.runtime_properties['score'] > max_rep.runtime_properties['score']:
+                    current_max_rep = rep
+            all_representations.remove(current_max_rep)
+            next_rep = current_max_rep
+
+            if max_rep.runtime_properties['score'] < current_max_rep.runtime_properties['score']:
+                max_rep = current_max_rep
+                print("max representation: " + str(max_rep))
+
+            if 'test_score' in next_rep.runtime_properties:
+                print(str(next_rep) + " cv score: " + str(next_rep.runtime_properties['score']) + " test: " + str(
+                    next_rep.runtime_properties['test_score']))
+            else:
+                print(str(next_rep))
+
+
+                #######################
             #create branch
             #######################
             current_layer = []
@@ -463,6 +470,7 @@ class DepthFirstCognito(CachedEvaluationFramework):
                                         bin_candidate = CandidateFeature(copy.deepcopy(bt), combo)
                                         bin_candidate.sympy_representation = copy.deepcopy(sympy_representation)
                                         binary_candidates_to_be_applied.append(bin_candidate)
+                                        all_evaluated_features.add(sympy_representation)
                                     else:
                                         # print(str(bin_candidate) + " skipped: " + str(sympy_representation))
                                         pass
@@ -480,32 +488,12 @@ class DepthFirstCognito(CachedEvaluationFramework):
             #print(current_layer)
 
             # select next representation
-            shuffled_indices = np.arange(len(current_layer))
-            np.random.shuffle(shuffled_indices)
-            for rep_i in range(len(current_layer)):
-                new_rep = current_layer[shuffled_indices[rep_i]]
-                all_evaluated_features.add(next_rep.sympy_representation)
+            new_representations = evaluate_candidates(current_layer)
+            #print(new_representations)
 
-                new_rep = evaluate_candidates([new_rep])[0]
-                if new_rep != None:
-                    break
-
-            print(str(new_rep) + " cv score: " + str(new_rep.runtime_properties['score']) + " test: " + str(
-                new_rep.runtime_properties['test_score']))
-            if new_rep == None:
-                break
-
-            if new_rep.runtime_properties['score'] * self.score._sign > max_rep.runtime_properties['score']:
-                max_rep = new_rep
-                print("max representation: " + str(max_rep))
-
-            if new_rep.runtime_properties['score'] * self.score._sign <= rep_succesion[-1*(current_lambda+1)].runtime_properties['score']:
-                current_lambda += 1
-            if current_lambda >= self.lambda_threshold:
-                next_rep = max_rep
-                current_lambda = 0
-            else:
-                next_rep = new_rep
+            for rep in new_representations:
+                if rep != None:
+                    all_representations.append(rep)
 
 
 
@@ -536,12 +524,12 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
+    dataset = (Config.get('data_path') + '/house_price.csv', 79)
     #dataset = (Config.get('data_path') + '/synthetic_data.csv', 3)
 
 
@@ -553,12 +541,12 @@ if __name__ == '__main__':
 
 
     #regression
-    #selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=15,save_logs=True)
+    selector = GlobalTraversalCognito(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=neg_mean_squared_error_scorer, c_max=5, save_logs=True)
 
     #classification
-    selector = DepthFirstCognito(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
+    #selector = GlobalTraversalCognito(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

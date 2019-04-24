@@ -12,6 +12,7 @@ from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransfor
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
+from fastsklearnfeature.candidate_generation.feature_space.division import get_transformation_for_division
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
@@ -40,7 +41,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                                                                                                 'max_iter': [10000],
                                                                                                 'multi_class':['auto']
                                                                                                 },
-                 transformation_producer=get_transformation_for_cat_feature_space,
+                 transformation_producer=get_transformation_for_division,
                  epsilon=0.0,
                  c_max=2,
                  folds=10,
@@ -591,8 +592,8 @@ if __name__ == '__main__':
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    dataset = (Config.get('data_path') + '/house_price.csv', 79)
-    #dataset = (Config.get('data_path') + '/synthetic_data.csv', 3)
+    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
+    dataset = (Config.get('data_path') + '/synthetic_data.csv', 3)
 
 
 
@@ -603,7 +604,7 @@ if __name__ == '__main__':
 
 
     #regression
-    selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=15,save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=15,save_logs=True, epsilon=-np.inf)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=neg_mean_squared_error_scorer, c_max=5, save_logs=True)
 

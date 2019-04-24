@@ -32,7 +32,7 @@ import warnings
 #warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
-class DepthFirstCognito(CachedEvaluationFramework):
+class ComplexityGraph(CachedEvaluationFramework):
     def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'penalty': ['l2'],
                                                                                                 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'solver': ['lbfgs'],
@@ -46,17 +46,15 @@ class DepthFirstCognito(CachedEvaluationFramework):
                  folds=10,
                  score=make_scorer(f1_score, average='micro'),
                  max_seconds=None,
-                 save_logs=False,
-                 lambda_threshold=2
+                 save_logs=False
                  ):
-        super(DepthFirstCognito, self).__init__(dataset_config, classifier, grid_search_parameters,
+        super(ComplexityGraph, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
-        self.epsilon = -np.inf
+        self.epsilon = epsilon
         self.c_max = c_max
         self.folds = folds
         self.score = score
         self.save_logs = save_logs
-        self.lambda_threshold=lambda_threshold
 
         self.max_timestamp = None
         if type(max_seconds) != type(None):
@@ -127,6 +125,7 @@ class DepthFirstCognito(CachedEvaluationFramework):
         generated_features: List[CandidateFeature] = []
         for t_i in transformations:
             for f_i in t_i.get_combinations(features):
+                print(f_i)
                 if t_i.is_applicable(f_i):
                     sympy_representation = t_i.get_sympy_representation([p.get_sympy_representation() for p in f_i])
                     try:
@@ -421,21 +420,11 @@ class DepthFirstCognito(CachedEvaluationFramework):
 
         #select next representation
 
-        #next_id = np.argmax([rf.runtime_properties['score'] for rf in cost_2_raw_features[1]])
         next_id = np.random.randint(len(cost_2_raw_features[1]))
         next_rep = cost_2_raw_features[c][next_id]
 
-        max_rep = next_rep
-
-        current_lambda = 0
-
-        number_runs= 200
-
-        rep_succesion = []
-
-        for runs in range(number_runs):
-            rep_succesion.append(next_rep)
-            #print('next: ' + str(next_rep))
+        for runs in range(10):
+            print('next: ' + str(next_rep))
 
             #######################
             #create branch
@@ -477,39 +466,23 @@ class DepthFirstCognito(CachedEvaluationFramework):
             combinations_to_be_applied = self.generate_merge_for_combination(all_evaluated_features, [next_rep], cost_2_raw_features[1])
             current_layer.extend(combinations_to_be_applied)
 
-            #print(current_layer)
+            print(current_layer)
 
             # select next representation
             shuffled_indices = np.arange(len(current_layer))
             np.random.shuffle(shuffled_indices)
             for rep_i in range(len(current_layer)):
-                new_rep = current_layer[shuffled_indices[rep_i]]
+                next_rep = current_layer[shuffled_indices[rep_i]]
                 all_evaluated_features.add(next_rep.sympy_representation)
 
-                new_rep = evaluate_candidates([new_rep])[0]
-                if new_rep != None:
+                print(next_rep)
+                next_rep = evaluate_candidates([next_rep])[0]
+                if next_rep != None:
                     break
 
-            print(str(new_rep) + " cv score: " + str(new_rep.runtime_properties['score']) + " test: " + str(
-                new_rep.runtime_properties['test_score']))
-            if new_rep == None:
+            if next_rep == None:
                 break
-
-            if new_rep.runtime_properties['score'] * self.score._sign > max_rep.runtime_properties['score']:
-                max_rep = new_rep
-                print("max representation: " + str(max_rep))
-
-            if new_rep.runtime_properties['score'] * self.score._sign <= rep_succesion[-1*(current_lambda+1)].runtime_properties['score']:
-                current_lambda += 1
-            if current_lambda >= self.lambda_threshold:
-                next_rep = max_rep
-                current_lambda = 0
-            else:
-                next_rep = new_rep
-
-
-
-
+            print(str(next_rep) + " cv score: " + str(next_rep.runtime_properties['score']) + " test: " + str(next_rep.runtime_properties['score']))
 
 
 
@@ -558,7 +531,7 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=neg_mean_squared_error_scorer, c_max=5, save_logs=True)
 
     #classification
-    selector = DepthFirstCognito(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
+    selector = ComplexityGraph(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

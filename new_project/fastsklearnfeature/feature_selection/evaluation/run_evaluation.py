@@ -132,6 +132,7 @@ def evaluate(candidate_id: int):
         # remove parents' materialization
         candidate.get_name()
         candidate.get_complexity()
+        candidate.get_sympy_representation()
         candidate.parents = None
         return candidate
 

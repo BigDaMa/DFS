@@ -17,7 +17,7 @@ class ConcatenationFunction(sympy.Function):
                 all_arguments.add(argument)
         arguments = list(sympy.ordered(all_arguments))
 
-        if len(arguments)==1:
+        if len(arguments) == 1:
             return arguments[0]
 
         if arguments != list(args):
@@ -55,4 +55,4 @@ class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
         return properties
 
     def get_sympy_representation(self, input_attributes):
-        return ConcatenationFunction.eval(*input_attributes)
+        return ConcatenationFunction(*input_attributes)
