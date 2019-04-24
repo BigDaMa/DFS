@@ -497,18 +497,6 @@ class GlobalTraversalCognito(CachedEvaluationFramework):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)

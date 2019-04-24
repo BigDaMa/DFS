@@ -186,6 +186,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             for b_i in range(len(b)):
                 combo = [a[a_i], b[b_i]]
                 if id_t.is_applicable(combo):
+
                     sympy_representation = id_t.get_sympy_representation([p.get_sympy_representation() for p in combo])
                     if not sympy_representation in all_evaluated_features:
                         cat_candidate = CandidateFeature(copy.deepcopy(id_t), combo)

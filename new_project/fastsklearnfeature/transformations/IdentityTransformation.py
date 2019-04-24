@@ -3,25 +3,30 @@ from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 import sympy
 
+
 class ConcatenationFunction(sympy.Function):
     def __init__(self, *args):
         self.arguments = args
 
     @classmethod
     def eval(cls, *args):
-        all_arguments = set()
-        for argument in args:
-            if isinstance(argument, ConcatenationFunction):
-                all_arguments = all_arguments.union(argument.arguments)
-            else:
-                all_arguments.add(argument)
-        arguments = list(sympy.ordered(all_arguments))
+        def normalize_concat(inputs):
+            all_arguments_stored = set()
+            for input in inputs:
+                if isinstance(input, ConcatenationFunction):
+                    all_arguments_stored = all_arguments_stored.union(normalize_concat(input._args))
+                else:
+                    all_arguments_stored.add(input)
+            return all_arguments_stored
 
-        if len(arguments) == 1:
-            return arguments[0]
+        all_arguments = normalize_concat(args)
+        sorted_arguments = list(sympy.ordered(all_arguments))
 
-        if arguments != list(args):
-            return cls(*arguments)
+        if len(sorted_arguments) == 1:
+            return sorted_arguments[0]
+
+        if sorted_arguments != list(args):
+            return cls(*sorted_arguments)
 
 
 class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):

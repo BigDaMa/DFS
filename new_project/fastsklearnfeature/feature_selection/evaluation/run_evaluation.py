@@ -59,7 +59,7 @@ def evaluate(candidate_id: int):
     #process = psutil.Process(os.getpid())
     #print(str(process.memory_info().rss) + " " + str(sys.getsizeof(my_globale_module.candidate_list_global)))
 
-    candidate = my_globale_module.candidate_list_global[candidate_id]
+    candidate: CandidateFeature = my_globale_module.candidate_list_global[candidate_id]
 
     if type(my_globale_module.max_timestamp_global) != type(None) and time.time() >= my_globale_module.max_timestamp_global:
         raise RuntimeError('Out of time!')
