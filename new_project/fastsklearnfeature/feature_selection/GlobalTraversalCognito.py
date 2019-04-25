@@ -428,7 +428,7 @@ class GlobalTraversalCognito(CachedEvaluationFramework):
 
             current_max_rep = all_representations[0]
             for rep in all_representations:
-                if rep.runtime_properties['score'] > max_rep.runtime_properties['score']:
+                if rep.runtime_properties['score'] > current_max_rep.runtime_properties['score']:
                     current_max_rep = rep
             all_representations.remove(current_max_rep)
             next_rep = current_max_rep
@@ -482,8 +482,10 @@ class GlobalTraversalCognito(CachedEvaluationFramework):
                 current_layer.extend(binary_candidates_to_be_applied)
 
             # third: feature combinations
+            '''
             combinations_to_be_applied = self.generate_merge_for_combination(all_evaluated_features, [next_rep], cost_2_raw_features[1])
             current_layer.extend(combinations_to_be_applied)
+            '''
 
             #print(current_layer)
 

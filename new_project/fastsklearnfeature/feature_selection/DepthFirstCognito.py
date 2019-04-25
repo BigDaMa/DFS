@@ -474,9 +474,10 @@ class DepthFirstCognito(CachedEvaluationFramework):
                 current_layer.extend(binary_candidates_to_be_applied)
 
             # third: feature combinations
+            '''
             combinations_to_be_applied = self.generate_merge_for_combination(all_evaluated_features, [next_rep], cost_2_raw_features[1])
             current_layer.extend(combinations_to_be_applied)
-
+            '''
             #print(current_layer)
 
             # select next representation
