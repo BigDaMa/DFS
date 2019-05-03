@@ -23,7 +23,7 @@ class NonCommutativeBinaryTransformation(BaseEstimator, TransformerMixin, Binary
                 or 'bool' in str(feature_combination[i].properties['type'])):
                 return False
 
-        if self.method == np.divide and feature_combination[1].properties['has_zero']:
+        if self.method == np.divide and 'has_zero' in feature_combination[1].properties and feature_combination[1].properties['has_zero']:
             return False
 
         return True

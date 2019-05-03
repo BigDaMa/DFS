@@ -10,6 +10,9 @@ import tqdm
 import multiprocessing as mp
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
+from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
+from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
 
 class hashabledict(dict):
     def __hash__(self):
@@ -104,19 +107,31 @@ def evaluate(candidate_id: int):
             training_all = candidate.transformation.transform(training_all_input)
             one_test_set_transformed = candidate.transformation.transform(one_test_set_transformed_input)
 
-    candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
+
+    evaluated = True
+    if  (isinstance(candidate.transformation, MinusTransformation) or
+        (isinstance(candidate.transformation, HigherOrderCommutativeTransformation) and candidate.transformation.method == np.nansum)) \
+            and \
+        (
+          isinstance(my_globale_module.classifier_global, LogisticRegression) or
+          isinstance(my_globale_module.classifier_global, LinearRegression)
+        ):
+        candidate.runtime_properties['score'] = np.max([p.runtime_properties['score'] for p in candidate.parents])
+        candidate.runtime_properties['test_score'] = -1.0
+        candidate.runtime_properties['hyperparameters'] = None
+        y_pred=None
+        evaluated=False
+        candidate.runtime_properties['passed'] = True
+    else:
+        candidate.runtime_properties['passed'] = False
+        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
                                                                                                                                                              my_globale_module.grid_search_parameters_global, my_globale_module.score_global, my_globale_module.classifier_global, my_globale_module.target_train_folds_global, my_globale_module.target_test_folds_global, my_globale_module.train_y_all_target_global, my_globale_module.test_target_global)
 
     if Config.get_default('store.predictions', 'False') == 'True':
         candidate.runtime_properties['predictions'] = y_pred
 
 
-    #only save the transformed data if we need it in the future
-    candidate.runtime_properties['passed'] = False
-
-
-    #TODO: why minus?
-    if isinstance(candidate, RawFeature) or isinstance(candidate.transformation, MinusTransformation) or ((candidate.runtime_properties['score'] - np.max([p.runtime_properties['score'] for p in candidate.parents])) / my_globale_module.complexity_delta_global) * my_globale_module.score_global._sign > my_globale_module.epsilon_global:
+    if isinstance(candidate, RawFeature) or not evaluated or ((candidate.runtime_properties['score'] - np.max([p.runtime_properties['score'] for p in candidate.parents])) / my_globale_module.complexity_delta_global) * my_globale_module.score_global._sign > my_globale_module.epsilon_global:
         candidate.runtime_properties['passed'] = True
         if not isinstance(candidate, RawFeature):
             candidate.runtime_properties['train_transformed'] = train_transformed
@@ -135,7 +150,7 @@ def evaluate(candidate_id: int):
         candidate.get_name()
         candidate.get_complexity()
         candidate.get_sympy_representation()
-        #candidate.parents = None
+        candidate.parents = None
         return candidate
 
 

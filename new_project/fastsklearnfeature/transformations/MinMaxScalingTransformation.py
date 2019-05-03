@@ -30,7 +30,8 @@ class MinMaxScalingTransformation(BaseEstimator, TransformerMixin, NumericUnaryT
             return False
         if isinstance(feature_combination[0].transformation, MinMaxScalingTransformation):
             return False
-        if feature_combination[0].properties['min'] == 0.0 and feature_combination[0].properties['max'] == 1.0:
+        if 'min' in feature_combination[0].properties and feature_combination[0].properties['min'] == 0.0 and \
+           'max' in feature_combination[0].properties and feature_combination[0].properties['max'] == 1.0:
             return False
 
         return True

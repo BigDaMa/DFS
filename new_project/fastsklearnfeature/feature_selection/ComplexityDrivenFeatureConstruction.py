@@ -47,7 +47,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                  folds=10,
                  score=make_scorer(f1_score, average='micro'),
                  max_seconds=None,
-                 save_logs=False
+                 save_logs=False,
+                 reader=None
                  ):
         super(ComplexityDrivenFeatureConstruction, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
@@ -56,6 +57,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         self.folds = folds
         self.score = score
         self.save_logs = save_logs
+        self.reader = reader
 
         self.max_timestamp = None
         if type(max_seconds) != type(None):
@@ -580,21 +582,28 @@ if __name__ == '__main__':
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
 
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
-    #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
     #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
-    #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
-    #dataset = (Config.get('data_path') + '/ecoli.data', 8)
-    #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
-    #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
     #dataset = (Config.get('data_path') + '/house_price.csv', 79)
     #dataset = (Config.get('data_path') + '/synthetic_data.csv', 3)
+
+
+    from fastsklearnfeature.reader.OnlineOpenMLReader import OnlineOpenMLReader
+
+    from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
+
+    task_id = openMLname2task['transfusion']
+    # task_id = openMLname2task['iris']
+    # task_id = openMLname2task['ecoli']
+    # task_id = openMLname2task['breast cancer']
+    #task_id = openMLname2task['contraceptive']
+    #task_id = openMLname2task['german credit']
+    dataset = None
 
 
 
@@ -607,12 +616,19 @@ if __name__ == '__main__':
     #regression
     #selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=6,save_logs=True, epsilon=-np.inf)
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=r2_scorer,c_max=15, save_logs=True)
+    selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=r2_scorer, c_max=15, save_logs=True, reader=OnlineOpenMLReader(task_id))
+
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=neg_mean_squared_error_scorer, c_max=5, save_logs=True)
 
     #classification
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True)
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, epsilon=-np.inf)
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, epsilon=-np.inf)
+
+
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, reader=OnlineOpenMLReader(task_id))
+
+
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

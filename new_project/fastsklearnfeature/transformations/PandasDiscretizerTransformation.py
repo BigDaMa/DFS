@@ -38,7 +38,7 @@ class PandasDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUn
             return False
         if isinstance(feature_combination[0].transformation, PandasDiscretizerTransformation):
             return False
-        if feature_combination[0].properties['number_distinct_values'] <= self.number_bins:
+        if 'number_distinct_values' in feature_combination[0].properties and feature_combination[0].properties['number_distinct_values'] <= self.number_bins:
             return False
 
         return True

@@ -18,26 +18,36 @@ from fastsklearnfeature.transformations.generators.GroupByThenGenerator import G
 from fastsklearnfeature.transformations.PandasDiscretizerTransformation import PandasDiscretizerTransformation
 from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
 import pickle
+from sklearn.metrics import make_scorer
+from sklearn.metrics import f1_score
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics.scorer import r2_scorer
+from sklearn.metrics.scorer import neg_mean_squared_error_scorer
 
 from sklearn.feature_selection import mutual_info_classif
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
 
-
+import warnings
+warnings.filterwarnings("ignore")
 
 class ExploreKitSelection_iterative_search(EvaluationFramework):
-    def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'classifier__penalty': ['l2'],
+    def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'classifier__penalty': ['l2'],
                                                                                                 'classifier__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'classifier__solver': ['lbfgs'],
                                                                                                 'classifier__class_weight': ['balanced'],
                                                                                                 'classifier__max_iter': [10000],
                                                                                                 'classifier__multi_class':['auto']
                                                                                                 },
-                 transformation_producer=get_transformation_for_feature_space
+                 transformation_producer=get_transformation_for_feature_space,
+                 reader=None,
+                 score=make_scorer(f1_score, average='micro')
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
         self.transformation_producer = transformation_producer
+        self.reader = reader
+        self.score = score
 
 
 
@@ -183,7 +193,9 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
         for t_i in transformations:
             for f_i in t_i.get_combinations(features):
                 if t_i.is_applicable(f_i):
-                    generated_features.append(CandidateFeature(copy.deepcopy(t_i), f_i)) # do we need a deep copy here?
+                    can = CandidateFeature(copy.deepcopy(t_i), f_i)
+                    can.properties['type']= 'float'
+                    generated_features.append(can) # do we need a deep copy here?
                     #if output is multidimensional adapt here
         return generated_features
 
@@ -228,7 +240,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
             X = new_candidate.pipeline.fit_transform(self.dataset.splitted_values['train'], self.current_target)
             return mutual_info_classif(X, self.current_target)[-1]
         except:
-            return -1
+            return 0.0
 
     def evaluate_ranking(self, candidates):
         self.preprocessed_folds = []
@@ -249,8 +261,16 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
         # generate all candidates
         self.generate()
+
+        for raw_f in self.raw_features:
+            raw_f.properties['type'] = 'float'
+
+
+
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
+
+        myfolds = copy.deepcopy(list(self.preprocessed_folds))
 
         R_w = 15000
         max_iterations = 5 #15
@@ -270,15 +290,9 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
             print("base features: " + str(self.base_features))
 
-            current_result = self.evaluate_candidates([self.base_features])[0]
-            print(current_result)
-
-            results[i] = self.base_features
-            results[i].runtime_properties['test_score'] = current_result['test_score']
-            results[i].runtime_properties['score'] = current_result['score']
-            results[i].runtime_properties['execution_time'] = current_result['execution_time']
-            results[i].runtime_properties['global_time'] = current_result['global_time']
-            results[i].runtime_properties['hyperparameters'] = current_result['hyperparameters']
+            results[i] = self.evaluate_candidates([self.base_features], myfolds)[0]
+            print(results[i])
+            print(results[i].runtime_properties)
 
             feature_scores = self.evaluate_ranking(all_features)
             ids = np.argsort(np.array(feature_scores) * -1)
@@ -291,22 +305,18 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
                     break
 
                 current_feature_set = CandidateFeature(IdentityTransformation(2), [self.base_features, all_features[ids[f_i]]])
-                result = self.evaluate_candidates([current_feature_set])[0]
+                print(current_feature_set)
+                result = self.evaluate_candidates([current_feature_set], myfolds)[0]
                 evaluated_candidate_features += 1
-                improvement = result['score'] - current_result['score']
+                improvement = result.runtime_properties['score'] - results[i].runtime_properties['score']
 
-                print("Candidate: " + str(all_features[ids[f_i]]) + " score: " + str(result['score']) + " info: " + str(feature_scores[ids[f_i]]))
+                print("Candidate: " + str(all_features[ids[f_i]]) + " score: " + str(result.runtime_properties['score']) + " info: " + str(feature_scores[ids[f_i]]))
                 print("improvement: " + str(improvement))
                 if improvement > best_improvement_so_far:
                     best_improvement_so_far = improvement
-                    best_Feature_So_Far = current_feature_set
+                    best_Feature_So_Far = result
 
                     results[i] = best_Feature_So_Far
-                    results[i].runtime_properties['score'] = result['score']
-                    results[i].runtime_properties['test_score'] = result['test_score']
-                    results[i].runtime_properties['execution_time'] = result['execution_time']
-                    results[i].runtime_properties['global_time'] = result['global_time']
-                    results[i].runtime_properties['hyperparameters'] = result['hyperparameters']
                     results[i].runtime_properties['score_improvement'] = improvement
                     results[i].runtime_properties['info_gain'] = feature_scores[ids[f_i]]
 
@@ -357,9 +367,16 @@ if __name__ == '__main__':
     #dataset = (Config.get('ecoli.csv'), 8)
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
-    dataset = (Config.get('transfusion.csv'), 4)
+    #dataset = (Config.get('transfusion.csv'), 4)
 
-    selector = ExploreKitSelection_iterative_search(dataset)
+    from fastsklearnfeature.reader.OnlineOpenMLReader import OnlineOpenMLReader
+
+    from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
+
+    dataset = None
+    task_id = openMLname2task['transfusion']
+
+    selector = ExploreKitSelection_iterative_search(dataset, reader=OnlineOpenMLReader(task_id))
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     print(selector.run())

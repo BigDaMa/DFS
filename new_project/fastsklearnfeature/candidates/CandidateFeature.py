@@ -26,6 +26,7 @@ class CandidateFeature:
         self.sympy_representation = None
         self.identity_features = None
         self.complexity_score = None
+        self.properties = {}
 
         self.pipeline = self.create_pipeline()
 

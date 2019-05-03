@@ -24,7 +24,61 @@ import tqdm
 from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
 from functools import partial
+import itertools
 
+class hashabledict(dict):
+    def __hash__(self):
+        return hash(tuple(sorted(self.items())))
+
+
+
+def grid(grid_search_parameters, preprocessed_folds, train_data, current_target,test_data, test_target, pipeline, classifier, score):
+    hyperparam_to_score_list = {}
+
+    my_keys = list(grid_search_parameters.keys())
+
+    for parameter_combination in itertools.product(*[grid_search_parameters[k] for k in my_keys]):
+        parameter_set = hashabledict(zip(my_keys, parameter_combination))
+        hyperparam_to_score_list[parameter_set] = []
+        for train_id, test_id in preprocessed_folds:
+            clf = classifier(**parameter_set)
+            my_train = pipeline.fit_transform(train_data[train_id], current_target[train_id])
+            clf.fit(my_train, current_target[train_id])
+            y_pred = clf.predict(pipeline.transform(train_data[test_id]))
+
+            hyperparam_to_score_list[parameter_set].append(
+                score._sign * score._score_func(current_target[test_id], y_pred, **score._kwargs))
+
+
+    best_param = None
+    best_mean_cross_val_score = -float("inf")
+    for parameter_config, score_list in hyperparam_to_score_list.items():
+        mean_score = np.mean(score_list)
+        if mean_score > best_mean_cross_val_score:
+            best_param = parameter_config
+            best_mean_cross_val_score = mean_score
+
+    test_score = None
+    if Config.get_default('score.test', 'False') == 'True':
+        # refit to entire training and test on test set
+        clf = classifier(**best_param)
+        my_train = pipeline.fit_transform(train_data, current_target)
+        clf.fit(my_train, current_target)
+        y_pred = clf.predict(pipeline.transform(test_data))
+        test_score = score._sign * score._score_func(test_target, y_pred, **score._kwargs)
+
+        # np.save('/tmp/true_predictions', self.test_target)
+
+    return best_mean_cross_val_score, test_score, best_param, y_pred
+
+'''
+def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, preprocessed_folds, score, train_data, current_target, train_X_all, train_y_all_target, test_data, test_target):
+    candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred = grid(grid_search_parameters, preprocessed_folds, train_data, current_target, test_data, test_target, candidate.pipeline, classifier,
+         score)
+
+
+    return candidate
+'''
 
 def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, preprocessed_folds, score, train_data, current_target, train_X_all, train_y_all_target, test_data, test_target):
     pipeline = Pipeline([('features', FeatureUnion(
@@ -79,15 +133,18 @@ class EvaluationFramework:
 
     #generate all possible combinations of features
     def generate(self, seed=42):
-        s = None
-        if isinstance(self.classifier(), ClassifierMixin):
-            s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=seed)
-        elif isinstance(self.classifier(), RegressorMixin):
-            s = RandomSplitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=seed)
-        else:
-            pass
+        if type(self.reader) == type(None):
+            s = None
+            if isinstance(self.classifier(), ClassifierMixin):
+                s = Splitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=seed)
+            elif isinstance(self.classifier(), RegressorMixin):
+                s = RandomSplitter(train_fraction=[0.6, 10000000], valid_fraction=0.0, test_fraction=0.4, seed=seed)
+            else:
+                pass
 
-        self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
+            self.dataset = Reader(self.dataset_config[0], self.dataset_config[1], s)
+        else:
+            self.dataset = self.reader
         self.raw_features = self.dataset.read()
 
         print("training:" + str(len(self.dataset.splitted_target['train'])))
@@ -129,6 +186,7 @@ class EvaluationFramework:
             self.preprocessed_folds.append((train, test))
 
 
+    '''
     def evaluate_candidates(self, candidates: List[CandidateFeature]) -> List[CandidateFeature]:
         pool = mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count())))
 
@@ -145,7 +203,6 @@ class EvaluationFramework:
                               test_data=self.dataset.splitted_values['test'],
                               test_target=self.test_target)
 
-
         if Config.get_default("show_progess", 'True') == 'True':
             results = []
             for x in tqdm.tqdm(pool.imap_unordered(my_function, candidates), total=len(candidates)):
@@ -154,6 +211,24 @@ class EvaluationFramework:
             results = pool.map(my_function, candidates)
 
 
+        return results
+    '''
+
+    def evaluate_candidates(self, candidates: List[CandidateFeature], my_folds) -> List[CandidateFeature]:
+        my_function = partial(evaluate, classifier=self.classifier,
+                              grid_search_parameters=self.grid_search_parameters,
+                              preprocessed_folds=my_folds,
+                              score=self.score,
+                              train_data=self.dataset.splitted_values['train'],
+                              current_target=self.current_target,
+                              train_X_all=self.train_X_all,
+                              train_y_all_target=self.train_y_all_target,
+                              test_data=self.dataset.splitted_values['test'],
+                              test_target=self.test_target)
+
+        results = []
+        for can in candidates:
+            results.append(my_function(can))
         return results
 
 
