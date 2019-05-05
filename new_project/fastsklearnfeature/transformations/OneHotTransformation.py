@@ -51,6 +51,7 @@ class OneHotTransformation(BaseEstimator, TransformerMixin, Transformation):
         properties = {}
         # type properties
         properties['type'] = np.bool
+        properties['categorical'] = False
 
         try:
             # missing values properties

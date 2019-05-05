@@ -11,7 +11,8 @@ class OneHotGenerator:
     def produce(self):
         transformation_classes: List[OneHotTransformation] = []
         for c in range(len(self.raw_features)):
-            if self.raw_features[c].properties['type'] == np.dtype('O'):
+            if self.raw_features[c].properties['type'] == np.dtype('O') or \
+                ('categorical' in self.raw_features[c].properties and self.raw_features[c].properties['categorical']):
                 distinct_values = list(np.unique(self.training_all[:, c]))
                 for dv_i in range(len(distinct_values)):
                     transformation_classes.append(OneHotTransformation(distinct_values[dv_i], dv_i, self.raw_features[c]))

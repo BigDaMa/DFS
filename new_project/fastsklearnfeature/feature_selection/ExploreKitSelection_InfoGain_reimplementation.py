@@ -273,7 +273,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
         myfolds = copy.deepcopy(list(self.preprocessed_folds))
 
         R_w = 15000
-        max_iterations = 5 #15
+        max_iterations = 15 #15
         threshold_f = 0.001
         epsilon_w = 0.01
         threshold_w = 0.0
@@ -379,7 +379,7 @@ if __name__ == '__main__':
     selector = ExploreKitSelection_iterative_search(dataset, reader=OnlineOpenMLReader(task_id))
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
-    print(selector.run())
+    selector.run()
 
 
 

@@ -597,12 +597,17 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
 
-    task_id = openMLname2task['transfusion']
+    #task_id = openMLname2task['transfusion'] #interesting
     # task_id = openMLname2task['iris']
     # task_id = openMLname2task['ecoli']
     # task_id = openMLname2task['breast cancer']
     #task_id = openMLname2task['contraceptive']
-    #task_id = openMLname2task['german credit']
+    #task_id = openMLname2task['german credit'] #interesting
+    #task_id = openMLname2task['monks']
+    #task_id = openMLname2task['banknote']
+    #task_id = openMLname2task['heart-statlog']
+    #task_id = openMLname2task['musk']
+    task_id = openMLname2task['eucalyptus']
     dataset = None
 
 
@@ -616,7 +621,7 @@ if __name__ == '__main__':
     #regression
     #selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=6,save_logs=True, epsilon=-np.inf)
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=r2_scorer,c_max=15, save_logs=True)
-    selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=r2_scorer, c_max=15, save_logs=True, reader=OnlineOpenMLReader(task_id))
+    #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=r2_scorer, c_max=15, save_logs=True, reader=OnlineOpenMLReader(task_id))
 
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=neg_mean_squared_error_scorer, c_max=5, save_logs=True)
