@@ -13,6 +13,7 @@ from fastsklearnfeature.transformations.MinusTransformation import MinusTransfor
 from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
+from fastsklearnfeature.transformations.OneHotTransformation import OneHotTransformation
 
 class hashabledict(dict):
     def __hash__(self):
@@ -109,12 +110,17 @@ def evaluate(candidate_id: int):
 
 
     evaluated = True
-    if  (isinstance(candidate.transformation, MinusTransformation) or
-        (isinstance(candidate.transformation, HigherOrderCommutativeTransformation) and candidate.transformation.method == np.nansum)) \
-            and \
+    if  isinstance(candidate.transformation, OneHotTransformation) or \
         (
-          isinstance(my_globale_module.classifier_global, LogisticRegression) or
-          isinstance(my_globale_module.classifier_global, LinearRegression)
+            (
+                    isinstance(candidate.transformation, MinusTransformation) or
+                    (isinstance(candidate.transformation, HigherOrderCommutativeTransformation) and candidate.transformation.method == np.nansum)
+            ) \
+                and \
+            (
+              isinstance(my_globale_module.classifier_global, LogisticRegression) or
+              isinstance(my_globale_module.classifier_global, LinearRegression)
+            )
         ):
         candidate.runtime_properties['score'] = np.max([p.runtime_properties['score'] for p in candidate.parents])
         candidate.runtime_properties['test_score'] = -1.0

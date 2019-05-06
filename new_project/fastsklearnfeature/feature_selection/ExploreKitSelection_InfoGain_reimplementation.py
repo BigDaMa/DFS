@@ -40,7 +40,8 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
                                                                                                 },
                  transformation_producer=get_transformation_for_feature_space,
                  reader=None,
-                 score=make_scorer(f1_score, average='micro')
+                 score=make_scorer(f1_score, average='micro'),
+                 folds=10
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
@@ -48,6 +49,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
         self.transformation_producer = transformation_producer
         self.reader = reader
         self.score = score
+        self.folds = folds
 
 
 
@@ -237,8 +239,8 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
     def get_info_gain_of_feature(self, candidate: CandidateFeature):
         try:
             new_candidate = CandidateFeature(IdentityTransformation(2), [self.base_features, candidate])
-            X = new_candidate.pipeline.fit_transform(self.dataset.splitted_values['train'], self.current_target)
-            return mutual_info_classif(X, self.current_target)[-1]
+            X = new_candidate.pipeline.fit_transform(self.dataset.splitted_values['train'], self.train_y_all_target)
+            return mutual_info_classif(X, self.train_y_all_target)[-1]
         except:
             return 0.0
 
@@ -296,6 +298,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
             feature_scores = self.evaluate_ranking(all_features)
             ids = np.argsort(np.array(feature_scores) * -1)
+            print(feature_scores)
 
             best_improvement_so_far = np.NINF
             best_Feature_So_Far = None
@@ -367,16 +370,17 @@ if __name__ == '__main__':
     #dataset = (Config.get('ecoli.csv'), 8)
     #dataset = (Config.get('abalone.csv'), 8)
     #dataset = (Config.get('breastcancer.csv'), 0)
-    #dataset = (Config.get('transfusion.csv'), 4)
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
 
     from fastsklearnfeature.reader.OnlineOpenMLReader import OnlineOpenMLReader
 
     from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
 
-    dataset = None
-    task_id = openMLname2task['transfusion']
+    #dataset = None
+    #task_id = openMLname2task['transfusion']
 
-    selector = ExploreKitSelection_iterative_search(dataset, reader=OnlineOpenMLReader(task_id))
+    #selector = ExploreKitSelection_iterative_search(dataset, reader=OnlineOpenMLReader(task_id))
+    selector = ExploreKitSelection_iterative_search(dataset)
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()

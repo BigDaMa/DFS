@@ -131,7 +131,7 @@ class FeatureSelectionkBest(EvaluationFramework):
 
             print("time: " + str(time.time() - self.global_starting_time))
 
-            clf = GridSearchCV(LogisticRegression(), self.grid_search_parameters, cv=self.preprocessed_folds, scoring=self.score, iid=False,
+            clf = GridSearchCV(self.classifier(), self.grid_search_parameters, cv=self.preprocessed_folds, scoring=self.score, iid=False,
                                error_score='raise')
             clf.fit(X, self.current_target)
 

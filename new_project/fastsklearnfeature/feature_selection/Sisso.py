@@ -4,6 +4,7 @@ from fastsklearnfeature.transformations.feature_selection.SissoTransformer impor
 from typing import List
 import time
 from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
 import pickle
@@ -13,19 +14,26 @@ from sklearn.model_selection import StratifiedKFold
 from fastsklearnfeature.configuration.Config import Config
 import itertools
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
+from sklearn.metrics.scorer import r2_scorer
 
 
-class ExploreKitSelection_iterative_search(EvaluationFramework):
-    def __init__(self, dataset_config, classifier=LogisticRegression(), grid_search_parameters={'penalty': ['l2'],
+class Sisso(EvaluationFramework):
+    def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'penalty': ['l2'],
                                                                                                 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000],
                                                                                                 'solver': ['lbfgs'],
                                                                                                 'class_weight': ['balanced'],
                                                                                                 'max_iter': [10000]
-                                                                                                }
+                                                                                                },
+                 reader=None,
+                 score=make_scorer(f1_score, average='micro'),
+                 folds=10
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
+        self.reader = reader
+        self.score = score
+        self.folds=folds
 
 
 
@@ -118,22 +126,21 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
 
         t = CandidateFeature(SissoTransformer(len(self.raw_features), feature_names, ["^2", "^3", "1/"]), [all_f])
 
-        t.pipeline.fit(self.dataset.splitted_values['train'], self.current_target)
+        t.pipeline.fit(self.dataset.splitted_values['train'], self.train_y_all_target)
         X = t.transform(self.dataset.splitted_values['train'])
         X_test = t.transform(self.dataset.splitted_values['test'])
 
-        print((time.time() - self.global_starting_time))
+        print("time: " + str(time.time() - self.global_starting_time))
 
-        self.preprocessed_folds = []
-        for train, test in StratifiedKFold(n_splits=10, random_state=42).split(self.dataset.splitted_values['train'],
-                                                                               self.current_target):
-            self.preprocessed_folds.append((train, test))
-
-        clf = GridSearchCV(LogisticRegression(), self.grid_search_parameters, cv=self.preprocessed_folds, scoring=make_scorer(f1_score, average='micro'), iid=False,
+        clf = GridSearchCV(self.classifier(), self.grid_search_parameters, cv=self.preprocessed_folds,
+                           scoring=self.score, iid=False,
                            error_score='raise')
-        clf.fit(X, self.current_target)
+        clf.fit(X, self.train_y_all_target)
 
-        print(clf.score(X_test, self.test_target))
+        print(X_test)
+
+        print('test score: ' + str(clf.score(X_test, self.test_target)))
+        print("\n\n")
 
 
 
@@ -151,10 +158,29 @@ if __name__ == '__main__':
     # dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_23_cmc_contraceptive.csv", 9)
     # dataset = ("/home/felix/datasets/ExploreKit/csv/phpn1jVwe_mammography.csv", 6)
 
-    dataset = (Config.get('transfusion.csv'), 4)
+    #dataset = (Config.get('data_path') + '/house_price.csv', 79)
 
-    selector = ExploreKitSelection_iterative_search(dataset)
-    #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
+    from fastsklearnfeature.reader.OnlineOpenMLReader import OnlineOpenMLReader
+    from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
+
+    task_id = openMLname2task['transfusion'] #interesting
+    # task_id = openMLname2task['iris']
+    # task_id = openMLname2task['ecoli']
+    # task_id = openMLname2task['breast cancer']
+    # task_id = openMLname2task['contraceptive']
+    #task_id = openMLname2task['german credit']  # interesting
+    # task_id = openMLname2task['monks']
+    # task_id = openMLname2task['banknote']
+    # task_id = openMLname2task['heart-statlog']
+    # task_id = openMLname2task['musk']
+    # task_id = openMLname2task['eucalyptus']
+    #dataset = None
+
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+
+    #selector = Sisso(dataset, reader=OnlineOpenMLReader(task_id))
+    #selector = Sisso(dataset, score=r2_scorer, classifier=LinearRegression)
+    selector = Sisso(dataset)
 
     results = selector.run()
 

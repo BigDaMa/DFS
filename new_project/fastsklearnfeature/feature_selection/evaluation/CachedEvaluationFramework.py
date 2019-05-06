@@ -30,44 +30,7 @@ class CachedEvaluationFramework(EvaluationFramework):
         super(CachedEvaluationFramework, self).__init__(dataset_config, classifier, grid_search_parameters, transformation_producer)
 
 
-    def generate_target(self):
-        current_target = self.dataset.splitted_target['train']
 
-        if isinstance(self.classifier(), ClassifierMixin):
-            label_encoder = LabelEncoder()
-            label_encoder.fit(current_target)
-
-            current_target = label_encoder.transform(current_target)
-
-            if Config.get_default('score.test', 'False') == 'True':
-                self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
-                self.train_y_all_target = label_encoder.transform(self.train_y_all)
-
-
-            self.preprocessed_folds = []
-            for train, test in StratifiedKFold(n_splits=self.folds, random_state=42).split(self.dataset.splitted_values['train'],
-                                                                                   current_target):
-                self.preprocessed_folds.append((train, test))
-        elif isinstance(self.classifier(), RegressorMixin):
-
-            if Config.get_default('score.test', 'False') == 'True':
-                self.test_target = self.dataset.splitted_target['test']
-                self.train_y_all_target = self.train_y_all
-
-            self.preprocessed_folds = []
-            for train, test in KFold(n_splits=self.folds, random_state=42).split(
-                    self.dataset.splitted_values['train'],
-                    current_target):
-                self.preprocessed_folds.append((train, test))
-        else:
-            pass
-
-        self.target_train_folds = [None] * self.folds
-        self.target_test_folds = [None] * self.folds
-
-        for fold in range(len(self.preprocessed_folds)):
-            self.target_train_folds[fold] = current_target[self.preprocessed_folds[fold][0]]
-            self.target_test_folds[fold] = current_target[self.preprocessed_folds[fold][1]]
 
 
 

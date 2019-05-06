@@ -468,6 +468,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             results = evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
 
+            #print(results)
+
             layer_end_time = time.time() - self.global_starting_time
 
             #calculate whether we drop the evaluated candidate
@@ -592,6 +594,8 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + '/house_price.csv', 79)
     #dataset = (Config.get('data_path') + '/synthetic_data.csv', 3)
 
+    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+
 
     from fastsklearnfeature.reader.OnlineOpenMLReader import OnlineOpenMLReader
 
@@ -602,13 +606,13 @@ if __name__ == '__main__':
     # task_id = openMLname2task['ecoli']
     # task_id = openMLname2task['breast cancer']
     #task_id = openMLname2task['contraceptive']
-    task_id = openMLname2task['german credit'] #interesting
+    #task_id = openMLname2task['german credit'] #interesting
     #task_id = openMLname2task['monks']
     #task_id = openMLname2task['banknote']
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk']
     #task_id = openMLname2task['eucalyptus']
-    dataset = None
+    #dataset = None
 
 
 
@@ -631,9 +635,11 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, epsilon=-np.inf)
 
 
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, reader=OnlineOpenMLReader(task_id))
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, reader=OnlineOpenMLReader(task_id))
 
 
+    #paper featureset
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
