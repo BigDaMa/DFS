@@ -24,13 +24,15 @@ class Run_RawFeatures(EvaluationFramework):
                                                                                                 'classifier__multi_class':['auto']
                                                                                                 },
                  transformation_producer=get_transformation_for_feature_space,
-                 score=make_scorer(f1_score, average='micro')
+                 score=make_scorer(f1_score, average='micro'),
+                 reader=None
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
         self.transformation_producer = transformation_producer
         self.score = score
+        self.reader = reader
 
 
 
@@ -190,6 +192,8 @@ class Run_RawFeatures(EvaluationFramework):
         #starting_feature_matrix = self.create_starting_features()
         self.generate_target()
 
+        myfolds = copy.deepcopy(list(self.preprocessed_folds))
+
         numeric_features = []
         for r in self.raw_features:
             if 'float' in str(r.properties['type']) \
@@ -201,7 +205,7 @@ class Run_RawFeatures(EvaluationFramework):
 
         combo = CandidateFeature(IdentityTransformation(len(numeric_features)), numeric_features)
 
-        results = self.evaluate_candidates([combo])
+        results = self.evaluate_candidates([combo], myfolds)
 
         print(results[0].runtime_properties)
 
@@ -222,7 +226,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     # dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     # dataset = (Config.get('data_path') + '/iris.data', 4)
     # dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
@@ -233,7 +237,23 @@ if __name__ == '__main__':
     # dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
 
-    selector = Run_RawFeatures(dataset)
+    from fastsklearnfeature.reader.OnlineOpenMLReader import OnlineOpenMLReader
+    from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
+
+    #task_id = openMLname2task['transfusion'] #interesting
+    # task_id = openMLname2task['iris']
+    # task_id = openMLname2task['ecoli']
+    # task_id = openMLname2task['breast cancer']
+    # task_id = openMLname2task['contraceptive']
+    task_id = openMLname2task['german credit'] #interesting
+    # task_id = openMLname2task['monks']
+    # task_id = openMLname2task['banknote']
+    # task_id = openMLname2task['heart-statlog']
+    # task_id = openMLname2task['musk']
+    #task_id = openMLname2task['eucalyptus']
+    dataset = None
+
+    selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id))
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()

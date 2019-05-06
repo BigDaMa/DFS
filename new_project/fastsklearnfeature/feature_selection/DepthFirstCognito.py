@@ -47,7 +47,8 @@ class DepthFirstCognito(CachedEvaluationFramework):
                  score=make_scorer(f1_score, average='micro'),
                  max_seconds=None,
                  save_logs=False,
-                 lambda_threshold=2
+                 lambda_threshold=2,
+                 reader=None
                  ):
         super(DepthFirstCognito, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
@@ -57,6 +58,7 @@ class DepthFirstCognito(CachedEvaluationFramework):
         self.score = score
         self.save_logs = save_logs
         self.lambda_threshold=lambda_threshold
+        self.reader=reader
 
         self.max_timestamp = None
         if type(max_seconds) != type(None):

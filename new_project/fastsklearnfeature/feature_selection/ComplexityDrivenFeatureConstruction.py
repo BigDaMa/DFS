@@ -602,12 +602,12 @@ if __name__ == '__main__':
     # task_id = openMLname2task['ecoli']
     # task_id = openMLname2task['breast cancer']
     #task_id = openMLname2task['contraceptive']
-    #task_id = openMLname2task['german credit'] #interesting
+    task_id = openMLname2task['german credit'] #interesting
     #task_id = openMLname2task['monks']
     #task_id = openMLname2task['banknote']
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk']
-    task_id = openMLname2task['eucalyptus']
+    #task_id = openMLname2task['eucalyptus']
     dataset = None
 
 
