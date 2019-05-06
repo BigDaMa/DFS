@@ -20,10 +20,12 @@ import sympy
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
 from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics.scorer import r2_scorer
 from sklearn.metrics.scorer import neg_mean_squared_error_scorer
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates
+import numpy as np
 
 
 import warnings
@@ -621,7 +623,6 @@ if __name__ == '__main__':
     start = time.time()
 
 
-
     #regression
     #selector = ComplexityDrivenFeatureConstruction(dataset,classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]},score=r2_scorer,c_max=6,save_logs=True, epsilon=-np.inf)
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression,grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=r2_scorer,c_max=15, save_logs=True)
@@ -639,21 +640,18 @@ if __name__ == '__main__':
 
 
     #paper featureset
-    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=None, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=None, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
 
-
-    '''
-    selector = ComplexityDrivenFeatureConstruction(dataset,
-                                                   classifier=KNeighborsClassifier,
+    selector = ComplexityDrivenFeatureConstruction(dataset, classifier=KNeighborsClassifier,
                                                    grid_search_parameters={'n_neighbors': np.arange(3, 10),
                                                                            'weights': ['uniform', 'distance'],
                                                                            'metric': ['minkowski', 'euclidean',
-                                                                                      'manhattan']},
-                                                   c_max=5, save_logs=True) #,transformation_producer=get_transformation_for_cat_feature_space)
-    '''
+                                                                                      'manhattan']}, c_max=5,
+                                                   save_logs=True,
+                                                   transformation_producer=get_transformation_for_cat_feature_space)
 
     selector.run()
 

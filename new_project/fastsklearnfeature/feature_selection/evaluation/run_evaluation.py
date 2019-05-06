@@ -11,6 +11,7 @@ import multiprocessing as mp
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
 from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
+from fastsklearnfeature.transformations.binary.NonCommutativeBinaryTransformation import NonCommutativeBinaryTransformation
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
 from fastsklearnfeature.transformations.OneHotTransformation import OneHotTransformation
@@ -114,7 +115,8 @@ def evaluate(candidate_id: int):
         (
             (
                     isinstance(candidate.transformation, MinusTransformation) or
-                    (isinstance(candidate.transformation, HigherOrderCommutativeTransformation) and candidate.transformation.method == np.nansum)
+                    (isinstance(candidate.transformation, HigherOrderCommutativeTransformation) and candidate.transformation.method == np.nansum) or
+                    (isinstance(candidate.transformation, NonCommutativeBinaryTransformation) and candidate.transformation.method == np.subtract)
             ) \
                 and \
             (
