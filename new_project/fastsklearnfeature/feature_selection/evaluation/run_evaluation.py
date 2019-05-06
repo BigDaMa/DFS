@@ -110,7 +110,7 @@ def evaluate(candidate_id: int):
 
 
     evaluated = True
-    if  isinstance(candidate.transformation, OneHotTransformation) or \
+    if isinstance(candidate.transformation, OneHotTransformation) or \
         (
             (
                     isinstance(candidate.transformation, MinusTransformation) or
@@ -125,8 +125,8 @@ def evaluate(candidate_id: int):
         candidate.runtime_properties['score'] = np.max([p.runtime_properties['score'] for p in candidate.parents])
         candidate.runtime_properties['test_score'] = -1.0
         candidate.runtime_properties['hyperparameters'] = None
-        y_pred=None
-        evaluated=False
+        y_pred = None
+        evaluated = False
         candidate.runtime_properties['passed'] = True
     else:
         candidate.runtime_properties['passed'] = False
