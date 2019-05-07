@@ -538,6 +538,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         max_feature.runtime_properties['score']) + "\n")
                 #print("hyper: " + str(max_feature.runtime_properties['hyperparameters']))
 
+                print(max_feature.runtime_properties['fold_scores'])
+
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
                 pickle.dump(cost_2_unary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_unary.p", "wb"))
@@ -596,7 +598,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + '/house_price.csv', 79)
     #dataset = (Config.get('data_path') + '/synthetic_data.csv', 3)
 
-    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
 
 
     from fastsklearnfeature.reader.OnlineOpenMLReader import OnlineOpenMLReader
@@ -608,7 +610,7 @@ if __name__ == '__main__':
     # task_id = openMLname2task['ecoli']
     # task_id = openMLname2task['breast cancer']
     #task_id = openMLname2task['contraceptive']
-    #task_id = openMLname2task['german credit'] #interesting
+    task_id = openMLname2task['german credit'] #interesting
     #task_id = openMLname2task['monks']
     #task_id = openMLname2task['banknote']
     #task_id = openMLname2task['heart-statlog']
@@ -640,11 +642,14 @@ if __name__ == '__main__':
 
 
     #paper featureset
-    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=None, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
+    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True,
+                                                   transformation_producer=get_transformation_for_cat_feature_space, reader=OnlineOpenMLReader(task_id))
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
 
+    '''
     selector = ComplexityDrivenFeatureConstruction(dataset, classifier=KNeighborsClassifier,
                                                    grid_search_parameters={'n_neighbors': np.arange(3, 10),
                                                                            'weights': ['uniform', 'distance'],
@@ -652,6 +657,7 @@ if __name__ == '__main__':
                                                                                       'manhattan']}, c_max=5,
                                                    save_logs=True,
                                                    transformation_producer=get_transformation_for_cat_feature_space)
+    '''
 
     selector.run()
 

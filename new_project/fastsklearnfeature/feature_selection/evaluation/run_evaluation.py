@@ -15,6 +15,7 @@ from fastsklearnfeature.transformations.binary.NonCommutativeBinaryTransformatio
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
 from fastsklearnfeature.transformations.OneHotTransformation import OneHotTransformation
+import copy
 
 class hashabledict(dict):
     def __hash__(self):
@@ -40,11 +41,14 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
 
     best_param = None
     best_mean_cross_val_score = -float("inf")
+    best_score_list = []
     for parameter_config, score_list in hyperparam_to_score_list.items():
+        #mean_score = np.min(score_list)
         mean_score = np.mean(score_list)
         if mean_score > best_mean_cross_val_score:
             best_param = parameter_config
             best_mean_cross_val_score = mean_score
+            best_score_list = copy.deepcopy(score_list)
 
     test_score = None
     if Config.get_default('score.test', 'False') == 'True':
@@ -57,7 +61,7 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
         #np.save('/tmp/true_predictions', self.test_target)
 
 
-    return best_mean_cross_val_score, test_score, best_param, y_pred
+    return best_mean_cross_val_score, test_score, best_param, y_pred, best_score_list
 
 
 
@@ -132,11 +136,14 @@ def evaluate(candidate_id: int):
         candidate.runtime_properties['passed'] = True
     else:
         candidate.runtime_properties['passed'] = False
-        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
+        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred, best_score_list = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
                                                                                                                                                              my_globale_module.grid_search_parameters_global, my_globale_module.score_global, my_globale_module.classifier_global, my_globale_module.target_train_folds_global, my_globale_module.target_test_folds_global, my_globale_module.train_y_all_target_global, my_globale_module.test_target_global)
 
     if Config.get_default('store.predictions', 'False') == 'True':
         candidate.runtime_properties['predictions'] = y_pred
+
+
+    candidate.runtime_properties['fold_scores'] = best_score_list
 
 
     if isinstance(candidate, RawFeature) or not evaluated or ((candidate.runtime_properties['score'] - np.max([p.runtime_properties['score'] for p in candidate.parents])) / my_globale_module.complexity_delta_global) * my_globale_module.score_global._sign > my_globale_module.epsilon_global:
