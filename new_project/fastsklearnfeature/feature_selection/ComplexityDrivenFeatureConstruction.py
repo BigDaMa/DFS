@@ -643,8 +643,7 @@ if __name__ == '__main__':
 
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True,
-                                                   transformation_producer=get_transformation_for_cat_feature_space, reader=OnlineOpenMLReader(task_id))
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space, reader=OnlineOpenMLReader(task_id))
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
