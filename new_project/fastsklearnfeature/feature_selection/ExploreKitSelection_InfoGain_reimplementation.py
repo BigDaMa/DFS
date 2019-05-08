@@ -322,6 +322,7 @@ class ExploreKitSelection_iterative_search(EvaluationFramework):
                     results[i] = best_Feature_So_Far
                     results[i].runtime_properties['score_improvement'] = improvement
                     results[i].runtime_properties['info_gain'] = feature_scores[ids[f_i]]
+                    results[i].runtime_properties['global time'] = time.time() - self.global_starting_time
 
                     pickle.dump(results, open(Config.get("tmp.folder") + "/explorekit_results.p", "wb"))
 
