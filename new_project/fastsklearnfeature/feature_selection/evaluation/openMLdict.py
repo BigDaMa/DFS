@@ -10,3 +10,7 @@ openMLname2task['banknote'] = 10093
 openMLname2task['heart-statlog'] = 282
 openMLname2task['musk'] = 3950
 openMLname2task['eucalyptus'] =2079
+openMLname2task['haberman'] =272
+openMLname2task['quake'] = 3638
+openMLname2task['volcanoes'] = 10103
+openMLname2task['analcatdata'] = 3876

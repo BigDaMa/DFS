@@ -25,7 +25,8 @@ class Run_RawFeatures(EvaluationFramework):
                                                                                                 },
                  transformation_producer=get_transformation_for_feature_space,
                  score=make_scorer(f1_score, average='micro'),
-                 reader=None
+                 reader=None,
+                 folds=10
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
@@ -33,6 +34,7 @@ class Run_RawFeatures(EvaluationFramework):
         self.transformation_producer = transformation_producer
         self.score = score
         self.reader = reader
+        self.folds = folds
 
 
 
@@ -245,12 +247,15 @@ if __name__ == '__main__':
     # task_id = openMLname2task['ecoli']
     # task_id = openMLname2task['breast cancer']
     # task_id = openMLname2task['contraceptive']
-    task_id = openMLname2task['german credit'] #interesting
+    #task_id = openMLname2task['german credit'] #interesting
     # task_id = openMLname2task['monks']
     # task_id = openMLname2task['banknote']
     # task_id = openMLname2task['heart-statlog']
     # task_id = openMLname2task['musk']
     #task_id = openMLname2task['eucalyptus']
+    #task_id = openMLname2task['haberman']
+    #task_id = openMLname2task['quake']
+    task_id = openMLname2task['volcanoes']
     dataset = None
 
     selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id))

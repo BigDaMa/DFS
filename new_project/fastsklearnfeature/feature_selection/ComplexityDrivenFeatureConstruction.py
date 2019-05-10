@@ -538,7 +538,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         max_feature.runtime_properties['score']) + "\n")
                 #print("hyper: " + str(max_feature.runtime_properties['hyperparameters']))
 
-                print(max_feature.runtime_properties['fold_scores'])
+                #print(max_feature.runtime_properties['fold_scores'])
 
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
@@ -610,12 +610,16 @@ if __name__ == '__main__':
     # task_id = openMLname2task['ecoli']
     # task_id = openMLname2task['breast cancer']
     #task_id = openMLname2task['contraceptive']
-    task_id = openMLname2task['german credit'] #interesting
+    #task_id = openMLname2task['german credit'] #interesting
     #task_id = openMLname2task['monks']
     #task_id = openMLname2task['banknote']
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk']
     #task_id = openMLname2task['eucalyptus']
+    #task_id = openMLname2task['german credit']  # interesting
+    #task_id = openMLname2task['haberman']
+    #task_id = openMLname2task['quake'] #super cool
+    task_id = openMLname2task['volcanoes']
     #dataset = None
 
 
