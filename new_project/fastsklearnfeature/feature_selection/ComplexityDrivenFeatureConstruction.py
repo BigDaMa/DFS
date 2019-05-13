@@ -630,9 +630,9 @@ if __name__ == '__main__':
     #task_id = openMLname2task['musk'] # feature selection only
     #task_id = openMLname2task['eucalyptus'] #needs imputation
     #task_id = openMLname2task['haberman']
-    task_id = openMLname2task['quake'] #ok task with 4 folds
+    #task_id = openMLname2task['quake'] #ok task with 4 folds
     #task_id = openMLname2task['volcanoes'] #with 4 folds, it is a good example
-    #task_id = openMLname2task['analcatdata'] #with 4 folds, it is a good example
+    task_id = openMLname2task['analcatdata'] #with 4 folds, it is a good example
     #task_id = openMLname2task['humandevel'] # feature selection only
     #task_id = openMLname2task['diabetes'] #feature selection of deficiency works best
     #task_id = openMLname2task['lupus'] #with 4 folds, it is a good example
