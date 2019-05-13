@@ -598,7 +598,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 if __name__ == '__main__':
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
-    dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
+    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
 
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
@@ -637,7 +637,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['diabetes'] #feature selection of deficiency works best
     #task_id = openMLname2task['lupus'] #with 4 folds, it is a good example
     #task_id = openMLname2task['credit approval']
-    #dataset = None
+    dataset = None
 
 
 
