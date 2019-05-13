@@ -26,6 +26,9 @@ from sklearn.metrics.scorer import neg_mean_squared_error_scorer
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates
 import numpy as np
+import openml
+from sklearn.pipeline import Pipeline
+from sklearn.pipeline import FeatureUnion
 
 
 import warnings
@@ -485,6 +488,17 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     if candidate.runtime_properties['score'] > max_feature.runtime_properties['score']:
                         max_feature = candidate
 
+                        '''
+                        my_pipeline = Pipeline([('features', FeatureUnion(
+                            [
+                                (candidate.get_name(), max_feature.pipeline)
+                            ])),
+                                  ('classifier', my_globale_module.classifier_global(**max_feature.runtime_properties['hyperparameters']))
+                                  ])
+                        my_run = openml.runs.run_model_on_task(my_pipeline, self.reader.task)
+                        print(my_run)
+                        '''
+
 
                     if candidate.runtime_properties['passed']:
                         if isinstance(candidate, RawFeature):
@@ -584,7 +598,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 if __name__ == '__main__':
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_27_colic_horse.csv", 22)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/phpAmSP4g_cancer.csv", 30)
-    #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
+    dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_29_credit-a_credit.csv", 15)
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
 
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
@@ -606,20 +620,23 @@ if __name__ == '__main__':
     from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
 
     #task_id = openMLname2task['transfusion'] #interesting
-    # task_id = openMLname2task['iris']
-    # task_id = openMLname2task['ecoli']
-    # task_id = openMLname2task['breast cancer']
-    #task_id = openMLname2task['contraceptive']
+    #task_id = openMLname2task['iris'] # feature selection is enough
+    #task_id = openMLname2task['breast cancer']#only feature selection
+    #task_id = openMLname2task['contraceptive'#until 3 only feature selection
     #task_id = openMLname2task['german credit'] #interesting
     #task_id = openMLname2task['monks']
-    #task_id = openMLname2task['banknote']
+    #task_id = openMLname2task['banknote'] #raw features are already amazing
     #task_id = openMLname2task['heart-statlog']
-    #task_id = openMLname2task['musk']
-    #task_id = openMLname2task['eucalyptus']
-    #task_id = openMLname2task['german credit']  # interesting
+    #task_id = openMLname2task['musk'] # feature selection only
+    #task_id = openMLname2task['eucalyptus'] #needs imputation
     #task_id = openMLname2task['haberman']
-    #task_id = openMLname2task['quake'] #super cool
-    task_id = openMLname2task['volcanoes']
+    task_id = openMLname2task['quake'] #ok task with 4 folds
+    #task_id = openMLname2task['volcanoes'] #with 4 folds, it is a good example
+    #task_id = openMLname2task['analcatdata'] #with 4 folds, it is a good example
+    #task_id = openMLname2task['humandevel'] # feature selection only
+    #task_id = openMLname2task['diabetes'] #feature selection of deficiency works best
+    #task_id = openMLname2task['lupus'] #with 4 folds, it is a good example
+    #task_id = openMLname2task['credit approval']
     #dataset = None
 
 
@@ -646,8 +663,8 @@ if __name__ == '__main__':
 
 
     #paper featureset
-    #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space, reader=OnlineOpenMLReader(task_id))
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
+    #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space, reader=OnlineOpenMLReader(task_id, test_folds=4))
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

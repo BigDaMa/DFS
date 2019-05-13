@@ -14,3 +14,7 @@ openMLname2task['haberman'] =272
 openMLname2task['quake'] = 3638
 openMLname2task['volcanoes'] = 10103
 openMLname2task['analcatdata'] = 3876
+openMLname2task['humandevel'] = 3787
+openMLname2task['diabetes'] =3656
+openMLname2task['lupus'] = 3562
+openMLname2task['credit approval'] = 29

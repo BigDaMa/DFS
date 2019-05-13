@@ -255,10 +255,12 @@ if __name__ == '__main__':
     #task_id = openMLname2task['eucalyptus']
     #task_id = openMLname2task['haberman']
     #task_id = openMLname2task['quake']
-    task_id = openMLname2task['volcanoes']
+    #task_id = openMLname2task['volcanoes']
+    #task_id = openMLname2task['analcatdata']
+    #task_id = openMLname2task['credit approval']
     dataset = None
 
-    selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id))
+    selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id,4))
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()
