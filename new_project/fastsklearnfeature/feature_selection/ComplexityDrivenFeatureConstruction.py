@@ -19,6 +19,7 @@ import numpy as np
 import sympy
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
+from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics.scorer import r2_scorer
@@ -488,18 +489,6 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     if candidate.runtime_properties['score'] > max_feature.runtime_properties['score']:
                         max_feature = candidate
 
-                        '''
-                        my_pipeline = Pipeline([('features', FeatureUnion(
-                            [
-                                (candidate.get_name(), max_feature.pipeline)
-                            ])),
-                                  ('classifier', my_globale_module.classifier_global(**max_feature.runtime_properties['hyperparameters']))
-                                  ])
-                        my_run = openml.runs.run_model_on_task(my_pipeline, self.reader.task)
-                        print(my_run)
-                        '''
-
-
                     if candidate.runtime_properties['passed']:
                         if isinstance(candidate, RawFeature):
                             if not c in cost_2_raw_features:
@@ -553,6 +542,24 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 #print("hyper: " + str(max_feature.runtime_properties['hyperparameters']))
 
                 #print(max_feature.runtime_properties['fold_scores'])
+
+            '''
+            try:
+                #openml
+                my_pipeline = Pipeline([('features', max_feature.pipeline),
+                                        ('classifier', my_globale_module.classifier_global(**max_feature.runtime_properties['hyperparameters']))
+                                        ])
+                from fastsklearnfeature.feature_selection.openml_wrapper.ComplexPipelineWrapper import \
+                    ComplexPipelineWrapper
+                my_wrapper = ComplexPipelineWrapper(my_pipeline)
+
+                my_run = openml.runs.run_model_on_task(my_wrapper, self.reader.task, avoid_duplicate_runs=False)
+                #my_run.to_filesystem('/tmp/myrun' + str(max_feature) + str(time.time()))
+                my_run.publish()
+                # print(my_run)
+            except:
+                pickle.dump()
+            '''
 
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
@@ -619,10 +626,10 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
 
-    #task_id = openMLname2task['transfusion'] #interesting
+    #task_id = openMLname2task['transfusiosklearn.metrics.roc_auc_scoren'] #interesting
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
-    #task_id = openMLname2task['contraceptive'#until 3 only feature selection
+    #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
     #task_id = openMLname2task['german credit'] #interesting
     #task_id = openMLname2task['monks']
     #task_id = openMLname2task['banknote'] #raw features are already amazing
@@ -632,7 +639,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['haberman']
     #task_id = openMLname2task['quake'] #ok task with 4 folds
     #task_id = openMLname2task['volcanoes'] #with 4 folds, it is a good example
-    task_id = openMLname2task['analcatdata'] #with 4 folds, it is a good example
+    #task_id = openMLname2task['analcatdata'] #with 4 folds, it is a good example
     #task_id = openMLname2task['humandevel'] # feature selection only
     #task_id = openMLname2task['diabetes'] #feature selection of deficiency works best
     #task_id = openMLname2task['lupus'] #with 4 folds, it is a good example
@@ -664,7 +671,7 @@ if __name__ == '__main__':
 
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space, reader=OnlineOpenMLReader(task_id, test_folds=4))
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space, reader=OnlineOpenMLReader(task_id, test_folds=4), score=make_scorer(roc_auc_score))
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

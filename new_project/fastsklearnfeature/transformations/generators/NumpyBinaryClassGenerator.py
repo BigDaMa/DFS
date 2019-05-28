@@ -8,7 +8,7 @@ def sympy_divide(a, b):
     return sympy.Mul(a, sympy.Pow(b, -1))
 
 def sympy_subtract(a, b):
-    return sympy.Add(a, sympy.Mul(b, -1))
+    return sympy.Add(a, sympy.Mul(-1, b))
 
 
 class NumpyBinaryClassGenerator:

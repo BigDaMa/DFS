@@ -3,6 +3,7 @@ from fastsklearnfeature.transformations.FastGroupByThenTransformation import Fas
 from typing import List
 import numpy as np
 import sympy
+from sympy.core.numbers import NegativeOne
 
 class groupbythen(sympy.Function):
     is_commutative = False
@@ -13,6 +14,9 @@ class groupbythenIdempotentFunction(groupbythen):
     def eval(cls, value, key):
         if isinstance(value, groupbythen) and key == value.args[1]:  # conditional idempotent
             return value
+        if isinstance(key, sympy.Mul) and key._args[0] == NegativeOne:
+            return cls(value, key._args[1])
+
 
 class groupbythenmin(groupbythenIdempotentFunction):
     nargs = 2

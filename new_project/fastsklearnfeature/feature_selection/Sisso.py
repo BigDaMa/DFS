@@ -174,13 +174,13 @@ if __name__ == '__main__':
     # task_id = openMLname2task['heart-statlog']
     # task_id = openMLname2task['musk']
     # task_id = openMLname2task['eucalyptus']
-    #dataset = None
+    dataset = None
 
-    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
 
-    #selector = Sisso(dataset, reader=OnlineOpenMLReader(task_id))
+    selector = Sisso(dataset, reader=OnlineOpenMLReader(task_id))
     #selector = Sisso(dataset, score=r2_scorer, classifier=LinearRegression)
-    selector = Sisso(dataset)
+    #selector = Sisso(dataset)
 
     results = selector.run()
 

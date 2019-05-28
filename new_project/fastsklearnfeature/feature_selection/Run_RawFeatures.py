@@ -12,6 +12,7 @@ from fastsklearnfeature.candidate_generation.feature_space.explorekit_transforma
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
+from sklearn.metrics import roc_auc_score
 
 
 
@@ -228,7 +229,7 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     # dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     # dataset = (Config.get('data_path') + '/iris.data', 4)
     # dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
@@ -258,9 +259,11 @@ if __name__ == '__main__':
     #task_id = openMLname2task['volcanoes']
     #task_id = openMLname2task['analcatdata']
     #task_id = openMLname2task['credit approval']
-    dataset = None
+    #task_id = openMLname2task['lupus']
+    #dataset = None
 
-    selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id,4))
+    #selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id,4), score=make_scorer(roc_auc_score))
+    selector = Run_RawFeatures(dataset, score=make_scorer(roc_auc_score))
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()

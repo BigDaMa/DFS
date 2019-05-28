@@ -11,7 +11,6 @@ from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 import copy
-from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
 from fastsklearnfeature.candidate_generation.feature_space.division import get_transformation_for_division
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
 from sklearn.neighbors import KNeighborsClassifier
@@ -24,7 +23,9 @@ from sklearn.metrics.scorer import r2_scorer
 from sklearn.metrics.scorer import neg_mean_squared_error_scorer
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates
-
+from sklearn.metrics import make_scorer
+from sklearn.metrics import f1_score
+from sklearn.metrics import roc_auc_score
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -246,59 +247,31 @@ class GlobalTraversalCognito(CachedEvaluationFramework):
         return count_smaller_or_equal
 
     # P(Accuracy <= current) -> 1.0 = highest accuracy
-    def getAccuracyScore(self, current_score, complexity, cost_2_raw_features, cost_2_unary_transformed, cost_2_binary_transformed, cost_2_combination):
+    def getAccuracyScore(self, current_rep: CandidateFeature, all_seen_representations: List[CandidateFeature]) -> float:
         count_smaller_or_equal_v = 0
-        count_all = 0
-        for c in range(1, complexity + 1):
-            if c in cost_2_raw_features:
-                count_smaller_or_equal_v += self.count_smaller_or_equal(cost_2_raw_features[c], current_score)
-            if c in cost_2_unary_transformed:
-                count_smaller_or_equal_v += self.count_smaller_or_equal(cost_2_unary_transformed[c], current_score)
-            if c in cost_2_binary_transformed:
-                count_smaller_or_equal_v += self.count_smaller_or_equal(cost_2_binary_transformed[c], current_score)
-            if c in cost_2_combination:
-                count_smaller_or_equal_v += self.count_smaller_or_equal(cost_2_combination[c], current_score)
+        for rep in all_seen_representations:
+            if rep.runtime_properties['score'] <= current_rep.runtime_properties['score']:
+                count_smaller_or_equal_v += 1
 
-            if c in cost_2_raw_features:
-                count_all += len(cost_2_raw_features[c])
-            if c in cost_2_unary_transformed:
-                count_all += len(cost_2_unary_transformed[c])
-            if c in cost_2_binary_transformed:
-                count_all += len(cost_2_binary_transformed[c])
-            if c in cost_2_combination:
-                count_all += len(cost_2_combination[c])
-
-        return count_smaller_or_equal_v / float(count_all)
+        return count_smaller_or_equal_v / float(len(all_seen_representations))
 
     # P(Complexity >= current) -> 1.0 = lowest complexity
-    def getSimplicityScore(self, current_complexity, complexity, cost_2_raw_features, cost_2_unary_transformed, cost_2_binary_transformed, cost_2_combination):
+    def getSimplicityScore(self, current_complexity: float, all_seen_representations: List[CandidateFeature]) -> float:
         count_greater_or_equal_v = 0
-        count_all = 0
+        for rep in all_seen_representations:
+            if rep.get_complexity() >= current_complexity:
+                count_greater_or_equal_v += 1
 
-        for c in range(1, complexity + 1):
-            if c >= current_complexity:
-                if c in cost_2_raw_features:
-                    count_greater_or_equal_v += len(cost_2_raw_features[c])
-                if c in cost_2_unary_transformed:
-                    count_greater_or_equal_v += len(cost_2_unary_transformed[c])
-                if c in cost_2_binary_transformed:
-                    count_greater_or_equal_v += len(cost_2_binary_transformed[c])
-                if c in cost_2_combination:
-                    count_greater_or_equal_v += len(cost_2_combination[c])
-
-            if c in cost_2_raw_features:
-                count_all += len(cost_2_raw_features[c])
-            if c in cost_2_unary_transformed:
-                count_all += len(cost_2_unary_transformed[c])
-            if c in cost_2_binary_transformed:
-                count_all += len(cost_2_binary_transformed[c])
-            if c in cost_2_combination:
-                count_all += len(cost_2_combination[c])
-
-        return count_greater_or_equal_v / float(count_all)
+        return count_greater_or_equal_v / float(len(all_seen_representations))
 
     def harmonic_mean(self, complexity, accuracy):
         return (2 * complexity * accuracy) / (complexity + accuracy)
+
+    def get_h(self, current_rep, all_seen_representations):
+        simplicity_cum_score = self.getSimplicityScore(current_rep.get_complexity(), all_seen_representations)
+        accuracy_cum_score = self.getAccuracyScore(current_rep, all_seen_representations)
+
+        return self.harmonic_mean(simplicity_cum_score, accuracy_cum_score)
 
 
     def run(self):
@@ -426,15 +399,22 @@ class GlobalTraversalCognito(CachedEvaluationFramework):
         all_representations = []
         all_representations.extend(cost_2_raw_features[c])
 
+        all_seen_representations = copy.deepcopy(all_representations)
+
         for runs in range(number_runs):
             #get next
 
             current_max_rep = all_representations[0]
+            current_max_score_save = -1
             for rep in all_representations:
-                if rep.runtime_properties['score'] > current_max_rep.runtime_properties['score']:
+                current_score_save = self.get_h(rep, all_seen_representations)
+                if current_score_save > current_max_score_save:
                     current_max_rep = rep
+                    current_max_score_save = current_score_save
             all_representations.remove(current_max_rep)
             next_rep = current_max_rep
+
+            print("hscore: " + str(current_max_rep) + " -> " + str(current_max_score_save))
 
             if max_rep.runtime_properties['score'] < current_max_rep.runtime_properties['score']:
                 max_rep = current_max_rep
@@ -447,7 +427,7 @@ class GlobalTraversalCognito(CachedEvaluationFramework):
                 print(str(next_rep))
 
 
-                #######################
+            #######################
             #create branch
             #######################
             current_layer = []
@@ -499,6 +479,7 @@ class GlobalTraversalCognito(CachedEvaluationFramework):
             for rep in new_representations:
                 if rep != None:
                     all_representations.append(rep)
+                    all_seen_representations.append(rep)
 
 
 
@@ -511,13 +492,13 @@ if __name__ == '__main__':
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
     #dataset = (Config.get('data_path') + "/dataset_23_cmc_contraceptive.csv", 9)
     #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
-    #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
+    dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/iris.data', 4)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
     #dataset = (Config.get('data_path') + '/ecoli.data', 8)
     #dataset = (Config.get('data_path') + '/breast-cancer.data', 0)
-    dataset = (Config.get('data_path') + '/transfusion.data', 4)
+    #dataset = (Config.get('data_path') + '/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/test_categorical.data', 4)
     #dataset = ('../configuration/resources/data/transfusion.data', 4)
     #dataset = (Config.get('data_path') + '/wine.data', 0)
@@ -539,7 +520,7 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(dataset, classifier=LinearRegression, grid_search_parameters={'fit_intercept': [True, False],'normalize': [True, False]}, score=neg_mean_squared_error_scorer, c_max=5, save_logs=True)
 
     #classification
-    selector = GlobalTraversalCognito(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True)
+    selector = GlobalTraversalCognito(dataset, c_max=3, folds=10, max_seconds=None, save_logs=True, epsilon=-np.Inf, score=make_scorer(roc_auc_score))
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
