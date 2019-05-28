@@ -9,13 +9,29 @@ class groupbythen(sympy.Function):
     is_commutative = False
     nargs = 2
 
+    @classmethod
+    def eval(cls, value, key):
+        new_key = key
+        new_value = value
+
+        if isinstance(key, sympy.Mul) and key._args[0] == NegativeOne:
+            new_key = key._args[1]
+        if isinstance(key, sympy.Pow) and key._args[1] == NegativeOne:
+            new_key = key._args[0]
+
+        if new_value != value or new_key != key:
+            return cls(new_value, new_key)
+
+
 class groupbythenIdempotentFunction(groupbythen):
     @classmethod
     def eval(cls, value, key):
         if isinstance(value, groupbythen) and key == value.args[1]:  # conditional idempotent
             return value
-        if isinstance(key, sympy.Mul) and key._args[0] == NegativeOne:
-            return cls(value, key._args[1])
+
+        evaluated = super(groupbythenIdempotentFunction, cls).eval(value, key)
+        if evaluated is not None:
+            return evaluated
 
 
 class groupbythenmin(groupbythenIdempotentFunction):
@@ -32,6 +48,21 @@ class groupbythenstd(groupbythen):
     def eval(cls, value, key):
         if isinstance(value, groupbythen) and key == value.args[1]:  # idempotent
             return 0
+
+        new_value = value
+        new_key = key
+
+        evaluated = super(groupbythenstd, cls).eval(value, key)
+        if evaluated is not None:
+            new_value = evaluated._args[0]
+            new_key = evaluated._args[1]
+
+        if isinstance(value, sympy.Mul) and value._args[0] == NegativeOne:
+            new_value = value._args[1]
+
+        if new_value != value or new_key != key:
+            return cls(new_value, new_key)
+
 
 class GroupByThenGenerator:
     def __init__(self, number_of_parents: int, methods=[np.nanmean,
