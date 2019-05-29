@@ -66,7 +66,10 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
         return "(" + self.method.__name__ + "(" + str(candidate_feature_names[0]) + ") GroupyBy " + str(candidate_feature_names[1]) + ")"
 
     def get_sympy_representation(self, input_attributes):
-        return self.sympy_method(input_attributes[0], input_attributes[1])
+        try:
+            return self.sympy_method(input_attributes[0], input_attributes[1])
+        except:
+            print("my error: " + str(input_attributes[0]) + ' ' + str(input_attributes[1]))
 
     def derive_properties(self, training_data, parents: List[CandidateFeature]):
         properties = {}
