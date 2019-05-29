@@ -26,13 +26,19 @@ class groupbythen(sympy.Function):
 class groupbythenIdempotentFunction(groupbythen):
     @classmethod
     def eval(cls, value, key):
-        if isinstance(value, groupbythen) and key == value.args[1]:  # conditional idempotent
-            return value
-
         evaluated = super(groupbythenIdempotentFunction, cls).eval(value, key)
-        if evaluated is not None:
+
+        if not isinstance(evaluated, groupbythenIdempotentFunction):
             return evaluated
 
+        new_value = value
+        new_key = key
+        if evaluated is not None:
+            new_value = evaluated._args[0]
+            new_key = evaluated._args[1]
+
+        if isinstance(new_value, groupbythen) and new_key == new_value.args[1]:  # conditional idempotent
+            return new_value
 
 class groupbythenmin(groupbythenIdempotentFunction):
     nargs = 2
@@ -46,19 +52,22 @@ class groupbythenmean(groupbythenIdempotentFunction):
 class groupbythenstd(groupbythen):
     @classmethod
     def eval(cls, value, key):
-        if isinstance(value, groupbythen) and key == value.args[1]:  # idempotent
-            return 0
+
+        evaluated = super(groupbythenstd, cls).eval(value, key)
+        if not isinstance(evaluated, groupbythenstd):
+            return evaluated
 
         new_value = value
         new_key = key
-
-        evaluated = super(groupbythenstd, cls).eval(value, key)
         if evaluated is not None:
             new_value = evaluated._args[0]
             new_key = evaluated._args[1]
 
-        if isinstance(value, sympy.Mul) and value._args[0] == NegativeOne:
-            new_value = value._args[1]
+        if isinstance(new_value, sympy.Mul) and new_value._args[0] == NegativeOne:
+            new_value = new_value._args[1]
+
+        if isinstance(new_value, groupbythen) and new_key == new_value.args[1]:  # idempotent
+            return 0
 
         if new_value != value or new_key != key:
             return cls(new_value, new_key)
