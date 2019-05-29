@@ -626,7 +626,7 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
 
-    #task_id = openMLname2task['transfusiosklearn.metrics.roc_auc_scoren'] #interesting
+    task_id = openMLname2task['transfusion'] #interesting
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
