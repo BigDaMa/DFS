@@ -12,14 +12,6 @@ class Reader:
         self.raw_features: List[RawFeature] = []
         self.splitter: Splitter = splitter
 
-    def derive_properties(self, column_id, data):
-        properties = {}
-        # type properties
-        properties['type'] = self.dataframe.dtypes.values[column_id]
-
-        return properties
-
-
     def read(self):
         self.dataframe = pd.read_csv(self.file_name, na_filter=False)
 
@@ -37,8 +29,10 @@ class Reader:
         self.splitted_values['train'], self.splitted_values['valid'],self.splitted_values['test'] = self.splitter.materialize_values(self.dataframe)
 
         for attribute_i in range(self.dataframe.shape[1]):
-            properties = self.derive_properties(attribute_i, self.dataframe[self.dataframe.columns[attribute_i]].values)
-            self.raw_features.append(RawFeature(self.dataframe.columns[attribute_i], attribute_i, properties))
+            rf = RawFeature(self.dataframe.columns[attribute_i], attribute_i, {})
+            rf.derive_properties(self.dataframe[self.dataframe.columns[attribute_i]].values)
+            self.raw_features.append(rf)
+
 
         return self.raw_features
 
