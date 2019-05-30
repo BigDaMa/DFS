@@ -25,6 +25,14 @@ class RawFeature(CandidateFeature):
 
         self.pipeline = self.create_pipeline()
 
+    def __eq__(self, other):
+        if isinstance(other, RawFeature):
+            return (self.name == other.name and self.column_id == other.column_id)
+        return False
+
+    def __hash__(self):
+        return hash((self.name, self.column_id))
+
 
     def create_pipeline(self):
         memory=None

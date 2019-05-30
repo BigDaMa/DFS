@@ -17,4 +17,5 @@ class OneHotGenerator:
                 for dv_i in range(len(distinct_values)):
                     transformation_classes.append(OneHotTransformation(distinct_values[dv_i], dv_i, self.raw_features[c]))
 
+
         return transformation_classes

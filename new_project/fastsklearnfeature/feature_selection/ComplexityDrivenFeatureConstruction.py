@@ -37,7 +37,7 @@ import warnings
 warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
 warnings.filterwarnings("ignore", message="Data with input dtype object was converted to float64 by MinMaxScaler.")
 warnings.filterwarnings("ignore", message="All-NaN slice encountered")
-#warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
+warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
 class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
@@ -398,8 +398,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             if (c - 1) in cost_2_binary_transformed:
                 unary_candidates_to_be_applied.extend(cost_2_binary_transformed[c - 1])
 
-
-            current_layer.extend(self.generate_features(unary_transformations, unary_candidates_to_be_applied, all_evaluated_features))
+            all_unary_features = self.generate_features(unary_transformations, unary_candidates_to_be_applied, all_evaluated_features)
+            current_layer.extend(all_unary_features)
 
             #second binary
             #get length 2 partitions for current cost
