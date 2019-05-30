@@ -19,6 +19,8 @@ class OneDivisionTransformation(BaseEstimator, TransformerMixin, NumericUnaryTra
             return False
         if feature_combination[0].properties['has_zero']:
             return False
+        if 'missing_values' in feature_combination[0].properties and feature_combination[0].properties['missing_values']:
+            return False
 
         return True
 
@@ -32,7 +34,7 @@ class OneDivisionTransformation(BaseEstimator, TransformerMixin, NumericUnaryTra
 
         try:
             # missing values properties
-            #properties['missing_values'] = any([parents[0].properties['missing_values'],parents[1].properties['missing_values']])
+            properties['missing_values'] = parents[0].properties['missing_values']
 
             properties['has_zero'] = False
 
@@ -41,5 +43,5 @@ class OneDivisionTransformation(BaseEstimator, TransformerMixin, NumericUnaryTra
         except:
             # was nonnumeric data
             pass
-        properties['number_distinct_values'] = len(np.unique(training_data))
+        properties['number_distinct_values'] = parents[0].properties['number_distinct_values']
         return properties

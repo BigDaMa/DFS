@@ -17,6 +17,8 @@ class MinusTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransform
     def is_applicable(self, feature_combination: List[CandidateFeature]):
         if not super(MinusTransformation, self).is_applicable(feature_combination):
             return False
+        if 'missing_values' in feature_combination[0].properties and feature_combination[0].properties['missing_values']:
+            return False
 
         return True
 
@@ -30,14 +32,14 @@ class MinusTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransform
 
         try:
             # missing values properties
-            properties['missing_values'] = False
+            properties['missing_values'] = parents[0].properties['missing_values']
 
-            properties['has_zero'] = any([p.properties['has_zero'] for p in parents])
+            properties['has_zero'] = parents[0].properties['has_zero']
 
-            properties['min'] = np.nanmin(training_data)
-            properties['max'] = np.nanmax(training_data)
+            properties['min'] = -1 * parents[0].properties['max']
+            properties['max'] = -1 * parents[0].properties['min']
         except:
             # was nonnumeric data
             pass
-        properties['number_distinct_values'] = len(np.unique(training_data))
+        properties['number_distinct_values'] = parents[0].properties['number_distinct_values']
         return properties

@@ -45,6 +45,14 @@ class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
                 or 'int' in str(feature_combination[i].properties['type']) \
                 or 'bool' in str(feature_combination[i].properties['type'])):
                 return False
+
+        try:
+            check_missing_values = any([combo.properties['missing_values'] for combo in feature_combination])
+            if check_missing_values:
+                return False
+        except:
+            print(feature_combination)
+
         return True
 
     def get_name(self, candidate_feature_names):
@@ -57,6 +65,7 @@ class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
     def derive_properties(self, training_data, parents):
         properties = {}
         properties['type'] = np.float
+        properties['missing_values'] = False
         return properties
 
     def get_sympy_representation(self, input_attributes):

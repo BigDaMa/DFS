@@ -50,7 +50,7 @@ class Transformation:
 
         try:
             # missing values properties
-            #properties['missing_values'] = np.sum(np.isnan(training_data))
+            properties['missing_values'] = np.isnan(training_data).any()
 
             # range properties
             properties['has_zero'] = 0 in training_data
@@ -58,6 +58,7 @@ class Transformation:
             properties['max'] = np.nanmax(training_data)
         except:
             # was nonnumeric data
+            properties['missing_values'] = np.isnan(training_data).any()
             pass
         properties['number_distinct_values'] = len(np.unique(training_data))
         return properties

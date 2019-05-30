@@ -15,6 +15,7 @@ import sympy
 from fastsklearnfeature.transformations.generators.OneHotGenerator import OneHotGenerator
 from fastsklearnfeature.transformations.OneDivisionTransformation import OneDivisionTransformation
 from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
+from fastsklearnfeature.transformations.ImputationTransformation import ImputationTransformation
 
 def get_transformation_for_division(train_X_all, raw_features):
 
@@ -26,6 +27,10 @@ def get_transformation_for_division(train_X_all, raw_features):
 
     unary_transformations.append(OneDivisionTransformation())
     unary_transformations.append(MinusTransformation())
+
+    unary_transformations.append(ImputationTransformation('mean'))
+    unary_transformations.append(ImputationTransformation('median'))
+    unary_transformations.append(ImputationTransformation('most_frequent'))
 
     
     binary_transformations.extend(HigherOrderCommutativeClassGenerator(2,

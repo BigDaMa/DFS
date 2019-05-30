@@ -33,6 +33,8 @@ class MinMaxScalingTransformation(BaseEstimator, TransformerMixin, NumericUnaryT
         if 'min' in feature_combination[0].properties and feature_combination[0].properties['min'] == 0.0 and \
            'max' in feature_combination[0].properties and feature_combination[0].properties['max'] == 1.0:
             return False
+        if 'missing_values' in feature_combination[0].properties and feature_combination[0].properties['missing_values']:
+            return False
 
         return True
 
@@ -45,9 +47,7 @@ class MinMaxScalingTransformation(BaseEstimator, TransformerMixin, NumericUnaryT
         properties['type'] = training_data.dtype
 
         try:
-            # missing values properties
-            if 'missing_values' in parents[0].properties:
-                properties['missing_values'] = parents[0].properties['missing_values']
+            properties['missing_values'] = parents[0].properties['missing_values']
 
             # range properties
             properties['has_zero'] = True

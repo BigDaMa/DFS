@@ -33,9 +33,10 @@ from sklearn.pipeline import FeatureUnion
 
 
 import warnings
-warnings.filterwarnings("ignore")
-#warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
-#warnings.filterwarnings("ignore", message="Data with input dtype object was converted to float64 by MinMaxScaler.")
+#warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", message="Data with input dtype int64 was converted to float64 by MinMaxScaler.")
+warnings.filterwarnings("ignore", message="Data with input dtype object was converted to float64 by MinMaxScaler.")
+warnings.filterwarnings("ignore", message="All-NaN slice encountered")
 #warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
 
 
@@ -373,7 +374,11 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     raw_f.sympy_representation = sympy_representation
                     all_evaluated_features.add(sympy_representation)
                     if raw_f.is_numeric():
-                        current_layer.append(raw_f)
+                        if raw_f.properties['missing_values']:
+                            raw_f.runtime_properties['score'] = 0.0
+                            cost_2_raw_features[c].append(raw_f)
+                        else:
+                            current_layer.append(raw_f)
                         #print("numeric: " + str(raw_f))
                     else:
                         raw_f.runtime_properties['score'] = 0.0
@@ -543,6 +548,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
                 #print(max_feature.runtime_properties['fold_scores'])
 
+
             '''
             try:
                 #openml
@@ -558,8 +564,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 my_run.publish()
                 # print(my_run)
             except:
-                pickle.dump()
+                pickle.dump(my_pipeline, open('/tmp/my_pipeline', 'wb'))
             '''
+
 
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
@@ -626,7 +633,7 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
 
-    task_id = openMLname2task['transfusion'] #interesting
+    #task_id = openMLname2task['transfusion'] #interesting
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
@@ -635,7 +642,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['banknote'] #raw features are already amazing
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
-    #task_id = openMLname2task['eucalyptus'] #needs imputation
+    task_id = openMLname2task['eucalyptus'] #needs imputation
     #task_id = openMLname2task['haberman']
     #task_id = openMLname2task['quake'] #ok task with 4 folds
     #task_id = openMLname2task['volcanoes'] #with 4 folds, it is a good example
@@ -671,7 +678,7 @@ if __name__ == '__main__':
 
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=4), score=make_scorer(roc_auc_score))
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

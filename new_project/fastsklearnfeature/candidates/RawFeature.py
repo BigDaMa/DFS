@@ -64,9 +64,13 @@ class RawFeature(CandidateFeature):
         return 1.0
 
     def derive_properties(self, training_data):
+        self.properties['type'] = training_data.dtype
         try:
             # missing values properties
             #self.properties['missing_values'] = pd.isnull(training_data).any()
+            self.properties['missing_values'] = np.isnan(training_data).any()
+            #print(training_data)
+            #print(str(self.name) + ' ' + str(self.properties['missing_values']))
 
             # range properties
             self.properties['has_zero'] = 0 in training_data
@@ -75,7 +79,7 @@ class RawFeature(CandidateFeature):
         except Exception as e:
             print(e)
             #was nonnumeric data
-            pass
+            self.properties['missing_values'] = np.isnan(training_data).any()
         self.properties['number_distinct_values'] = len(np.unique(training_data))
 
     def is_numeric(self):

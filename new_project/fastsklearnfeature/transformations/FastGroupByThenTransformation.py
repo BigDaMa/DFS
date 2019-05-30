@@ -42,6 +42,9 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
     def is_applicable(self, feature_combination: List[CandidateFeature]):
         #we handle conditional idempotence via sympy
 
+        if 'missing_values' in feature_combination[0].properties and feature_combination[0].properties['missing_values']:
+            return False
+
         #the aggregated column has to be numeric
         if 'float' in str(feature_combination[0].properties['type']) \
             or 'int' in str(feature_combination[0].properties['type']) \

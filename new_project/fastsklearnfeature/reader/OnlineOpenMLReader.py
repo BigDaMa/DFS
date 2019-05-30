@@ -5,6 +5,7 @@ import openml
 from fastsklearnfeature.candidates.RawFeature import RawFeature
 from fastsklearnfeature.configuration.Config import Config
 import copy
+import pickle
 
 class OnlineOpenMLReader:
     def __init__(self, taskID, test_folds=1):
@@ -12,14 +13,6 @@ class OnlineOpenMLReader:
         self.raw_features: List[RawFeature] = []
         self.test_folds = test_folds
         openml.config.apikey = Config.get('openML.apikey')
-
-    def derive_properties(self, column_id, data):
-        properties = {}
-        # type properties
-        properties['type'] = self.dataframe.dtypes.values[column_id]
-
-        return properties
-
 
     def read(self):
 
@@ -52,10 +45,10 @@ class OnlineOpenMLReader:
         self.splitted_values['test'] = X[test_indices]
 
         for attribute_i in range(self.dataframe.shape[1]):
-            properties = self.derive_properties(attribute_i, self.dataframe[self.dataframe.columns[attribute_i]].values)
-            properties['categorical'] = categorical_indicator[attribute_i]
-            self.raw_features.append(RawFeature(self.dataframe.columns[attribute_i], attribute_i, properties))
-
+            rf = RawFeature(self.dataframe.columns[attribute_i], attribute_i, {})
+            rf.derive_properties(self.dataframe[self.dataframe.columns[attribute_i]].values)
+            rf.properties['categorical'] = categorical_indicator[attribute_i]
+            self.raw_features.append(rf)
 
         return self.raw_features
 

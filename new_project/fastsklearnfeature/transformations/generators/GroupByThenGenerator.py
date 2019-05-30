@@ -1,9 +1,9 @@
-#from fastsklearnfeature.transformations.GroupByThenTransformation import GroupByThenTransformation
 from fastsklearnfeature.transformations.FastGroupByThenTransformation import FastGroupByThenTransformation
 from typing import List
 import numpy as np
 import sympy
 from sympy.core.numbers import NegativeOne
+from fastsklearnfeature.transformations.MinMaxScalingTransformation import scale
 
 class groupbythen(sympy.Function):
     is_commutative = False
@@ -18,6 +18,9 @@ class groupbythen(sympy.Function):
             new_key = key._args[1]
         if isinstance(key, sympy.Pow) and key._args[1] == NegativeOne:
             new_key = key._args[0]
+        if isinstance(key, scale):
+            new_key = key._args[0]
+
 
         if new_value != value or new_key != key:
             return cls(new_value, new_key)
@@ -38,6 +41,9 @@ class groupbythenIdempotentFunction(groupbythen):
             new_key = evaluated._args[1]
 
         if isinstance(new_value, groupbythen) and new_key == new_value.args[1]:  # conditional idempotent
+            return new_value
+
+        if new_value == new_key:
             return new_value
 
         if new_value != value or new_key != key:
@@ -70,6 +76,9 @@ class groupbythenstd(groupbythen):
             new_value = new_value._args[1]
 
         if isinstance(new_value, groupbythen) and new_key == new_value.args[1]:  # idempotent
+            return 0
+
+        if new_value == new_key:
             return 0
 
         if new_value != value or new_key != key:
