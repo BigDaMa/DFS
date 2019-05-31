@@ -30,6 +30,7 @@ import numpy as np
 import openml
 from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
+from fastsklearnfeature.feature_selection.openml_wrapper.pipeline2openml import candidate2openml
 
 
 import warnings
@@ -548,32 +549,17 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
                 #print(max_feature.runtime_properties['fold_scores'])
 
+            # upload best feature to OpenML
+            candidate2openml(max_feature, my_globale_module.classifier_global, self.reader.task)
 
             '''
-            try:
-                #openml
-                my_pipeline = Pipeline([('features', max_feature.pipeline),
-                                        ('classifier', my_globale_module.classifier_global(**max_feature.runtime_properties['hyperparameters']))
-                                        ])
-                from fastsklearnfeature.feature_selection.openml_wrapper.ComplexPipelineWrapper import \
-                    ComplexPipelineWrapper
-                my_wrapper = ComplexPipelineWrapper(my_pipeline)
-
-                my_run = openml.runs.run_model_on_task(my_wrapper, self.reader.task, avoid_duplicate_runs=False)
-                #my_run.to_filesystem('/tmp/myrun' + str(max_feature) + str(time.time()))
-                my_run.publish()
-                # print(my_run)
-            except:
-                pickle.dump(my_pipeline, open('/tmp/my_pipeline', 'wb'))
-            '''
-
-
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
                 pickle.dump(cost_2_unary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_unary.p", "wb"))
                 pickle.dump(cost_2_binary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_binary.p", "wb"))
                 pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"))
                 pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"))
+            '''
 
             max_feature_per_complexity[c] = max_feature
 
@@ -637,12 +623,12 @@ if __name__ == '__main__':
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
-    #task_id = openMLname2task['german credit'] #interesting
+    #task_id = openMLname2task['german credit'] #cool with onehot
     #task_id = openMLname2task['monks']
     #task_id = openMLname2task['banknote'] #raw features are already amazing
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
-    task_id = openMLname2task['eucalyptus'] #needs imputation
+    task_id = openMLname2task['eucalyptus'] # cool with imputation
     #task_id = openMLname2task['haberman']
     #task_id = openMLname2task['quake'] #ok task with 4 folds
     #task_id = openMLname2task['volcanoes'] #with 4 folds, it is a good example
@@ -679,6 +665,12 @@ if __name__ == '__main__':
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
     selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
+    '''
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True,
+                                                   transformation_producer=get_transformation_for_division,
+                                                   reader=OnlineOpenMLReader(task_id, test_folds=1),
+                                                   score=make_scorer(roc_auc_score))
+    '''
 
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=5, folds=10,
     #                                               max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)

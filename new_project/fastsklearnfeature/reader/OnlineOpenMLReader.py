@@ -14,7 +14,7 @@ class OnlineOpenMLReader:
         self.test_folds = test_folds
         openml.config.apikey = Config.get('openML.apikey')
 
-    def read(self):
+    def read(self) -> List[RawFeature]:
 
         self.task = openml.tasks.get_task(self.task_id)
         dataset = openml.datasets.get_dataset(dataset_id=self.task.dataset_id)

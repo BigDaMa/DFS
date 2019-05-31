@@ -1,4 +1,5 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
+from fastsklearnfeature.candidates.RawFeature import RawFeature
 from typing import List, Set
 import time
 from sklearn.linear_model import LogisticRegression
@@ -7,6 +8,8 @@ from fastsklearnfeature.configuration.Config import Config
 import itertools
 from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
+from fastsklearnfeature.transformations.ImputationTransformation import ImputationTransformation
+from fastsklearnfeature.transformations.generators.OneHotGenerator import OneHotGenerator
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
@@ -197,16 +200,20 @@ class Run_RawFeatures(EvaluationFramework):
 
         myfolds = copy.deepcopy(list(self.preprocessed_folds))
 
-        numeric_features = []
+        baseline_features: List[CandidateFeature] = []
         for r in self.raw_features:
-            if 'float' in str(r.properties['type']) \
-                    or 'int' in str(r.properties['type']) \
-                    or 'bool' in str(r.properties['type']):
-                numeric_features.append(r)
+            if r.is_numeric() and not r.properties['categorical']:
+                if not r.properties['missing_values']:
+                    baseline_features.append(r)
+                else:
+                    baseline_features.append(CandidateFeature(ImputationTransformation(), [r]))
+            else:
+                baseline_features.extend([CandidateFeature(t, [r]) for t in OneHotGenerator(self.train_X_all, [r]).produce()])
 
-        print(len(numeric_features))
 
-        combo = CandidateFeature(IdentityTransformation(len(numeric_features)), numeric_features)
+        print(len(baseline_features))
+
+        combo = CandidateFeature(IdentityTransformation(len(baseline_features)), baseline_features)
 
         results = self.evaluate_candidates([combo], myfolds)
 
@@ -253,7 +260,7 @@ if __name__ == '__main__':
     # task_id = openMLname2task['banknote']
     # task_id = openMLname2task['heart-statlog']
     # task_id = openMLname2task['musk']
-    #task_id = openMLname2task['eucalyptus']
+    task_id = openMLname2task['eucalyptus']
     #task_id = openMLname2task['haberman']
     #task_id = openMLname2task['quake']
     #task_id = openMLname2task['volcanoes']
@@ -262,8 +269,8 @@ if __name__ == '__main__':
     #task_id = openMLname2task['lupus']
     #dataset = None
 
-    #selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id,4), score=make_scorer(roc_auc_score))
-    selector = Run_RawFeatures(dataset, score=make_scorer(roc_auc_score))
+    selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id, 1), score=make_scorer(f1_score, average='micro')) #make_scorer(f1_score, average='micro') #make_scorer(roc_auc_score)
+    #selector = Run_RawFeatures(dataset, score=make_scorer(roc_auc_score))
     #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
     selector.run()

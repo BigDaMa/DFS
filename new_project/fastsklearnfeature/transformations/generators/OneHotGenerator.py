@@ -8,7 +8,7 @@ class OneHotGenerator:
         self.training_all = training_all
         self.raw_features = raw_features
 
-    def produce(self):
+    def produce(self) -> List[OneHotTransformation]:
         transformation_classes: List[OneHotTransformation] = []
         for c in range(len(self.raw_features)):
             if self.raw_features[c].properties['type'] == np.dtype('O') or \

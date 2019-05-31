@@ -5,7 +5,6 @@ from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from fastsklearnfeature.candidates.RawFeature import RawFeature
 from typing import List
 import sympy
-import numpy
 
 class impute(sympy.Function):
     @classmethod
@@ -15,8 +14,9 @@ class impute(sympy.Function):
 
 class ImputationTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, strategy='mean'):
-        name = strategy + 'Imputation'
-        self.imputer = SimpleImputer(strategy=strategy)
+        self.strategy = strategy
+        name = self.strategy + 'Imputation'
+        self.imputer = SimpleImputer(strategy=self.strategy)
         Transformation.__init__(self, name,
                                 number_parent_features=1,
                                 output_dimensions=1,

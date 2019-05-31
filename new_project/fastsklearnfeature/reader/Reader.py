@@ -12,7 +12,7 @@ class Reader:
         self.raw_features: List[RawFeature] = []
         self.splitter: Splitter = splitter
 
-    def read(self):
+    def read(self) -> List[RawFeature]:
         self.dataframe = pd.read_csv(self.file_name, na_filter=False)
 
         # get target
