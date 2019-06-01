@@ -550,7 +550,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 #print(max_feature.runtime_properties['fold_scores'])
 
             # upload best feature to OpenML
-            candidate2openml(max_feature, my_globale_module.classifier_global, self.reader.task)
+            candidate2openml(max_feature, my_globale_module.classifier_global, self.reader.task, 'ComplexityDriven')
 
             '''
             if self.save_logs:

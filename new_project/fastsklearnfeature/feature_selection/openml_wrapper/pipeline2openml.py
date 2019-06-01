@@ -24,71 +24,71 @@ import numpy as np
 from typing import List, Set
 
 def replaceColumnTransformer(value: ColumnTransformer, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__, dict(value.__class__.__dict__))
+	NewClass = type('C' + hex(int(str(time.time()).replace('.','')))[2:], value.__class__.__bases__, dict(value.__class__.__dict__))
 	return NewClass(value.transformers, value.remainder, value.sparse_threshold, value.n_jobs, value.transformer_weights)
 
 def replaceFeatureUnion(value: FeatureUnion, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.transformer_list, value.n_jobs, value.transformer_weights)
 
 def replacePipeline(value: Pipeline, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.steps, value.memory)
 
 def replaceFunctionTransformer(value: FunctionTransformer, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.func, value.inverse_func, value.validate, value.accept_sparse, value.pass_y, value.check_inverse, value.kw_args, value.inv_kw_args)
 
 def replaceIdentityTransformation(value: IdentityTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.number_parent_features)
 
 def replaceHigherOrderCommutativeTransformation(value: HigherOrderCommutativeTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.method, None, value.number_parent_features)
 
 def replaceMinMaxScalingTransformation(value: MinMaxScalingTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass()
 
 def replacePandasDiscretizerTransformation(value: PandasDiscretizerTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.number_bins, value.qbucket)
 
 def replaceImputationTransformation(value: ImputationTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.strategy)
 
 def replaceOneHotTransformation(value: OneHotTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.value, value.value_id, value.raw_feature)
 
 def replaceFastGroupByThenTransformation(value: FastGroupByThenTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.method, None)
 
 def replaceMinusTransformation(value: MinusTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass()
 
 def replaceOneDivisionTransformation(value: OneDivisionTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass()
 
 def replaceNonCommutativeBinaryTransformation(value: NonCommutativeBinaryTransformation, counter):
-	NewClass = type(value.__class__.__name__ + str(time.time()).replace('.',''), value.__class__.__bases__,
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.method, None)
 
@@ -112,6 +112,7 @@ def replace_with_new_wrapper(pip, counter: List[int] = [0]):
 		for step_counter in range(len(pip.transformers)):
 			pip.transformers[step_counter] = (get_name(counter), replace_with_new_wrapper(pip.transformers[step_counter][1], counter), pip.transformers[step_counter][2])
 		my_class = replaceColumnTransformer(pip, counter)
+
 	elif isinstance(pip, FunctionTransformer):
 		my_class = replaceFunctionTransformer(pip, counter)
 
@@ -139,20 +140,44 @@ def replace_with_new_wrapper(pip, counter: List[int] = [0]):
 
 	return my_class
 
-def candidate2openml(max_feature, classifier, task):
+def candidate2openml(max_feature, classifier, task, tag):
 	original = copy.deepcopy(max_feature.pipeline)
 	try:
 		# openml
-		my_pipeline = Pipeline([('features', max_feature.pipeline),
-								('classifier', classifier(**max_feature.runtime_properties['hyperparameters']))
+		if isinstance(max_feature.pipeline, Pipeline):
+			my_pipeline = max_feature.pipeline
+			my_pipeline = replace_with_new_wrapper(my_pipeline)
+			my_pipeline.steps.append(('c', classifier(**max_feature.runtime_properties['hyperparameters'])))
+		else:
+			my_pipeline = Pipeline([('f', max_feature.pipeline),
+									('c', classifier(**max_feature.runtime_properties['hyperparameters']))
+									])
+
+			my_pipeline.steps[0] = (my_pipeline.steps[0][0], replace_with_new_wrapper(my_pipeline.steps[0][1]))
+
+		my_run = openml.runs.run_model_on_task(my_pipeline, task, avoid_duplicate_runs=False)
+		my_run.publish()
+		my_run.push_tag(tag)
+	except Exception as e:
+		print("error: " + str(max_feature) + ' ' + str(e) )
+		pickle.dump(original, open('/tmp/my_pipeline', 'wb'))
+	max_feature.pipeline = original
+
+def candidate2openmltest(max_feature, classifier, task, tag):
+	original = copy.deepcopy(max_feature.pipeline)
+
+	if isinstance(max_feature.pipeline, Pipeline):
+		my_pipeline = max_feature.pipeline
+		my_pipeline = replace_with_new_wrapper(my_pipeline)
+		my_pipeline.steps.append(('c', classifier()))
+	else:
+		my_pipeline = Pipeline([('f', max_feature.pipeline),
+								('c', classifier())
 								])
 
 		my_pipeline.steps[0] = (my_pipeline.steps[0][0], replace_with_new_wrapper(my_pipeline.steps[0][1]))
 
-		my_run = openml.runs.run_model_on_task(my_pipeline, task, avoid_duplicate_runs=False)
-		my_run.publish()
-		my_run.push_tag('ComplexityDriven')
-	except:
-		print("error: " + str(max_feature))
-		pickle.dump(my_pipeline, open('/tmp/my_pipeline', 'wb'))
+	my_run = openml.runs.run_model_on_task(my_pipeline, task, avoid_duplicate_runs=False)
+	my_run.publish()
+	my_run.push_tag(tag)
 	max_feature.pipeline = original

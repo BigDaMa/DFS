@@ -34,19 +34,24 @@ class CandidateFeature:
     def create_pipeline(self):
         #parent_features = FeatureUnion([(p.get_name(), p.pipeline) for p in self.parents], n_jobs=Config.get('feature.union.parallelism'))
 
-        if Config.get_default('pipeline.caching', 'False') == 'True':
-            parent_features = FeatureUnion([(p.get_name() + str(time.time()), p.pipeline) for p in self.parents])
-        else:
+        if len(self.parents) > 1:
             parent_features = FeatureUnion([(p.get_name() + str(time.time()), copy.deepcopy(p.pipeline)) for p in self.parents])
+        else:
+            parent_features = copy.deepcopy(self.parents[0].pipeline)
 
         memory = None
         if Config.get_default('pipeline.caching', 'False') == 'True':
             memory = "/dev/shm"
 
-        pipeline = Pipeline([
-            ('parents', parent_features),
-            (self.transformation.name, self.transformation)
-        ], memory=memory)
+        pipeline = None
+        if isinstance(parent_features, Pipeline):
+            parent_features.steps.append((self.transformation.name, self.transformation))
+            pipeline = parent_features
+        else:
+            pipeline = Pipeline([
+                ('parents', parent_features),
+                (self.transformation.name, self.transformation)
+            ], memory=memory)
         return pipeline
 
 
