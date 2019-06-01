@@ -50,7 +50,7 @@ def replaceIdentityTransformation(value: IdentityTransformation, counter):
 def replaceHigherOrderCommutativeTransformation(value: HigherOrderCommutativeTransformation, counter):
 	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
-	return NewClass(value.method, None, value.number_parent_features)
+	return NewClass(value.method, 0, value.number_parent_features)
 
 def replaceMinMaxScalingTransformation(value: MinMaxScalingTransformation, counter):
 	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
@@ -70,12 +70,13 @@ def replaceImputationTransformation(value: ImputationTransformation, counter):
 def replaceOneHotTransformation(value: OneHotTransformation, counter):
 	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
-	return NewClass(value.value, value.value_id, value.raw_feature)
+	print('value: ' + str(value.value) + " " + str(type(value.value)))
+	return NewClass(value.value, value.value_id, 0)
 
 def replaceFastGroupByThenTransformation(value: FastGroupByThenTransformation, counter):
 	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
-	return NewClass(value.method, None)
+	return NewClass(value.method, 0)
 
 def replaceMinusTransformation(value: MinusTransformation, counter):
 	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
@@ -90,7 +91,7 @@ def replaceOneDivisionTransformation(value: OneDivisionTransformation, counter):
 def replaceNonCommutativeBinaryTransformation(value: NonCommutativeBinaryTransformation, counter):
 	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
-	return NewClass(value.method, None)
+	return NewClass(value.method, 0)
 
 
 def get_name(counter: List[int]):

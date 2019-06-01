@@ -14,7 +14,10 @@ class equals_string(sympy.Function):
 
 class OneHotTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, value: str, value_id: str, raw_feature: RawFeature):
-        self.value = value
+        if 'numpy.float' in str(type(value)):
+            self.value = float(value)
+        else:
+            self.value = value
         self.value_id = value_id
         self.is_contained = False
         self.raw_feature = raw_feature
