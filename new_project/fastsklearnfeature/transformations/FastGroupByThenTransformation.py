@@ -78,25 +78,25 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
 
         try:
             # missing values properties
-            properties['missing_values'] = False # for np.nanFunctions
+            properties['missing_values'] = np.isnan(training_data).any()
 
             # range properties
             if (parents[0].properties['min'] == 0.0 and self.method == np.nanmin) or \
                (parents[0].properties['max'] == 0.0 and self.method == np.nanmax):
                 properties['has_zero'] = True
             else:
-                properties['has_zero'] = 0 in training_data[:,0]
+                properties['has_zero'] = 0 in training_data
 
             if self.method == np.nanmin:
                 properties['min'] = parents[0].properties['min']
             else:
-                properties['min'] = np.nanmin(training_data[:,0])
+                properties['min'] = np.nanmin(training_data)
 
 
             if self.method == np.nanmax:
                 properties['max'] = parents[0].properties['max']
             else:
-                properties['max'] = np.nanmax(training_data[:,0])
+                properties['max'] = np.nanmax(training_data)
         except:
             # was nonnumeric data
             pass

@@ -43,9 +43,6 @@ class groupbythenIdempotentFunction(groupbythen):
         if isinstance(new_value, groupbythen) and new_key == new_value.args[1]:  # conditional idempotent
             return new_value
 
-        if new_value == new_key:
-            return new_value
-
         if new_value != value or new_key != key:
             return cls(new_value, new_key)
 

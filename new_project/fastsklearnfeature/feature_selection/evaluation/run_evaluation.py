@@ -61,7 +61,7 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
         #np.save('/tmp/true_predictions', self.test_target)
 
 
-    return best_mean_cross_val_score, test_score, best_param, y_pred, best_score_list
+    return best_mean_cross_val_score, test_score, best_param, y_pred, best_score_list, clf
 
 
 
@@ -136,8 +136,12 @@ def evaluate(candidate_id: int):
         candidate.runtime_properties['passed'] = True
     else:
         candidate.runtime_properties['passed'] = False
-        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred, candidate.runtime_properties['fold_scores'] = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
+        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred, candidate.runtime_properties['fold_scores'], my_clf = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
             my_globale_module.grid_search_parameters_global, my_globale_module.score_global, my_globale_module.classifier_global, my_globale_module.target_train_folds_global, my_globale_module.target_test_folds_global, my_globale_module.train_y_all_target_global, my_globale_module.test_target_global)
+
+
+        #if True:
+        #    candidate.runtime_properties['coef_'] = my_clf.coef_
 
 
     if Config.get_default('store.predictions', 'False') == 'True':
@@ -160,6 +164,10 @@ def evaluate(candidate_id: int):
             # derive properties
             if not isinstance(candidate, RawFeature):
                 candidate.derive_properties(candidate.runtime_properties['train_transformed'][0])
+
+                #avoid nan for specific ml models
+                if candidate.properties['missing_values'] and my_globale_module.classifier_global == LogisticRegression:
+                    return None
 
 
         # remove parents' materialization
