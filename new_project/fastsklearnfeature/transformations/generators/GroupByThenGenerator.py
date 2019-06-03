@@ -4,23 +4,23 @@ import numpy as np
 import sympy
 from sympy.core.numbers import NegativeOne
 from fastsklearnfeature.transformations.MinMaxScalingTransformation import scale
+from fastsklearnfeature.transformations.ImputationTransformation import impute
 
 class groupbythen(sympy.Function):
-    is_commutative = False
-    nargs = 2
-
     @classmethod
     def eval(cls, value, key):
         new_key = key
         new_value = value
 
+        #transformations that do not change the number of unique values
         if isinstance(key, sympy.Mul) and key._args[0] == NegativeOne:
             new_key = key._args[1]
         if isinstance(key, sympy.Pow) and key._args[1] == NegativeOne:
             new_key = key._args[0]
         if isinstance(key, scale):
             new_key = key._args[0]
-
+        if isinstance(key, impute):
+            new_key = key._args[0]
 
         if new_value != value or new_key != key:
             return cls(new_value, new_key)

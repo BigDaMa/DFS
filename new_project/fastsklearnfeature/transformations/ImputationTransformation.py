@@ -8,9 +8,18 @@ import sympy
 
 class impute(sympy.Function):
     @classmethod
-    def eval(cls, x):
-        if isinstance(x, impute): #idempotent
-            return x
+    def eval(cls, value):
+        if isinstance(value, impute): #idempotent
+            return value
+
+class meanimpute(impute):
+    nargs = 1
+
+class medianimpute(impute):
+    nargs = 1
+
+class mostfrequentimpute(impute):
+    nargs = 1
 
 class ImputationTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, strategy='mean'):
@@ -41,7 +50,12 @@ class ImputationTransformation(BaseEstimator, TransformerMixin, Transformation):
         return False
 
     def get_sympy_representation(self, input_attributes):
-        return impute(input_attributes[0])
+        if self.strategy == 'mean':
+            return meanimpute(input_attributes[0])
+        elif self.strategy == 'median':
+            return medianimpute(input_attributes[0])
+        elif self.strategy == 'most_frequent':
+            return mostfrequentimpute(input_attributes[0])
 
     def derive_properties(self, training_data, parents: List[CandidateFeature]):
         properties = {}
