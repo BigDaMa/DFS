@@ -16,8 +16,10 @@ from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import 
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
 from sklearn.metrics import roc_auc_score
-
-
+from fastsklearnfeature.feature_selection.openml_wrapper.pipeline2openml import candidate2openml
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
 
 class Run_RawFeatures(EvaluationFramework):
     def __init__(self, dataset_config, classifier=LogisticRegression, grid_search_parameters={'classifier__penalty': ['l2'],
@@ -200,6 +202,7 @@ class Run_RawFeatures(EvaluationFramework):
 
         myfolds = copy.deepcopy(list(self.preprocessed_folds))
 
+        '''
         baseline_features: List[CandidateFeature] = []
         for r in self.raw_features:
             if r.is_numeric() and not r.properties['categorical']:
@@ -214,14 +217,24 @@ class Run_RawFeatures(EvaluationFramework):
         print(len(baseline_features))
 
         combo = CandidateFeature(IdentityTransformation(len(baseline_features)), baseline_features)
+        '''
+        categorical_ids = []
+        for r in self.raw_features:
+            if r.properties['categorical']:
+                categorical_ids.append(r.column_id)
+
+        combo = CandidateFeature(IdentityTransformation(0), self.raw_features)
+        if len(categorical_ids) >= 1:
+            combo.pipeline = Pipeline(steps=[('imputation', SimpleImputer(strategy='mean')),
+                                         ('onehot', OneHotEncoder(categorical_features=categorical_ids))])
+        else:
+            combo.pipeline = Pipeline(steps=[('imputation', SimpleImputer(strategy='mean'))])
 
         results = self.evaluate_candidates([combo], myfolds)
 
         print(results[0].runtime_properties)
 
-
-
-
+        candidate2openml(results[0], self.classifier, self.reader.task, 'RawFeatureBaseline')
 
 
 #statlog_heart.csv=/home/felix/datasets/ExploreKit/csv/dataset_53_heart-statlog_heart.csv
@@ -252,21 +265,27 @@ if __name__ == '__main__':
 
     #task_id = openMLname2task['transfusion'] #interesting
     # task_id = openMLname2task['iris']
-    # task_id = openMLname2task['ecoli']
-    # task_id = openMLname2task['breast cancer']
-    # task_id = openMLname2task['contraceptive']
+    #task_id = openMLname2task['ecoli']
+    #task_id = openMLname2task['breast cancer']
+    #task_id = openMLname2task['contraceptive']
     #task_id = openMLname2task['german credit'] #interesting
     # task_id = openMLname2task['monks']
-    # task_id = openMLname2task['banknote']
-    # task_id = openMLname2task['heart-statlog']
+    #task_id = openMLname2task['banknote']
+    #task_id = openMLname2task['heart-statlog']
     # task_id = openMLname2task['musk']
-    task_id = openMLname2task['eucalyptus']
+    #task_id = openMLname2task['eucalyptus']
     #task_id = openMLname2task['haberman']
     #task_id = openMLname2task['quake']
     #task_id = openMLname2task['volcanoes']
     #task_id = openMLname2task['analcatdata']
     #task_id = openMLname2task['credit approval']
     #task_id = openMLname2task['lupus']
+    #task_id = openMLname2task['diabetes']
+
+    task_id = openMLname2task['covertype'] = 218
+    # task_id = openMLname2task['eeg_eye_state'] = 9983
+    #task_id = openMLname2task['MagicTelescope'] = 3954
+
     #dataset = None
 
     selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id, 1), score=make_scorer(f1_score, average='micro')) #make_scorer(f1_score, average='micro') #make_scorer(roc_auc_score)

@@ -552,14 +552,14 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             # upload best feature to OpenML
             candidate2openml(max_feature, my_globale_module.classifier_global, self.reader.task, 'ComplexityDriven')
 
-            '''
+
             if self.save_logs:
                 pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"))
                 pickle.dump(cost_2_unary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_unary.p", "wb"))
                 pickle.dump(cost_2_binary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_binary.p", "wb"))
                 pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"))
                 pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"))
-            '''
+
 
             max_feature_per_complexity[c] = max_feature
 
@@ -624,7 +624,6 @@ if __name__ == '__main__':
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
     #task_id = openMLname2task['german credit'] #cool with onehot
-    #task_id = openMLname2task['monks']
     #task_id = openMLname2task['banknote'] #raw features are already amazing
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
@@ -637,6 +636,9 @@ if __name__ == '__main__':
     #task_id = openMLname2task['diabetes'] #feature selection of deficiency works best
     #task_id = openMLname2task['lupus'] #with 4 folds, it is a good example
     #task_id = openMLname2task['credit approval']
+    #task_id = openMLname2task['covertype'] = 218
+    #task_id = openMLname2task['eeg_eye_state'] = 9983
+    #task_id = openMLname2task['MagicTelescope'] = 3954
     dataset = None
 
 
@@ -665,6 +667,7 @@ if __name__ == '__main__':
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
     selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
+
     '''
     selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True,
                                                    transformation_producer=get_transformation_for_division,

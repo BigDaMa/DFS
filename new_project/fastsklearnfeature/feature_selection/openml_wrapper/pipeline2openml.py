@@ -144,14 +144,22 @@ def replace_with_new_wrapper(pip, counter: List[int] = [0]):
 def candidate2openml(max_feature, classifier, task, tag):
 	original = copy.deepcopy(max_feature.pipeline)
 	try:
+		best_hyperparameters = max_feature.runtime_properties['hyperparameters']
+
+		all_keys = list(best_hyperparameters.keys())
+		for k in all_keys:
+			if 'classifier__' in k:
+				best_hyperparameters[k[12:]] = best_hyperparameters.pop(k)
+		print(best_hyperparameters)
+
 		# openml
 		if isinstance(max_feature.pipeline, Pipeline):
 			my_pipeline = max_feature.pipeline
 			my_pipeline = replace_with_new_wrapper(my_pipeline)
-			my_pipeline.steps.append(('c', classifier(**max_feature.runtime_properties['hyperparameters'])))
+			my_pipeline.steps.append(('c', classifier(**best_hyperparameters)))
 		else:
 			my_pipeline = Pipeline([('f', max_feature.pipeline),
-									('c', classifier(**max_feature.runtime_properties['hyperparameters']))
+									('c', classifier(**best_hyperparameters))
 									])
 
 			my_pipeline.steps[0] = (my_pipeline.steps[0][0], replace_with_new_wrapper(my_pipeline.steps[0][1]))
