@@ -99,7 +99,7 @@ def evaluate(candidate_id: int):
             train_transformed_input = np.hstack([p.runtime_properties['train_transformed'][fold] for p in candidate.parents])
             test_transformed_input = np.hstack([p.runtime_properties['test_transformed'][fold] for p in candidate.parents])
 
-            candidate.transformation.fit(train_transformed_input)
+            candidate.transformation.fit(train_transformed_input, my_globale_module.target_train_folds_global[fold])
             train_transformed[fold] = candidate.transformation.transform(train_transformed_input)
             test_transformed[fold] = candidate.transformation.transform(test_transformed_input)
 
@@ -109,7 +109,7 @@ def evaluate(candidate_id: int):
             one_test_set_transformed_input = np.hstack(
                 [p.runtime_properties['one_test_set_transformed'] for p in candidate.parents])
 
-            candidate.transformation.fit(training_all_input)
+            candidate.transformation.fit(training_all_input, my_globale_module.train_y_all_target_global)
             training_all = candidate.transformation.transform(training_all_input)
             one_test_set_transformed = candidate.transformation.transform(one_test_set_transformed_input)
 

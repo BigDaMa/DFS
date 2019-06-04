@@ -16,21 +16,23 @@ from fastsklearnfeature.transformations.generators.OneHotGenerator import OneHot
 from fastsklearnfeature.transformations.OneDivisionTransformation import OneDivisionTransformation
 from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
 from fastsklearnfeature.transformations.ImputationTransformation import ImputationTransformation
+from fastsklearnfeature.transformations.mdlp_discretization.MDLPDiscretizerTransformation import MDLPDiscretizerTransformation
 
 def get_transformation_for_division(train_X_all, raw_features):
 
     unary_transformations: List[UnaryTransformation] = []
     binary_transformations: List[Transformation] = []
 
-    unary_transformations.append(PandasDiscretizerTransformation(number_bins=10))
+    #unary_transformations.append(PandasDiscretizerTransformation(number_bins=10))
     unary_transformations.append(MinMaxScalingTransformation())
+    unary_transformations.append(MDLPDiscretizerTransformation())
 
     unary_transformations.append(OneDivisionTransformation())
     unary_transformations.append(MinusTransformation())
 
     unary_transformations.append(ImputationTransformation('mean'))
-    unary_transformations.append(ImputationTransformation('median'))
-    unary_transformations.append(ImputationTransformation('most_frequent'))
+    #unary_transformations.append(ImputationTransformation('median'))
+    #unary_transformations.append(ImputationTransformation('most_frequent'))
 
     
     binary_transformations.extend(HigherOrderCommutativeClassGenerator(2,

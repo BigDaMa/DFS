@@ -627,7 +627,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['banknote'] #raw features are already amazing
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
-    #task_id = openMLname2task['eucalyptus'] # cool with imputation
+    task_id = openMLname2task['eucalyptus'] # cool with imputation
     #task_id = openMLname2task['haberman']
     #task_id = openMLname2task['quake'] #ok task with 4 folds
     #task_id = openMLname2task['volcanoes'] #with 4 folds, it is a good example
@@ -640,7 +640,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['eeg_eye_state']
     #task_id = openMLname2task['MagicTelescope']
     #task_id = openMLname2task['adult']
-    task_id = openMLname2task['mushroom']
+    #task_id = openMLname2task['mushroom']
     dataset = None
 
 

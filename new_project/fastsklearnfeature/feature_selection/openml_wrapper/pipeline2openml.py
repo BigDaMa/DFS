@@ -4,7 +4,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.pipeline import FeatureUnion
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.base import BaseEstimator
 import time
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
@@ -16,6 +15,8 @@ from fastsklearnfeature.transformations.FastGroupByThenTransformation import Fas
 from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
 from fastsklearnfeature.transformations.OneDivisionTransformation import OneDivisionTransformation
 from fastsklearnfeature.transformations.binary.NonCommutativeBinaryTransformation import NonCommutativeBinaryTransformation
+from fastsklearnfeature.transformations.mdlp_discretization.MDLPDiscretizerTransformation import MDLPDiscretizerTransformation
+
 
 
 from fastsklearnfeature.configuration.Config import Config
@@ -70,7 +71,6 @@ def replaceImputationTransformation(value: ImputationTransformation, counter):
 def replaceOneHotTransformation(value: OneHotTransformation, counter):
 	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
-	print('value: ' + str(value.value) + " " + str(type(value.value)))
 	return NewClass(value.value, value.value_id, 0)
 
 def replaceFastGroupByThenTransformation(value: FastGroupByThenTransformation, counter):
@@ -92,6 +92,11 @@ def replaceNonCommutativeBinaryTransformation(value: NonCommutativeBinaryTransfo
 	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
 					dict(value.__class__.__dict__))
 	return NewClass(value.method, 0)
+
+def replaceMDLPDiscretizerTransformation(value: MDLPDiscretizerTransformation, counter):
+	NewClass = type('C' + hex(int(str(time.time()).replace('.', '')))[2:], value.__class__.__bases__,
+					dict(value.__class__.__dict__))
+	return NewClass()
 
 
 def get_name(counter: List[int]):
@@ -138,6 +143,8 @@ def replace_with_new_wrapper(pip, counter: List[int] = [0]):
 		my_class = replaceOneDivisionTransformation(pip, counter)
 	elif isinstance(pip, NonCommutativeBinaryTransformation):
 		my_class = replaceNonCommutativeBinaryTransformation(pip, counter)
+	elif isinstance(pip, MDLPDiscretizerTransformation):
+		my_class = replaceMDLPDiscretizerTransformation(pip, counter)
 
 	return my_class
 
