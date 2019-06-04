@@ -157,7 +157,6 @@ def candidate2openml(max_feature, classifier, task, tag):
 		for k in all_keys:
 			if 'classifier__' in k:
 				best_hyperparameters[k[12:]] = best_hyperparameters.pop(k)
-		print(best_hyperparameters)
 
 		# openml
 		if isinstance(max_feature.pipeline, Pipeline):

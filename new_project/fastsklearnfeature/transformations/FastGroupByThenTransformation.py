@@ -45,6 +45,9 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
         if 'missing_values' in feature_combination[0].properties and feature_combination[0].properties['missing_values']:
             return False
 
+        if 'missing_values' in feature_combination[1].properties and feature_combination[1].properties['missing_values']:
+            return False
+
         #the aggregated column has to be numeric
         if 'float' in str(feature_combination[0].properties['type']) \
             or 'int' in str(feature_combination[0].properties['type']) \
