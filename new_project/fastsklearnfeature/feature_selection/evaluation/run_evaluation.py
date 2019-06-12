@@ -174,7 +174,8 @@ def evaluate(candidate_id: int):
         candidate.get_name()
         candidate.get_complexity()
         candidate.get_sympy_representation()
-        candidate.parents = None
+        if my_globale_module.remove_parents:
+            candidate.parents = None
         return candidate
 
 

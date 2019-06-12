@@ -34,6 +34,9 @@ class MDLPDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUnar
         if feature_combination[0].properties['missing_values']:
             return False
 
+        if 'number_distinct_values' in feature_combination[0].properties and feature_combination[0].properties['number_distinct_values'] <= 2:
+            return False
+
         return True
 
     def get_sympy_representation(self, input_attributes):

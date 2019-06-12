@@ -11,26 +11,15 @@ from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 import copy
-from fastsklearnfeature.candidate_generation.feature_space.one_hot import get_transformation_for_cat_feature_space
 from fastsklearnfeature.candidate_generation.feature_space.division import get_transformation_for_division
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
-from sklearn.neighbors import KNeighborsClassifier
-import numpy as np
 import sympy
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
-from sklearn.metrics import roc_auc_score
-from sklearn.linear_model import LinearRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics.scorer import r2_scorer
-from sklearn.metrics.scorer import neg_mean_squared_error_scorer
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates
-import numpy as np
-import openml
-from sklearn.pipeline import Pipeline
-from sklearn.pipeline import FeatureUnion
 from fastsklearnfeature.feature_selection.openml_wrapper.pipeline2openml import candidate2openml
+import numpy as np
 
 
 import warnings
@@ -55,7 +44,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                  score=make_scorer(f1_score, average='micro'),
                  max_seconds=None,
                  save_logs=False,
-                 reader=None
+                 reader=None,
+                 upload2openml=False,
+                 remove_parents=True
                  ):
         super(ComplexityDrivenFeatureConstruction, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
@@ -65,6 +56,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         self.score = score
         self.save_logs = save_logs
         self.reader = reader
+        self.upload2openml = upload2openml
+        self.remove_parents = remove_parents
 
         self.max_timestamp = None
         if type(max_seconds) != type(None):
@@ -356,6 +349,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         my_globale_module.preprocessed_folds_global = copy.deepcopy(self.preprocessed_folds)
         my_globale_module.epsilon_global = copy.deepcopy(self.epsilon)
         my_globale_module.complexity_delta_global = copy.deepcopy(self.complexity_delta)
+        my_globale_module.remove_parents = copy.deepcopy(self.remove_parents)
 
 
 
@@ -549,7 +543,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 #print(max_feature.runtime_properties['fold_scores'])
 
             # upload best feature to OpenML
-            candidate2openml(max_feature, my_globale_module.classifier_global, self.reader.task, 'ComplexityDriven')
+            if self.upload2openml:
+                candidate2openml(max_feature, my_globale_module.classifier_global, self.reader.task, 'ComplexityDriven')
 
 
             if self.save_logs:
@@ -616,7 +611,7 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.reader.OnlineOpenMLReader import OnlineOpenMLReader
 
-    from fastsklearnfeature.feature_selection.evaluation.openMLdict import openMLname2task
+    from fastsklearnfeature.feature_selection.openml_wrapper.openMLdict import openMLname2task
 
     #task_id = openMLname2task['transfusion'] #interesting
     #task_id = openMLname2task['iris'] # feature selection is enough
@@ -624,9 +619,9 @@ if __name__ == '__main__':
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
     #task_id = openMLname2task['german credit'] #cool with onehot
     #task_id = openMLname2task['banknote'] #raw features are already amazing
-    #task_id = openMLname2task['heart-statlog']
+    task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
-    task_id = openMLname2task['eucalyptus'] # cool with imputation
+    #task_id = openMLname2task['eucalyptus'] # cool with imputation
     #task_id = openMLname2task['haberman']
     #task_id = openMLname2task['quake'] #ok task with 4 folds
     #task_id = openMLname2task['volcanoes'] #with 4 folds, it is a good example
@@ -640,6 +635,11 @@ if __name__ == '__main__':
     #task_id = openMLname2task['MagicTelescope']
     #task_id = openMLname2task['adult']
     #task_id = openMLname2task['mushroom']
+    #task_id = openMLname2task['ildp']
+    #task_id = openMLname2task['biodeg']
+    #task_id = openMLname2task['vowel']
+    #task_id = openMLname2task['cylinder-bands']
+    #task_id = openMLname2task['glass']
     dataset = None
 
 
@@ -667,7 +667,8 @@ if __name__ == '__main__':
 
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
+    #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'), epsilon=-np.inf, remove_parents=False)
 
     '''
     selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True,
