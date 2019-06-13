@@ -613,13 +613,13 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.feature_selection.openml_wrapper.openMLdict import openMLname2task
 
-    #task_id = openMLname2task['transfusion'] #interesting
+    task_id = openMLname2task['transfusion'] #interesting
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
     #task_id = openMLname2task['german credit'] #cool with onehot
     #task_id = openMLname2task['banknote'] #raw features are already amazing
-    task_id = openMLname2task['heart-statlog']
+    #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
     #task_id = openMLname2task['eucalyptus'] # cool with imputation
     #task_id = openMLname2task['haberman']
