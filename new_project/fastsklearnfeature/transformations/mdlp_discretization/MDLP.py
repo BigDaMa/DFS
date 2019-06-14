@@ -4,6 +4,7 @@ import numpy as np
 from fastsklearnfeature.transformations.mdlp_discretization.Entropy import entropy_numpy, cut_point_information_gain_numpy
 from math import log
 from sklearn.base import TransformerMixin
+import pandas as pd
 
 
 def previous_item(a, val):
@@ -124,7 +125,7 @@ class MDLP_Discretizer(TransformerMixin):
         :return: array with potential cut_points
         '''
 
-        missing_mask = np.isnan(values)
+        missing_mask = pd.isnull(values)
         data_partition = np.concatenate([values[:, np.newaxis], self._class_labels], axis=1)
         data_partition = data_partition[~missing_mask]
         #sort data by values
@@ -194,7 +195,7 @@ class MDLP_Discretizer(TransformerMixin):
         '''
 
         #Delte missing data
-        mask = np.isnan(X)
+        mask = pd.isnull(X)
         X = X[~mask]
         y = y[~mask]
 
@@ -271,6 +272,6 @@ class MDLP_Discretizer(TransformerMixin):
             else:
                 cuts = [-np.inf] + self._cuts[attr] + [np.inf]
                 discretized_col = np.digitize(x=data[:, attr], bins=cuts, right=False).astype('float') - 1
-                discretized_col[np.isnan(data[:, attr])] = np.nan
+                discretized_col[pd.isnull(data[:, attr])] = np.nan
                 data[:, attr] = discretized_col
         return data

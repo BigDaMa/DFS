@@ -234,6 +234,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             candidate.runtime_properties['training_all'] = training_all
             candidate.runtime_properties['one_test_set_transformed'] = one_test_set_transformed
 
+
         candidate.runtime_properties['train_transformed'] = train_transformed
         candidate.runtime_properties['test_transformed'] = test_transformed
 
@@ -380,7 +381,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         #print("nonnumeric: " + str(raw_f))
 
                     self.materialize_raw_features(raw_f)
-                    raw_f.derive_properties(raw_f.runtime_properties['train_transformed'][0])
+                    #raw_f.derive_properties(raw_f.runtime_properties['train_transformed'][0])
 
             # first unary
             # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
@@ -468,7 +469,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
             #now evaluate all from this layer
-            #print(current_layer)
+            print(current_layer)
             print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
             results = evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
@@ -596,7 +597,7 @@ if __name__ == '__main__':
     #dataset = ("/home/felix/datasets/ExploreKit/csv/dataset_37_diabetes_diabetes.csv", 8)
 
     #dataset = (Config.get('data_path') + "/phpn1jVwe_mammography.csv", 6)
-    #dataset = (Config.get('data_path') + "/dataset_31_credit-g_german_credit.csv", 20)
+    dataset = (Config.get('data_path') + "/dataset_31_credit-g.csv", 20)
     #dataset = (Config.get('data_path') + '/dataset_53_heart-statlog_heart.csv', 13)
     #dataset = (Config.get('data_path') + '/ILPD.csv', 10)
     #dataset = (Config.get('data_path') + '/data_banknote_authentication.txt', 4)
@@ -613,7 +614,7 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.feature_selection.openml_wrapper.openMLdict import openMLname2task
 
-    task_id = openMLname2task['transfusion'] #interesting
+    #task_id = openMLname2task['transfusion'] #interesting
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
@@ -640,7 +641,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['vowel']
     #task_id = openMLname2task['cylinder-bands']
     #task_id = openMLname2task['glass']
-    dataset = None
+    #dataset = None
 
 
 
@@ -668,7 +669,11 @@ if __name__ == '__main__':
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'), epsilon=-np.inf, remove_parents=False)
+    #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'), epsilon=-np.inf, remove_parents=False)
+    selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True,
+                                                   transformation_producer=get_transformation_for_division,
+                                                   score=make_scorer(f1_score, average='micro'), epsilon=-np.inf,
+                                                   remove_parents=False)
 
     '''
     selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True,

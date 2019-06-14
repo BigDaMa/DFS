@@ -1,6 +1,7 @@
 import itertools
 from typing import List
 import sympy
+import pandas as pd
 import numpy as np
 
 class Transformation:
@@ -50,7 +51,7 @@ class Transformation:
 
         try:
             # missing values properties
-            properties['missing_values'] = np.isnan(training_data).any()
+            properties['missing_values'] = pd.isnull(training_data).any()
 
             # range properties
             properties['has_zero'] = 0 in training_data
@@ -58,7 +59,7 @@ class Transformation:
             properties['max'] = np.nanmax(training_data)
         except:
             # was nonnumeric data
-            properties['missing_values'] = np.isnan(training_data).any()
+            properties['missing_values'] = pd.isnull(training_data).any()
             pass
         properties['number_distinct_values'] = len(np.unique(training_data))
         return properties

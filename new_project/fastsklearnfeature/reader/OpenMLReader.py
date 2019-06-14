@@ -21,7 +21,7 @@ class OpenMLReader:
 
         try:
             # missing values properties
-            properties['missing values'] = np.sum(np.isnan(data))
+            properties['missing values'] = pd.isnull(data).any()
 
             # range properties
             properties['negative'] = np.sum(data < 0.0)

@@ -7,6 +7,7 @@ from typing import List, Dict, Set
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import sympy
 import copy
+import pandas as pd
 
 class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, method, sympy_method):
@@ -81,7 +82,7 @@ class FastGroupByThenTransformation(BaseEstimator, TransformerMixin, Transformat
 
         try:
             # missing values properties
-            properties['missing_values'] = np.isnan(training_data).any()
+            properties['missing_values'] = pd.isnull(training_data).any()
 
             # range properties
             if (parents[0].properties['min'] == 0.0 and self.method == np.nanmin) or \
