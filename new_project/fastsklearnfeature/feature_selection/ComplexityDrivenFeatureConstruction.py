@@ -469,7 +469,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
             #now evaluate all from this layer
-            print(current_layer)
+            #print(current_layer)
             print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
             results = evaluate_candidates(current_layer)
             print("----------- Evaluation Finished -----------")
