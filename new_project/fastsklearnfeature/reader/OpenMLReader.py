@@ -13,25 +13,6 @@ class OpenMLReader:
         self.raw_features: List[RawFeature] = []
         self.splitter: Splitter = splitter
 
-    def derive_properties(self, column_id, data):
-        properties = {}
-        # type properties
-        properties['type'] = self.dataframe.dtypes.values[column_id]
-        #print(self.dataframe.dtypes.values)
-
-        try:
-            # missing values properties
-            properties['missing values'] = pd.isnull(data).any()
-
-            # range properties
-            properties['negative'] = np.sum(data < 0.0)
-        except:
-            #was nonnumeric data
-            pass
-
-        return properties
-
-
     def read(self):
         openML_path = Config.get('openml.path')
 
