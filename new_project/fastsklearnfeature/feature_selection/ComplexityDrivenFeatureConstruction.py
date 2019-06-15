@@ -669,7 +669,7 @@ if __name__ == '__main__':
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'), epsilon=-np.inf, remove_parents=False)
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=6, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'), epsilon=-np.inf, remove_parents=False)
     '''
     selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True,
                                                    transformation_producer=get_transformation_for_division,
