@@ -45,7 +45,7 @@ class CandidateFeature:
 
         pipeline = None
         if isinstance(parent_features, Pipeline):
-            parent_features.steps.append((self.transformation.name, self.transformation))
+            parent_features.steps.append((self.transformation.name + str(time.time()), self.transformation))
             pipeline = parent_features
         else:
             pipeline = Pipeline([

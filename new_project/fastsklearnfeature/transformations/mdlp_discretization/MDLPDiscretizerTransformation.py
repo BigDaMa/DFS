@@ -21,6 +21,8 @@ class MDLPDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUnar
 
     def fit(self, X, y=None):
         self.discretizer.fit(X, y)
+        if len(self.discretizer._cuts[0]) == 0:
+            raise ValueError('MDLP discretization failed!')
         return self
 
     def transform(self, X):
