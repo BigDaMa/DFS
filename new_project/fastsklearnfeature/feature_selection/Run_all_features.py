@@ -41,8 +41,7 @@ class Run_RawFeatures(EvaluationFramework):
         'classifier__learning_rate': [0.02],
         'classifier__n_estimators': [600],
         'classifier__objective': ['binary:logistic'],
-        'classifier__silent': [True],
-        'classifier__n_jobs': [int(Config.get_default("parallelism", mp.cpu_count()))]
+        'classifier__silent': [True]
         },
                  transformation_producer=get_transformation_for_feature_space,
                  score=make_scorer(f1_score, average='micro'),
@@ -324,7 +323,7 @@ class Run_RawFeatures(EvaluationFramework):
         combo = CandidateFeature(IdentityTransformation(len(baseline_features)), scaled_baseline_features)
 
 
-        results = self.evaluate_candidates([combo], myfolds)
+        results = self.evaluate_candidates_detail([combo], myfolds, int(Config.get_default("parallelism", mp.cpu_count())))
 
         print(str(results[0].runtime_properties))
 

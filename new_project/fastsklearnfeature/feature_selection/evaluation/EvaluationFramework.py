@@ -81,7 +81,7 @@ def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, pr
     return candidate
 '''
 
-def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, preprocessed_folds, score, train_data, current_target, train_X_all, train_y_all_target, test_data, test_target):
+def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, preprocessed_folds, score, train_data, current_target, train_X_all, train_y_all_target, test_data, test_target, cv_jobs=1):
     pipeline = Pipeline([('features', FeatureUnion(
         [
             (candidate.get_name(), candidate.pipeline)
@@ -95,7 +95,7 @@ def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, pr
         refit = True
 
     clf = GridSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score, iid=False,
-                       error_score='raise', refit=refit)
+                       error_score='raise', refit=refit, n_jobs=cv_jobs)
     clf.fit(train_data, current_target) #dataset.splitted_values['train']
     candidate.runtime_properties['score'] = clf.best_score_
     candidate.runtime_properties['hyperparameters'] = clf.best_params_
@@ -247,6 +247,24 @@ class EvaluationFramework:
                               train_y_all_target=self.train_y_all_target,
                               test_data=self.dataset.splitted_values['test'],
                               test_target=self.test_target)
+
+        results = []
+        for can in candidates:
+            results.append(my_function(can))
+        return results
+
+    def evaluate_candidates_detail(self, candidates: List[CandidateFeature], my_folds, cv_jobs) -> List[CandidateFeature]:
+        my_function = partial(evaluate, classifier=self.classifier,
+                              grid_search_parameters=self.grid_search_parameters,
+                              preprocessed_folds=my_folds,
+                              score=self.score,
+                              train_data=self.dataset.splitted_values['train'],
+                              current_target=self.train_y_all_target,
+                              train_X_all=self.train_X_all,
+                              train_y_all_target=self.train_y_all_target,
+                              test_data=self.dataset.splitted_values['test'],
+                              test_target=self.test_target,
+                              cv_jobs=cv_jobs)
 
         results = []
         for can in candidates:
