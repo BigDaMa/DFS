@@ -10,6 +10,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import f1_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 import multiprocessing as mp
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import StratifiedKFold
@@ -96,6 +97,37 @@ def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, pr
 
     clf = GridSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score, iid=False,
                        error_score='raise', refit=refit, n_jobs=cv_jobs)
+    clf.fit(train_data, current_target) #dataset.splitted_values['train']
+    candidate.runtime_properties['score'] = clf.best_score_
+    candidate.runtime_properties['hyperparameters'] = clf.best_params_
+
+    if Config.get_default('score.test', 'False') == 'True':
+        if Config.get_default('instance.selection', 'False') == 'True':
+            clf = GridSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score,
+                               iid=False, error_score='raise', refit=True)
+
+            clf.fit(train_X_all, train_y_all_target)
+        candidate.runtime_properties['test_score'] = clf.score(test_data, test_target) #self.dataset.splitted_values['test']
+    else:
+        candidate.runtime_properties['test_score'] = 0.0
+
+    return candidate
+
+def evaluate_randomcv(candidate: CandidateFeature, classifier, grid_search_parameters, preprocessed_folds, score, train_data, current_target, train_X_all, train_y_all_target, test_data, test_target, cv_jobs=1):
+    pipeline = Pipeline([('features', FeatureUnion(
+        [
+            (candidate.get_name(), candidate.pipeline)
+        ])),
+                         ('classifier', classifier())
+                         ])
+
+    refit = False
+    if Config.get_default('score.test', 'False') == 'True' and not Config.get_default('instance.selection',
+                                                                                      'False') == 'True':
+        refit = True
+
+    clf = RandomizedSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score, iid=False,
+                       error_score='raise', refit=refit, n_jobs=cv_jobs, n_iter=100)
     clf.fit(train_data, current_target) #dataset.splitted_values['train']
     candidate.runtime_properties['score'] = clf.best_score_
     candidate.runtime_properties['hyperparameters'] = clf.best_params_
@@ -271,6 +303,23 @@ class EvaluationFramework:
             results.append(my_function(can))
         return results
 
+    def evaluate_candidates_randomcv(self, candidates: List[CandidateFeature], my_folds, cv_jobs) -> List[CandidateFeature]:
+        my_function = partial(evaluate_randomcv, classifier=self.classifier,
+                              grid_search_parameters=self.grid_search_parameters,
+                              preprocessed_folds=my_folds,
+                              score=self.score,
+                              train_data=self.dataset.splitted_values['train'],
+                              current_target=self.train_y_all_target,
+                              train_X_all=self.train_X_all,
+                              train_y_all_target=self.train_y_all_target,
+                              test_data=self.dataset.splitted_values['test'],
+                              test_target=self.test_target,
+                              cv_jobs=cv_jobs)
+
+        results = []
+        for can in candidates:
+            results.append(my_function(can))
+        return results
 
 
     '''

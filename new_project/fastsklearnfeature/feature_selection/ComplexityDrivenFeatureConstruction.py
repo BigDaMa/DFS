@@ -619,7 +619,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
-    #task_id = openMLname2task['german credit'] #cool with onehot
+    task_id = openMLname2task['german credit'] #cool with onehot
     #task_id = openMLname2task['banknote'] #raw features are already amazing
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
@@ -629,7 +629,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['volcanoes'] #with 4 folds, it is a good example
     #task_id = openMLname2task['analcatdata'] #with 4 folds, it is a good example
     #task_id = openMLname2task['humandevel'] # feature selection only
-    task_id = openMLname2task['diabetes'] #feature selection of deficiency works best
+    #task_id = openMLname2task['diabetes'] #feature selection of deficiency works best
     #task_id = openMLname2task['lupus'] #with 4 folds, it is a good example
     #task_id = openMLname2task['credit approval']
     #task_id = openMLname2task['covertype']
@@ -670,7 +670,7 @@ if __name__ == '__main__':
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'), epsilon=-np.inf, remove_parents=False, upload2openml=True)
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
     '''
     selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True,
                                                    transformation_producer=get_transformation_for_division,

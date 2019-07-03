@@ -5,12 +5,15 @@ from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from typing import List
 import sympy
 from fastsklearnfeature.transformations.mdlp_discretization.MDLP import MDLP_Discretizer
+from fastsklearnfeature.transformations.MinMaxScalingTransformation import scale
 
 class mdlpdiscretize(sympy.Function):
     @classmethod
     def eval(cls, x):
         if isinstance(x, mdlpdiscretize): #idempotent
             return x
+        if isinstance(x, scale): #idempotent
+            return cls(x.args[0])
 
 
 class MDLPDiscretizerTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransformation):

@@ -95,6 +95,7 @@ def evaluate(candidate_id: int):
         #print(self.name_to_train_transformed.keys())
 
         #merge columns from parents
+        test_unique_values = 0
         for fold in range(len(my_globale_module.preprocessed_folds_global)):
             train_transformed_input = np.hstack([p.runtime_properties['train_transformed'][fold] for p in candidate.parents])
             test_transformed_input = np.hstack([p.runtime_properties['test_transformed'][fold] for p in candidate.parents])
@@ -102,6 +103,10 @@ def evaluate(candidate_id: int):
             candidate.transformation.fit(train_transformed_input, my_globale_module.target_train_folds_global[fold])
             train_transformed[fold] = candidate.transformation.transform(train_transformed_input)
             test_transformed[fold] = candidate.transformation.transform(test_transformed_input)
+            test_unique_values += len(np.unique(test_transformed[fold]))
+
+        if test_unique_values == len(my_globale_module.preprocessed_folds_global):
+            return None
 
         if Config.get_default('score.test', 'False') == 'True':
             training_all_input = np.hstack(
