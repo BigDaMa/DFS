@@ -163,8 +163,17 @@ def evaluate(candidate_id: int):
         #    candidate.runtime_properties['coef_'] = my_clf.coef_
 
 
-    if Config.get_default('store.predictions', 'False') == 'True':
-        candidate.runtime_properties['test_fold_predictions'] = test_fold_predictions
+        if Config.get_default('store.predictions', 'False') == 'True':
+            candidate.runtime_properties['test_fold_predictions'] = test_fold_predictions
+
+
+            ## check whether prediction already exists
+            materialized_all = []
+            for fold_ii in range(len(my_globale_module.preprocessed_folds_global)):
+                materialized_all.extend(candidate.runtime_properties['test_fold_predictions'][fold_ii].flatten())
+            materialized = tuple(materialized_all)
+            if materialized in my_globale_module.predictions_set:
+                return None
 
 
 

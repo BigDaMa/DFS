@@ -354,6 +354,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         my_globale_module.remove_parents = copy.deepcopy(self.remove_parents)
 
         my_globale_module.materialized_set = set()
+        my_globale_module.predictions_set = set()
 
 
 
@@ -494,6 +495,18 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         candidate = None
                     else:
                         my_globale_module.materialized_set.add(materialized)
+
+                ## check if predictions exist already
+                if type(candidate) != type(None) and 'test_fold_predictions' in candidate.runtime_properties:
+                    materialized_all = []
+                    for fold_ii in range(len(my_globale_module.preprocessed_folds_global)):
+                        materialized_all.extend(candidate.runtime_properties['test_fold_predictions'][fold_ii].flatten())
+                    materialized = tuple(materialized_all)
+                    if materialized in my_globale_module.predictions_set:
+                        candidate = None
+                    else:
+                        my_globale_module.predictions_set.add(materialized)
+
 
 
                 if type(candidate) != type(None):
