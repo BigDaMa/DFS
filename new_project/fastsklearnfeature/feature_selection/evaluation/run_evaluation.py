@@ -31,21 +31,23 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
 
     my_keys = list(grid_search_parameters.keys())
 
-    test_fold_predictions = []
+    test_fold_predictions = {}
 
     for parameter_combination in itertools.product(*[grid_search_parameters[k] for k in my_keys]):
         parameter_set = hashabledict(zip(my_keys, parameter_combination))
         hyperparam_to_score_list[parameter_set] = []
+        test_fold_predictions[parameter_set] = []
         for fold in range(len(train_transformed)):
             clf = classifier(**parameter_set)
             clf.fit(train_transformed[fold], target_train_folds[fold])
             y_pred = clf.predict(test_transformed[fold])
-            test_fold_predictions.append(y_pred == target_test_folds[fold])
+            test_fold_predictions[parameter_set].append(y_pred == target_test_folds[fold])
             hyperparam_to_score_list[parameter_set].append(score._sign * score._score_func(target_test_folds[fold], y_pred, **score._kwargs))
 
     best_param = None
     best_mean_cross_val_score = -float("inf")
     best_score_list = []
+    best_test_fold_predictions = []
     for parameter_config, score_list in hyperparam_to_score_list.items():
         #mean_score = np.min(score_list)
         mean_score = np.mean(score_list)
@@ -53,6 +55,7 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
             best_param = parameter_config
             best_mean_cross_val_score = mean_score
             best_score_list = copy.deepcopy(score_list)
+            best_test_fold_predictions = test_fold_predictions[parameter_config]
 
     test_score = None
     if Config.get_default('score.test', 'False') == 'True':
@@ -65,7 +68,7 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
         #np.save('/tmp/true_predictions', self.test_target)
 
 
-    return best_mean_cross_val_score, test_score, best_param, test_fold_predictions, best_score_list, clf
+    return best_mean_cross_val_score, test_score, best_param, best_test_fold_predictions, best_score_list, clf
 
 
 
