@@ -31,6 +31,8 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
 
     my_keys = list(grid_search_parameters.keys())
 
+    test_fold_predictions = []
+
     for parameter_combination in itertools.product(*[grid_search_parameters[k] for k in my_keys]):
         parameter_set = hashabledict(zip(my_keys, parameter_combination))
         hyperparam_to_score_list[parameter_set] = []
@@ -38,6 +40,7 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
             clf = classifier(**parameter_set)
             clf.fit(train_transformed[fold], target_train_folds[fold])
             y_pred = clf.predict(test_transformed[fold])
+            test_fold_predictions.append(y_pred)
             hyperparam_to_score_list[parameter_set].append(score._sign * score._score_func(target_test_folds[fold], y_pred, **score._kwargs))
 
     best_param = None
@@ -62,7 +65,7 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
         #np.save('/tmp/true_predictions', self.test_target)
 
 
-    return best_mean_cross_val_score, test_score, best_param, y_pred, best_score_list, clf
+    return best_mean_cross_val_score, test_score, best_param, test_fold_predictions, best_score_list, clf
 
 
 
@@ -152,7 +155,7 @@ def evaluate(candidate_id: int):
         candidate.runtime_properties['passed'] = True
     else:
         candidate.runtime_properties['passed'] = False
-        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], y_pred, candidate.runtime_properties['fold_scores'], my_clf = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
+        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], test_fold_predictions, candidate.runtime_properties['fold_scores'], my_clf = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
             my_globale_module.grid_search_parameters_global, my_globale_module.score_global, my_globale_module.classifier_global, my_globale_module.target_train_folds_global, my_globale_module.target_test_folds_global, my_globale_module.train_y_all_target_global, my_globale_module.test_target_global)
 
 
@@ -161,7 +164,7 @@ def evaluate(candidate_id: int):
 
 
     if Config.get_default('store.predictions', 'False') == 'True':
-        candidate.runtime_properties['predictions'] = y_pred
+        candidate.runtime_properties['test_fold_predictions'] = test_fold_predictions
 
 
 
