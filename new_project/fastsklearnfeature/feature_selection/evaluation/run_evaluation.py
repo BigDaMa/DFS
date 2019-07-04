@@ -16,6 +16,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression
 from fastsklearnfeature.transformations.OneHotTransformation import OneHotTransformation
 import copy
+from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 
 class hashabledict(dict):
     def __hash__(self):
@@ -105,8 +106,18 @@ def evaluate(candidate_id: int):
             test_transformed[fold] = candidate.transformation.transform(test_transformed_input)
             test_unique_values += len(np.unique(test_transformed[fold]))
 
-        if test_unique_values == len(my_globale_module.preprocessed_folds_global):
-            return None
+        if not isinstance(candidate.transformation, IdentityTransformation):
+            #check whether feature is constant
+            if test_unique_values == len(my_globale_module.preprocessed_folds_global):
+                return None
+
+            ## check if we computed an equivalent feature before
+            materialized_all = []
+            for fold_ii in range(len(my_globale_module.preprocessed_folds_global)):
+                materialized_all.extend(test_transformed[fold_ii].flatten())
+            materialized = tuple(materialized_all)
+            if materialized in my_globale_module.materialized_set:
+                return None
 
         if Config.get_default('score.test', 'False') == 'True':
             training_all_input = np.hstack(

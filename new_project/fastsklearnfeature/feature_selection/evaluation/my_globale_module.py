@@ -13,3 +13,5 @@ preprocessed_folds_global = None
 epsilon_global = None
 complexity_delta_global = None
 remove_parents = True
+
+materialized_set = None

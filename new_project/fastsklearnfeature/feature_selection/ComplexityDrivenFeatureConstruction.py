@@ -353,6 +353,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         my_globale_module.complexity_delta_global = copy.deepcopy(self.complexity_delta)
         my_globale_module.remove_parents = copy.deepcopy(self.remove_parents)
 
+        my_globale_module.materialized_set = set()
+
 
 
 
@@ -481,6 +483,19 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
             #calculate whether we drop the evaluated candidate
             for candidate in results:
+
+                ## check if we computed an equivalent feature before
+                if type(candidate) != type(None) and not isinstance(candidate.transformation, IdentityTransformation):
+                    materialized_all = []
+                    for fold_ii in range(len(my_globale_module.preprocessed_folds_global)):
+                        materialized_all.extend(candidate.runtime_properties['test_transformed'][fold_ii].flatten())
+                    materialized = tuple(materialized_all)
+                    if materialized in my_globale_module.materialized_set:
+                        candidate = None
+                    else:
+                        my_globale_module.materialized_set.add(materialized)
+
+
                 if type(candidate) != type(None):
                     candidate.runtime_properties['layer_end_time'] = layer_end_time
 
