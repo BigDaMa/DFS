@@ -4,14 +4,14 @@ from typing import List
 import openml
 from fastsklearnfeature.candidates.RawFeature import RawFeature
 from fastsklearnfeature.configuration.Config import Config
-import copy
-import pickle
+from collections import deque
 
 class OnlineOpenMLReader:
-    def __init__(self, taskID, test_folds=1):
+    def __init__(self, taskID, test_folds=1, rotate_test=0):
         self.task_id = taskID
         self.raw_features: List[RawFeature] = []
         self.test_folds = test_folds
+        self.rotate_test = rotate_test
         openml.config.apikey = Config.get('openML.apikey')
 
     def read(self) -> List[RawFeature]:
@@ -21,8 +21,13 @@ class OnlineOpenMLReader:
 
         test_indices = np.array([])
         train_indices = np.array([])
+
+        circular_queue = deque(range(self.task.get_split_dimensions()[1]))
+
+        circular_queue.rotate(self.rotate_test)
+
         for fold in range(self.task.get_split_dimensions()[1]):
-            _, t_indices = self.task.get_train_test_split_indices(fold=fold)
+            _, t_indices = self.task.get_train_test_split_indices(fold=circular_queue.popleft())
 
             if fold < self.test_folds:
                 test_indices = np.concatenate((test_indices, t_indices), axis=None)

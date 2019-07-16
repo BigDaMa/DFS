@@ -10,17 +10,24 @@ from fastsklearnfeature.transformations.IdentityTransformation import IdentityTr
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
-from sklearn.metrics import make_scorer
-from sklearn.metrics import f1_score
-from sklearn.metrics import roc_auc_score
 from fastsklearnfeature.feature_selection.openml_wrapper.pipeline2openml import candidate2openml
+from fastsklearnfeature.transformations.generators.OneHotGenerator import OneHotGenerator
+from fastsklearnfeature.transformations.ImputationTransformation import ImputationTransformation
+from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
+from fastsklearnfeature.transformations.OneHotTransformation import OneHotTransformation
+import numpy as np
+from fastsklearnfeature.candidates.RawFeature import RawFeature
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import StandardScaler
+
+from sklearn.metrics import make_scorer
+from sklearn.metrics import f1_score
+from sklearn.metrics import roc_auc_score
+
+from typing import List, Dict, Set
+import pickle
 import warnings
-import numpy as np
 warnings.filterwarnings("ignore")
 
 class Run_RawFeatures(EvaluationFramework):
@@ -34,7 +41,8 @@ class Run_RawFeatures(EvaluationFramework):
                  transformation_producer=get_transformation_for_feature_space,
                  score=make_scorer(f1_score, average='micro'),
                  reader=None,
-                 folds=10
+                 folds=10,
+                 max_complexity=3
                  ):
         self.dataset_config = dataset_config
         self.classifier = classifier
@@ -43,6 +51,7 @@ class Run_RawFeatures(EvaluationFramework):
         self.score = score
         self.reader = reader
         self.folds = folds
+        self.max_complexity=max_complexity
 
 
 
@@ -194,6 +203,92 @@ class Run_RawFeatures(EvaluationFramework):
 
 
 
+    def load_data_all(self, path):
+        cost_2_raw_features: Dict[int, List[RawFeature]] = pickle.load(open(path + "/data_raw.p", "rb"))
+        cost_2_unary_transformed: Dict[int, List[CandidateFeature]] = pickle.load(open(path + "/data_unary.p", "rb"))
+        cost_2_binary_transformed: Dict[int, List[CandidateFeature]] = pickle.load(open(path + "/data_binary.p", "rb"))
+        cost_2_dropped_evaluated_candidates: Dict[int, List[CandidateFeature]] = pickle.load(
+            open(path + "/data_dropped.p", "rb"))
+
+        # build tree from logged data
+
+        # get last layer:
+        all_layers = list(cost_2_raw_features.keys())
+        all_layers.extend(list(cost_2_unary_transformed.keys()))
+        all_layers.extend(list(cost_2_binary_transformed.keys()))
+        all_layers.extend(list(cost_2_dropped_evaluated_candidates.keys()))
+
+        last_layer = max(all_layers)
+        all_layers = None
+
+        # create string2candidate dictionary
+        def extend_string2candidate(my_dict: Dict[int, List[CandidateFeature]],
+                                    string2candidate: Dict[str, CandidateFeature], last_layer):
+            for c in range(0, last_layer + 1):
+                if c in my_dict:
+                    for v in my_dict[c]:
+                        string2candidate[str(v)] = v
+
+        string2candidate: Dict[str, CandidateFeature] = {}
+        extend_string2candidate(cost_2_raw_features, string2candidate, last_layer)
+        extend_string2candidate(cost_2_unary_transformed, string2candidate, last_layer)
+        extend_string2candidate(cost_2_binary_transformed, string2candidate, last_layer)
+        extend_string2candidate(cost_2_dropped_evaluated_candidates, string2candidate, last_layer)
+
+        return string2candidate
+
+    def get_interesting_features(self, string2candidate, k, max_complexity):
+
+        def prune_from_root(c: CandidateFeature):
+            if isinstance(c, RawFeature):
+                return True
+            if not all([prune_from_root(p) for p in c.parents]):
+                return False
+            if c.runtime_properties['score'] > max([p.runtime_properties['score'] for p in c.parents]):
+                return True
+            else:
+                return False
+
+        candidates: List[CandidateFeature] = []
+        for c in string2candidate.values():
+            if not isinstance(c, RawFeature) and prune_from_root(c):
+                if c.get_complexity() <= max_complexity:
+                    candidates.append(c)
+
+        # prune features that have the exact same accuracy
+        accuracy2candidate: Dict[float, CandidateFeature] = {}
+        for c in candidates:
+            if c.runtime_properties['score'] in accuracy2candidate:
+                if accuracy2candidate[c.runtime_properties['score']].get_complexity() > c.get_complexity():
+                    accuracy2candidate[c.runtime_properties['score']] = c
+            else:
+                accuracy2candidate[c.runtime_properties['score']] = c
+        candidates = list(accuracy2candidate.values())
+
+        new_candidates: List[CandidateFeature] = []
+        for c in candidates:
+            if not isinstance(c.transformation, OneHotTransformation):
+                new_candidates.append(c)
+        candidates = new_candidates
+
+
+
+        # candidates = list(string2candidate.values())
+        complexities = np.array([c.runtime_properties['score'] for c in candidates]) * -1
+        sorted_ids = np.argsort(complexities)
+
+        if len(candidates) < k:
+            k = len(candidates)
+
+        interesting_features = []
+
+        for my_i in range(k):
+            interesting_features.append(candidates[sorted_ids[my_i]])
+
+        return interesting_features
+
+
+
     def run(self):
         self.global_starting_time = time.time()
 
@@ -204,41 +299,33 @@ class Run_RawFeatures(EvaluationFramework):
 
         myfolds = copy.deepcopy(list(self.preprocessed_folds))
 
-        '''
-        baseline_features: List[CandidateFeature] = []
-        for r in self.raw_features:
-            if r.is_numeric() and not r.properties['categorical']:
-                if not r.properties['missing_values']:
-                    baseline_features.append(r)
-                else:
-                    baseline_features.append(CandidateFeature(ImputationTransformation(), [r]))
-            else:
-                baseline_features.extend([CandidateFeature(t, [r]) for t in OneHotGenerator(self.train_X_all, [r]).produce()])
+
+        level_scores: Dict[int, List[float]] = {}
+        level_test_scores: Dict[int, List[float]] = {}
+
+        #string2candidate = self.load_data_all('/home/felix/phd/fastfeatures/results/eucalyptus')
+        #string2candidate = self.load_data_all('/home/felix/phd/fastfeatures/results/contraceptive')
+        #string2candidate = self.load_data_all('/home/felix/phd/fastfeatures/results/diabetes')
+        #string2candidate = self.load_data_all('/home/felix/phd/fastfeatures/results/credit')
+        #string2candidate = self.load_data_all('/home/felix/phd/fastfeatures/results/heart_new_all')
+        #string2candidate = self.load_data_all('/tmp')
+
+        features = pickle.load(open('/tmp/cover_features.p', "rb"))
+
+        #apply minmax scaling
+        new_features: List[CandidateFeature] = []
+        for f in features:
+            new_features.append(CandidateFeature(MinMaxScalingTransformation(), [f]))
 
 
-        print(len(baseline_features))
+        results = self.evaluate_candidates([CandidateFeature(IdentityTransformation(len(new_features)), new_features)], myfolds)
 
-        combo = CandidateFeature(IdentityTransformation(len(baseline_features)), baseline_features)
-        '''
-        categorical_ids = []
-        for r in self.raw_features:
-            if r.properties['categorical']:
-                categorical_ids.append(r.column_id)
-
-        combo = CandidateFeature(IdentityTransformation(0), self.raw_features)
-        if len(categorical_ids) >= 1:
-            combo.pipeline = Pipeline(steps=[('imputation', SimpleImputer(strategy='mean')),
-                                         ('onehot', OneHotEncoder(categorical_features=categorical_ids)), ('scaling', StandardScaler(with_mean=False))])
-        else:
-            combo.pipeline = Pipeline(steps=[('imputation', SimpleImputer(strategy='mean')), ('scaling', StandardScaler(with_mean=False))])
-
-        results = self.evaluate_candidates([combo], myfolds)
-
+        print(results[0])
         print(results[0].runtime_properties)
 
-        candidate2openml(results[0], self.classifier, self.reader.task, 'RawFeatureBaseline')
-
         return results[0]
+
+
 
 
 #statlog_heart.csv=/home/felix/datasets/ExploreKit/csv/dataset_53_heart-statlog_heart.csv
@@ -268,7 +355,7 @@ if __name__ == '__main__':
     from fastsklearnfeature.feature_selection.openml_wrapper.openMLdict import openMLname2task
 
     #task_id = openMLname2task['transfusion'] #interesting
-    #task_id = openMLname2task['iris']
+    # task_id = openMLname2task['iris']
     #task_id = openMLname2task['ecoli']
     #task_id = openMLname2task['breast cancer']
     #task_id = openMLname2task['contraceptive']
@@ -295,12 +382,11 @@ if __name__ == '__main__':
 
     all_results: List[CandidateFeature] = []
     for rotation in range(10):
-        selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id, 1, rotation), score=make_scorer(roc_auc_score)) #make_scorer(f1_score, average='micro') #make_scorer(roc_auc_score)
+        selector = Run_RawFeatures(dataset, reader=OnlineOpenMLReader(task_id, 1, rotation), score=make_scorer(roc_auc_score), max_complexity=3) #make_scorer(f1_score, average='micro') #make_scorer(roc_auc_score)
         #selector = Run_RawFeatures(dataset, score=make_scorer(roc_auc_score))
         #selector = ExploreKitSelection(dataset, KNeighborsClassifier(), {'n_neighbors': np.arange(3,10), 'weights': ['uniform','distance'], 'metric': ['minkowski','euclidean','manhattan']})
 
         all_results.append(selector.run())
-
 
     print("Average test score: " + str(np.mean([c.runtime_properties['test_score'] for c in all_results])))
 

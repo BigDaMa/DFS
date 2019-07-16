@@ -230,10 +230,12 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             if Config.get_default('instance.selection', 'False') == 'True':
                 candidate.fit(self.train_X_all)
                 training_all = candidate.transform(self.train_X_all)
-            one_test_set_transformed = candidate.transform(self.dataset.splitted_values['test'])
 
-            candidate.runtime_properties['training_all'] = training_all
-            candidate.runtime_properties['one_test_set_transformed'] = one_test_set_transformed
+            if len(self.dataset.splitted_values['test']) > 0:
+                one_test_set_transformed = candidate.transform(self.dataset.splitted_values['test'])
+                candidate.runtime_properties['one_test_set_transformed'] = one_test_set_transformed
+
+                candidate.runtime_properties['training_all'] = training_all
 
 
         candidate.runtime_properties['train_transformed'] = train_transformed
@@ -356,8 +358,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         my_globale_module.materialized_set = set()
         my_globale_module.predictions_set = set()
 
-
-
+        pickle.dump(my_globale_module.target_test_folds_global, open('/tmp/test_groundtruth.p', 'wb+'))
 
 
         c = 1
@@ -496,6 +497,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     else:
                         my_globale_module.materialized_set.add(materialized)
 
+                '''
                 ## check if predictions exist already
                 if type(candidate) != type(None) and 'test_fold_predictions' in candidate.runtime_properties:
                     materialized_all = []
@@ -506,6 +508,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         candidate = None
                     else:
                         my_globale_module.predictions_set.add(materialized)
+                '''
 
 
 
@@ -614,6 +617,10 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
             if type(self.c_max) != type(None) and self.c_max < c:
                 break
+
+
+
+        return max_feature
 
 
 

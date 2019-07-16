@@ -57,8 +57,8 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
             best_score_list = copy.deepcopy(score_list)
             best_test_fold_predictions = test_fold_predictions[parameter_config]
 
-    test_score = None
-    if Config.get_default('score.test', 'False') == 'True':
+    test_score = -1
+    if type(training_all) != type(None):
         # refit to entire training and test on test set
         clf = classifier(**best_param)
         clf.fit(training_all, train_y_all_target)
@@ -90,7 +90,7 @@ def evaluate(candidate_id: int):
 
     if isinstance(candidate, RawFeature):
 
-        if Config.get_default('score.test', 'False') == 'True':
+        if 'training_all' in candidate.runtime_properties:
             training_all = candidate.runtime_properties['training_all']
             one_test_set_transformed = candidate.runtime_properties['one_test_set_transformed']
 
@@ -125,7 +125,7 @@ def evaluate(candidate_id: int):
             if materialized in my_globale_module.materialized_set:
                 return None
 
-        if Config.get_default('score.test', 'False') == 'True':
+        if 'training_all' in candidate.parents[0].runtime_properties:
             training_all_input = np.hstack(
                 [p.runtime_properties['training_all'] for p in candidate.parents])
             one_test_set_transformed_input = np.hstack(
@@ -170,6 +170,7 @@ def evaluate(candidate_id: int):
             candidate.runtime_properties['test_fold_predictions'] = test_fold_predictions
 
 
+            '''
             ## check whether prediction already exists
             materialized_all = []
             for fold_ii in range(len(my_globale_module.preprocessed_folds_global)):
@@ -177,7 +178,7 @@ def evaluate(candidate_id: int):
             materialized = tuple(materialized_all)
             if materialized in my_globale_module.predictions_set:
                 return None
-
+            '''
 
 
 
