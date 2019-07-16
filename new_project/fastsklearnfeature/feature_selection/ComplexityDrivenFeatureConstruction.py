@@ -653,7 +653,7 @@ if __name__ == '__main__':
     from fastsklearnfeature.feature_selection.openml_wrapper.openMLdict import openMLname2task
 
     #task_id = openMLname2task['transfusion'] #interesting
-    task_id = openMLname2task['iris'] # feature selection is enough
+    #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
     #task_id = openMLname2task['german credit'] #cool with onehot
@@ -679,6 +679,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['vowel']
     #task_id = openMLname2task['cylinder-bands']
     #task_id = openMLname2task['glass']
+    task_id = openMLname2task['kc2']
     #dataset = None
 
 
@@ -712,7 +713,7 @@ if __name__ == '__main__':
     selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True,
                                                    transformation_producer=get_transformation_for_division,
                                                    reader=OnlineOpenMLReader(task_id, test_folds=1),
-                                                   score=make_scorer(log_loss, greater_is_better=False, needs_proba=True),
+                                                   score=make_scorer(roc_auc_score),
                                                    remove_parents=False, upload2openml=True)
 
     '''

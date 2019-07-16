@@ -30,4 +30,5 @@ openMLname2task['vowel'] = 3022
 openMLname2task['cylinder-bands'] = 14968
 openMLname2task['glass'] = 40
 openMLname2task['titanic'] = 146230
+openMLname2task['kc2'] = 3913
 
