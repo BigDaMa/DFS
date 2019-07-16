@@ -42,7 +42,8 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
             clf.fit(train_transformed[fold], target_train_folds[fold])
             y_pred = clf.predict(test_transformed[fold])
             test_fold_predictions[parameter_set].append(y_pred == target_test_folds[fold])
-            hyperparam_to_score_list[parameter_set].append(score._sign * score._score_func(target_test_folds[fold], y_pred, **score._kwargs))
+            #hyperparam_to_score_list[parameter_set].append(score._sign * score._score_func(target_test_folds[fold], y_pred, **score._kwargs))
+            hyperparam_to_score_list[parameter_set].append(score(clf, train_transformed[fold], target_train_folds[fold]))
 
     best_param = None
     best_mean_cross_val_score = -float("inf")
@@ -63,7 +64,9 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
         clf = classifier(**best_param)
         clf.fit(training_all, train_y_all_target)
         y_pred = clf.predict(one_test_set_transformed)
-        test_score = score._sign * score._score_func(test_target, y_pred, **score._kwargs)
+        #test_score = score._sign * score._score_func(test_target, y_pred, **score._kwargs)
+        test_score = score(clf, training_all, train_y_all_target)
+        #print('test: ' + str(test_score))
 
         #np.save('/tmp/true_predictions', self.test_target)
 
@@ -125,7 +128,7 @@ def evaluate(candidate_id: int):
             if materialized in my_globale_module.materialized_set:
                 return None
 
-        if 'training_all' in candidate.parents[0].runtime_properties:
+        if 'training_all' in list(candidate.parents)[0].runtime_properties:
             training_all_input = np.hstack(
                 [p.runtime_properties['training_all'] for p in candidate.parents])
             one_test_set_transformed_input = np.hstack(

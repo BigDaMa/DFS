@@ -17,6 +17,8 @@ import sympy
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import log_loss
+
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates
 from fastsklearnfeature.feature_selection.openml_wrapper.pipeline2openml import candidate2openml
@@ -565,7 +567,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
             if len(current_layer) > 0:
-                if Config.get_default('score.test', 'False') == 'True':
+                if 'test_score' in max_feature.runtime_properties:
                     print("\nBest representation found for complexity = " + str(c) + ": " + str(max_feature) + "\nmean cross-validation score: " + "{0:.2f}".format(max_feature.runtime_properties['score']) + ", score on test: " + "{0:.2f}".format(max_feature.runtime_properties['test_score']) + "\n")
                 else:
                     print("\nBest representation found for complexity = " + str(c) + ": " + str(
@@ -651,10 +653,10 @@ if __name__ == '__main__':
     from fastsklearnfeature.feature_selection.openml_wrapper.openMLdict import openMLname2task
 
     #task_id = openMLname2task['transfusion'] #interesting
-    #task_id = openMLname2task['iris'] # feature selection is enough
+    task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
-    task_id = openMLname2task['german credit'] #cool with onehot
+    #task_id = openMLname2task['german credit'] #cool with onehot
     #task_id = openMLname2task['banknote'] #raw features are already amazing
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
@@ -705,7 +707,14 @@ if __name__ == '__main__':
     #paper featureset
     #selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_cat_feature_space)
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
+    #selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
+
+    selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True,
+                                                   transformation_producer=get_transformation_for_division,
+                                                   reader=OnlineOpenMLReader(task_id, test_folds=1),
+                                                   score=make_scorer(log_loss, greater_is_better=False, needs_proba=True),
+                                                   remove_parents=False, upload2openml=True)
+
     '''
     selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True,
                                                    transformation_producer=get_transformation_for_division,
