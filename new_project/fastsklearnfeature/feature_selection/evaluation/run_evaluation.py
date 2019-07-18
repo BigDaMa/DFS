@@ -249,11 +249,11 @@ def evaluate_no_catch(candidate_id: int):
 
     return result
 
-def evaluate_candidates(candidates: List[CandidateFeature]) -> List[CandidateFeature]:
+def evaluate_candidates(candidates: List[CandidateFeature], n_jobs: int = int(Config.get_default("parallelism", mp.cpu_count()))) -> List[CandidateFeature]:
 
     my_globale_module.candidate_list_global = candidates
 
-    with mp.Pool(processes=int(Config.get_default("parallelism", mp.cpu_count()))) as pool:
+    with mp.Pool(processes=n_jobs) as pool:
         my_function = evaluate_catch
         candidates_ids = list(range(len(candidates)))
 

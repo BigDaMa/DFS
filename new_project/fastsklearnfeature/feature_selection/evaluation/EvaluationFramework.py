@@ -101,6 +101,12 @@ def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, pr
     candidate.runtime_properties['score'] = clf.best_score_
     candidate.runtime_properties['hyperparameters'] = clf.best_params_
 
+    #for
+    test_fold_predictions = []
+    for fold in range(len(preprocessed_folds)):
+        test_fold_predictions.append(clf.predict(train_data[preprocessed_folds[fold][1]]) == current_target[preprocessed_folds[fold][1]])
+    candidate.runtime_properties['test_fold_predictions'] = test_fold_predictions
+
     if Config.get_default('score.test', 'False') == 'True':
         if Config.get_default('instance.selection', 'False') == 'True':
             clf = GridSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score,

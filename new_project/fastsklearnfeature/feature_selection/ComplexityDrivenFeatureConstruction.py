@@ -26,7 +26,7 @@ import numpy as np
 
 
 import warnings
-warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore")
 #warnings.filterwarnings("ignore", message="was converted to float64 by MinMaxScaler.")
 warnings.filterwarnings("ignore", message="All-NaN slice encountered")
 warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
@@ -49,7 +49,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                  save_logs=False,
                  reader=None,
                  upload2openml=False,
-                 remove_parents=True
+                 remove_parents=True,
+                 n_jobs=None
                  ):
         super(ComplexityDrivenFeatureConstruction, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
@@ -65,6 +66,11 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         self.max_timestamp = None
         if type(max_seconds) != type(None):
             self.max_timestamp = time.time() + max_seconds
+
+        if type(n_jobs) == type(None):
+            self.n_jobs = int(Config.get_default("parallelism", mp.cpu_count()))
+        else:
+            self.n_jobs = n_jobs
 
         #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
     def partition(self, number):
@@ -478,7 +484,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             #now evaluate all from this layer
             #print(current_layer)
             print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
-            results = evaluate_candidates(current_layer)
+            results = evaluate_candidates(current_layer, self.n_jobs)
             print("----------- Evaluation Finished -----------")
 
             #print(results)
@@ -679,7 +685,8 @@ if __name__ == '__main__':
     #task_id = openMLname2task['vowel']
     #task_id = openMLname2task['cylinder-bands']
     #task_id = openMLname2task['glass']
-    task_id = openMLname2task['kc2']
+    #task_id = openMLname2task['kc2']
+    task_id = openMLname2task['australia']
     #dataset = None
 
 

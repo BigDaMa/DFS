@@ -33,7 +33,7 @@ import warnings
 
 class ComplexityDrivenFeatureConstructionScikit:
 
-    def __init__(self, max_time_secs=None, scoring=make_scorer(f1_score, average='micro'), model=LogisticRegression, parameter_grid={'penalty': ['l2'], 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000], 'solver': ['lbfgs'], 'class_weight': ['balanced'], 'max_iter': [10000], 'multi_class':['auto']}):
+    def __init__(self, max_time_secs=None, scoring=make_scorer(f1_score, average='micro'), model=LogisticRegression, parameter_grid={'penalty': ['l2'], 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000], 'solver': ['lbfgs'], 'class_weight': ['balanced'], 'max_iter': [10000], 'multi_class':['auto']}, n_jobs=None):
         self.fe = None
         self.max_feature_rep: CandidateFeature = None
         self.pipeline = None
@@ -41,10 +41,11 @@ class ComplexityDrivenFeatureConstructionScikit:
         self.scoring = scoring
         self.model = model
         self.parameter_grid = parameter_grid
+        self.n_jobs = n_jobs
 
     def fit(self, features, target, sample_weight=None, groups=None):
         self.fe = ComplexityDrivenFeatureConstruction(None, reader=ScikitReader(features, target),
-                                                      score=self.scoring, c_max=np.inf, folds=10, max_seconds=self.max_time_secs, classifier=self.model, grid_search_parameters=self.parameter_grid)
+                                                      score=self.scoring, c_max=np.inf, folds=10, max_seconds=self.max_time_secs, classifier=self.model, grid_search_parameters=self.parameter_grid, n_jobs=self.n_jobs)
 
         self.max_feature_rep = self.fe.run()
 
