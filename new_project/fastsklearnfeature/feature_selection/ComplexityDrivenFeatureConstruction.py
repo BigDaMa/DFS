@@ -366,7 +366,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         my_globale_module.materialized_set = set()
         my_globale_module.predictions_set = set()
 
-        pickle.dump(my_globale_module.target_test_folds_global, open('/tmp/test_groundtruth.p', 'wb+'))
+        #pickle.dump(my_globale_module.target_test_folds_global, open('/tmp/test_groundtruth.p', 'wb+'))
 
 
         c = 1
@@ -589,11 +589,28 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
             if self.save_logs:
-                pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-                pickle.dump(cost_2_unary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_unary.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-                pickle.dump(cost_2_binary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_binary.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-                pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-                pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                try:
+                    pickle.dump(cost_2_raw_features, open(Config.get_default("tmp.folder", "/tmp") + "/data_raw" + str(self.reader.rotate_test) + ".p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(cost_2_unary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_unary" + str(self.reader.rotate_test) + ".p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(cost_2_binary_transformed, open(Config.get_default("tmp.folder", "/tmp") + "/data_binary" + str(self.reader.rotate_test) + ".p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(cost_2_combination, open(Config.get_default("tmp.folder", "/tmp") + "/data_combination" + str(self.reader.rotate_test) + ".p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(cost_2_dropped_evaluated_candidates, open(Config.get_default("tmp.folder", "/tmp") + "/data_dropped" + str(self.reader.rotate_test) + ".p", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                except:
+                    pickle.dump(cost_2_raw_features, open(
+                        Config.get_default("tmp.folder", "/tmp") + "/data_raw.p", "wb"),
+                                protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(cost_2_unary_transformed, open(
+                        Config.get_default("tmp.folder", "/tmp") + "/data_unary.p",
+                        "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(cost_2_binary_transformed, open(
+                        Config.get_default("tmp.folder", "/tmp") + "/data_binary.p",
+                        "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(cost_2_combination, open(
+                        Config.get_default("tmp.folder", "/tmp") + "/data_combination.p",
+                        "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(cost_2_dropped_evaluated_candidates, open(
+                        Config.get_default("tmp.folder", "/tmp") + "/data_dropped.p",
+                        "wb"), protocol=pickle.HIGHEST_PROTOCOL)
 
 
             max_feature_per_complexity[c] = max_feature
@@ -658,7 +675,7 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.feature_selection.openml_wrapper.openMLdict import openMLname2task
 
-    #task_id = openMLname2task['transfusion'] #interesting
+    task_id = openMLname2task['transfusion'] #interesting
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
@@ -686,7 +703,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['cylinder-bands']
     #task_id = openMLname2task['glass']
     #task_id = openMLname2task['kc2']
-    task_id = openMLname2task['australia']
+    #task_id = openMLname2task['australia']
     #dataset = None
 
 
@@ -717,11 +734,13 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
 
-    selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True,
-                                                   transformation_producer=get_transformation_for_division,
-                                                   reader=OnlineOpenMLReader(task_id, test_folds=1),
-                                                   score=make_scorer(roc_auc_score),
-                                                   remove_parents=False, upload2openml=True)
+    for rotation in range(10):
+        selector = ComplexityDrivenFeatureConstruction(None, c_max=5, folds=10, max_seconds=None, save_logs=True,
+                                                       transformation_producer=get_transformation_for_division,
+                                                       reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
+                                                       score=make_scorer(roc_auc_score),
+                                                       remove_parents=False, upload2openml=True, epsilon=-np.inf)
+        selector.run()
 
     '''
     selector = ComplexityDrivenFeatureConstruction(dataset, c_max=10, folds=10, max_seconds=None, save_logs=True,
@@ -750,7 +769,6 @@ if __name__ == '__main__':
                                                    transformation_producer=get_transformation_for_cat_feature_space)
     '''
 
-    selector.run()
 
     print(time.time() - start)
 

@@ -192,7 +192,7 @@ def evaluate(candidate_id: int):
             candidate.runtime_properties['train_transformed'] = train_transformed
             candidate.runtime_properties['test_transformed'] = test_transformed
 
-            if Config.get_default('score.test', 'False') == 'True':
+            if Config.get_default('score.test', 'False') == 'True' and type(training_all) != type(None):
                 candidate.runtime_properties['training_all'] = training_all
                 candidate.runtime_properties['one_test_set_transformed'] = one_test_set_transformed
 

@@ -15,10 +15,7 @@ class HigherOrderCommutativeTransformation(BaseEstimator, TransformerMixin, Tran
 
 
     def transform(self, X):
-        try:
-            return np.reshape(self.method(X, axis=1), (len(X), 1))
-        except Exception as e:
-            print('HigherOrderCommutativeTransformation' + str(e))
+        return np.reshape(self.method(X, axis=1), (len(X), 1))
 
 
     def is_applicable(self, feature_combination):
