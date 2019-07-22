@@ -249,7 +249,7 @@ def evaluate_no_catch(candidate_id: int):
 
     return result
 
-def evaluate_candidates(candidates: List[CandidateFeature], n_jobs: int = int(Config.get_default("parallelism", mp.cpu_count()))) -> List[CandidateFeature]:
+def evaluate_candidates_parallel(candidates: List[CandidateFeature], n_jobs: int = int(Config.get_default("parallelism", mp.cpu_count()))) -> List[CandidateFeature]:
 
     my_globale_module.candidate_list_global = candidates
 

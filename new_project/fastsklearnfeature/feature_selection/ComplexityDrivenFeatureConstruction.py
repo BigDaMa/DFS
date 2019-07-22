@@ -20,7 +20,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import log_loss
 
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
-from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates
+from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates_parallel
 from fastsklearnfeature.feature_selection.openml_wrapper.pipeline2openml import candidate2openml
 import numpy as np
 
@@ -484,7 +484,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             #now evaluate all from this layer
             #print(current_layer)
             print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
-            results = evaluate_candidates(current_layer, self.n_jobs)
+            results = evaluate_candidates_parallel(current_layer, self.n_jobs)
             print("----------- Evaluation Finished -----------")
 
             #print(results)
