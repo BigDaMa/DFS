@@ -33,7 +33,7 @@ import warnings
 
 class ComplexityDrivenFeatureConstructionScikit:
 
-    def __init__(self, max_time_secs=None, scoring=make_scorer(f1_score, average='micro'), model=LogisticRegression, parameter_grid={'penalty': ['l2'], 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000], 'solver': ['lbfgs'], 'class_weight': ['balanced'], 'max_iter': [10000], 'multi_class':['auto']}, n_jobs=None, epsilon=-np.inf):
+    def __init__(self, max_time_secs=None, scoring=make_scorer(f1_score, average='micro'), model=LogisticRegression, parameter_grid={'penalty': ['l2'], 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000], 'solver': ['lbfgs'], 'class_weight': ['balanced'], 'max_iter': [10000], 'multi_class':['auto']}, n_jobs=None, epsilon=-np.inf, feature_names = None, feature_is_categorical=None):
         self.fe = None
         self.max_feature_rep: CandidateFeature = None
         self.pipeline = None
@@ -43,9 +43,11 @@ class ComplexityDrivenFeatureConstructionScikit:
         self.parameter_grid = parameter_grid
         self.n_jobs = n_jobs
         self.epsilon = epsilon
+        self.feature_names = feature_names
+        self.feature_is_categorical = feature_is_categorical
 
     def fit(self, features, target, sample_weight=None, groups=None):
-        self.fe = ComplexityDrivenFeatureConstruction(None, reader=ScikitReader(features, target),
+        self.fe = ComplexityDrivenFeatureConstruction(None, reader=ScikitReader(features, target, feature_names=self.feature_names, feature_is_categorical=self.feature_is_categorical),
                                                       score=self.scoring, c_max=np.inf, folds=10, max_seconds=self.max_time_secs, classifier=self.model, grid_search_parameters=self.parameter_grid, n_jobs=self.n_jobs, epsilon=self.epsilon)
 
         self.max_feature_rep = self.fe.run()
