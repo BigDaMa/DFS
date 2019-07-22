@@ -26,7 +26,7 @@ import numpy as np
 
 
 import warnings
-#warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore")
 #warnings.filterwarnings("ignore", message="was converted to float64 by MinMaxScaler.")
 warnings.filterwarnings("ignore", message="All-NaN slice encountered")
 warnings.filterwarnings("ignore", message="divide by zero encountered in true_divide")
@@ -735,11 +735,11 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
 
     for rotation in range(10):
-        selector = ComplexityDrivenFeatureConstruction(None, c_max=5, folds=10, max_seconds=None, save_logs=True,
+        selector = ComplexityDrivenFeatureConstruction(None, c_max=7, folds=10, max_seconds=None, save_logs=True,
                                                        transformation_producer=get_transformation_for_division,
                                                        reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
                                                        score=make_scorer(roc_auc_score),
-                                                       remove_parents=False, upload2openml=True, epsilon=-np.inf)
+                                                       remove_parents=False, upload2openml=True, epsilon=0)
         selector.run()
 
     '''
