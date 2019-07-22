@@ -17,28 +17,31 @@ import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_g
 
 def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score):
 
-	nested_cv_scores = []
-	for fold in range(len(preprocessed_folds)):
-		X_train = splitted_values_train[preprocessed_folds[fold][0]]
-		y_train = splitted_target_train[preprocessed_folds[fold][0]]
+	try:
+		nested_cv_scores = []
+		for fold in range(len(preprocessed_folds)):
+			X_train = splitted_values_train[preprocessed_folds[fold][0]]
+			y_train = splitted_target_train[preprocessed_folds[fold][0]]
 
-		X_test = splitted_values_train[preprocessed_folds[fold][1]]
-		y_test = splitted_target_train[preprocessed_folds[fold][1]]
+			X_test = splitted_values_train[preprocessed_folds[fold][1]]
+			y_test = splitted_target_train[preprocessed_folds[fold][1]]
 
-		pipeline = generate_pipeline(feature, model)
+			pipeline = generate_pipeline(feature, model)
 
-		#replace parameter keys
+			#replace parameter keys
 
-		new_parameters = copy.deepcopy(parameters)
-		old_keys = list(new_parameters.keys())
-		for k in old_keys:
-			if not str(k).startswith('c__'):
-				new_parameters['c__' + str(k)] = new_parameters.pop(k)
+			new_parameters = copy.deepcopy(parameters)
+			old_keys = list(new_parameters.keys())
+			for k in old_keys:
+				if not str(k).startswith('c__'):
+					new_parameters['c__' + str(k)] = new_parameters.pop(k)
 
-		cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=9, refit=True)
-		cv.fit(X_train, y_train)
-		nested_cv_scores.append(cv.score(X_test, y_test))
-	return np.average(nested_cv_scores)
+			cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=9, refit=True)
+			cv.fit(X_train, y_train)
+			nested_cv_scores.append(cv.score(X_test, y_test))
+		return np.average(nested_cv_scores)
+	except:
+		return 0.0
 
 def run_nested_cross_validation_global(feature_id: int):
 	feature: CandidateFeature = nested_my_globale_module.candidate_list_global[feature_id]
