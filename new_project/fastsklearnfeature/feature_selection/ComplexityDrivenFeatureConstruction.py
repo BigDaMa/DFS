@@ -23,6 +23,7 @@ import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_g
 from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates_parallel
 from fastsklearnfeature.feature_selection.openml_wrapper.pipeline2openml import candidate2openml
 import numpy as np
+from fastsklearnfeature.feature_selection.evaluation.nested_cv_scikit import nested_cv_score_parallel
 
 
 import warnings
@@ -487,6 +488,17 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             results = evaluate_candidates_parallel(current_layer, self.n_jobs)
             print("----------- Evaluation Finished -----------")
 
+            ##nested cv
+            new_results_with_nested = []
+            for r_result in results:
+                if type(r_result) != type(None):
+                    new_results_with_nested.append(r_result)
+            results = nested_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
+
+            for r_result in results:
+                print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(r_result.runtime_properties['test_score']) + ' nested: ' + str(r_result.runtime_properties['nested_cv_score']))
+
+
             #print(results)
 
             layer_end_time = time.time() - self.global_starting_time
@@ -530,6 +542,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                         max_feature = candidate
 
                     if candidate.runtime_properties['passed']:
+
                         if isinstance(candidate, RawFeature):
                             if not c in cost_2_raw_features:
                                 cost_2_raw_features[c]: List[CandidateFeature] = []
