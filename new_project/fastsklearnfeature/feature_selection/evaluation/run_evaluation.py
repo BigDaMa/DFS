@@ -43,7 +43,7 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
             y_pred = clf.predict(test_transformed[fold]) #toberemoved
             test_fold_predictions[parameter_set].append(y_pred == target_test_folds[fold]) #toberemoved
             #hyperparam_to_score_list[parameter_set].append(score._sign * score._score_func(target_test_folds[fold], y_pred, **score._kwargs))
-            hyperparam_to_score_list[parameter_set].append(score(clf, train_transformed[fold], target_train_folds[fold]))
+            hyperparam_to_score_list[parameter_set].append(score(clf, test_transformed[fold], target_test_folds[fold]))
 
     best_param = None
     best_mean_cross_val_score = -float("inf")
@@ -65,7 +65,7 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
         clf.fit(training_all, train_y_all_target)
         #y_pred = clf.predict(one_test_set_transformed) #toberemoved
         #test_score = score._sign * score._score_func(test_target, y_pred, **score._kwargs)
-        test_score = score(clf, training_all, train_y_all_target)
+        test_score = score(clf, one_test_set_transformed, test_target)
         #print('test: ' + str(test_score))
 
         #np.save('/tmp/true_predictions', self.test_target)
