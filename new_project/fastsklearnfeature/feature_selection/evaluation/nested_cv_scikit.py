@@ -63,7 +63,7 @@ def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train
 			if not str(k).startswith('c__'):
 				new_parameters['c__' + str(k)] = new_parameters.pop(k)
 
-		cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=20, refit=True)
+		cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=40, refit=True)
 		cv.fit(X_train, y_train)
 		return cv.score(X_test, y_test)
 	except:
