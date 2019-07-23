@@ -488,7 +488,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             results = evaluate_candidates_parallel(current_layer, self.n_jobs)
             print("----------- Evaluation Finished -----------")
 
-            '''
+
             ##nested cv
             new_results_with_nested = []
             for r_result in results:
@@ -498,7 +498,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
             for r_result in results:
                 print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(r_result.runtime_properties['test_score']) + ' nested: ' + str(r_result.runtime_properties['nested_cv_score']))
-            '''
+
 
             #print(results)
 

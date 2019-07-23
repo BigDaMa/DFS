@@ -13,37 +13,97 @@ import tqdm
 import multiprocessing as mp
 from fastsklearnfeature.feature_selection.evaluation import nested_my_globale_module
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
+import itertools
 
-'''
+class hashabledict(dict):
+	def __hash__(self):
+		return hash(tuple(sorted(self.items())))
+
+
+
+
+def gridsearch(X, y, grid_search_parameters, classifier, ids, score, test_ids):
+	hyperparam_to_score_list = {}
+
+	my_keys = list(grid_search_parameters.keys())
+
+	test_fold_predictions = {}
+
+	for parameter_combination in itertools.product(*[grid_search_parameters[k] for k in my_keys]):
+		parameter_set = hashabledict(zip(my_keys, parameter_combination))
+		hyperparam_to_score_list[parameter_set] = []
+		test_fold_predictions[parameter_set] = []
+		for fold in range(len(ids)):
+			clf = classifier
+			clf.set_params(**parameter_set)
+			clf.fit(X[ids[fold][0]], y[ids[fold][0]])
+			hyperparam_to_score_list[parameter_set].append(score(clf, X[ids[fold][1]], y[ids[fold][1]]))
+
+	best_param = None
+	best_mean_cross_val_score = -float("inf")
+	for parameter_config, score_list in hyperparam_to_score_list.items():
+		mean_score = np.mean(score_list)
+		if mean_score > best_mean_cross_val_score:
+			best_param = parameter_config
+			best_mean_cross_val_score = mean_score
+
+	train_and_validation_ids = copy.deepcopy(ids[0][0])
+	train_and_validation_ids.extend(ids[0][1])
+
+	# refit to entire training and test on test set
+	clf = classifier
+	clf.set_params(**best_param)
+	clf.fit(X[train_and_validation_ids], y[train_and_validation_ids])
+	test_score = score(clf, X[test_ids], y[test_ids])
+
+	return test_score
+
+
 def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score):
-
 	try:
-		nested_cv_scores = []
+		pipeline = generate_pipeline(feature, model)
+
+		# replace parameter keys
+		new_parameters = copy.deepcopy(parameters)
+		old_keys = list(new_parameters.keys())
+		for k in old_keys:
+			if not str(k).startswith('c__'):
+				new_parameters['c__' + str(k)] = new_parameters.pop(k)
+
+		fold_ids = []
 		for fold in range(len(preprocessed_folds)):
-			X_train = splitted_values_train[preprocessed_folds[fold][0]]
-			y_train = splitted_target_train[preprocessed_folds[fold][0]]
+			fold_ids.append(preprocessed_folds[fold][1])
 
-			X_test = splitted_values_train[preprocessed_folds[fold][1]]
-			y_test = splitted_target_train[preprocessed_folds[fold][1]]
+		nested_cv_scores = []
+		for test_fold in range(len(fold_ids)):
+			test_ids = fold_ids[test_fold]
 
-			pipeline = generate_pipeline(feature, model)
+			my_set = set(range(len(fold_ids)))
+			my_set.remove(test_fold)
 
-			#replace parameter keys
+			cv_split_ids = []
 
-			new_parameters = copy.deepcopy(parameters)
-			old_keys = list(new_parameters.keys())
-			for k in old_keys:
-				if not str(k).startswith('c__'):
-					new_parameters['c__' + str(k)] = new_parameters.pop(k)
+			for validation_fold in my_set:
+				validation_ids = fold_ids[validation_fold]
 
-			cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=9, refit=True)
-			cv.fit(X_train, y_train)
-			nested_cv_scores.append(cv.score(X_test, y_test))
+				new_my_set = copy.deepcopy(my_set)
+				new_my_set.remove(validation_fold)
+
+				training_ids = []
+				for train_fold in new_my_set:
+					training_ids.extend(fold_ids[train_fold])
+
+				cv_split_ids.append((training_ids, validation_ids))
+
+			nested_cv_scores.append(gridsearch(splitted_values_train, splitted_target_train, new_parameters, pipeline, cv_split_ids, score, test_ids))
+
 		return np.average(nested_cv_scores)
-	except:
+	except Exception as e:
+		print(e)
 		return 0.0
-'''
 
+
+'''
 def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score):
 
 	try:
@@ -68,7 +128,7 @@ def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train
 		return cv.score(X_test, y_test)
 	except:
 		return 0.0
-
+'''
 
 def run_nested_cross_validation_global(feature_id: int):
 	feature: CandidateFeature = nested_my_globale_module.candidate_list_global[feature_id]
