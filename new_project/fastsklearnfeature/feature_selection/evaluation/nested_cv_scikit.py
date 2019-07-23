@@ -14,7 +14,7 @@ import multiprocessing as mp
 from fastsklearnfeature.feature_selection.evaluation import nested_my_globale_module
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 
-
+'''
 def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score):
 
 	try:
@@ -42,6 +42,33 @@ def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train
 		return np.average(nested_cv_scores)
 	except:
 		return 0.0
+'''
+
+def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score):
+
+	try:
+		X_train = splitted_values_train
+		y_train = splitted_target_train
+
+		X_test = splitted_values_train
+		y_test = splitted_target_train
+
+		pipeline = generate_pipeline(feature, model)
+
+		#replace parameter keys
+
+		new_parameters = copy.deepcopy(parameters)
+		old_keys = list(new_parameters.keys())
+		for k in old_keys:
+			if not str(k).startswith('c__'):
+				new_parameters['c__' + str(k)] = new_parameters.pop(k)
+
+		cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=20, refit=True)
+		cv.fit(X_train, y_train)
+		return cv.score(X_test, y_test)
+	except:
+		return 0.0
+
 
 def run_nested_cross_validation_global(feature_id: int):
 	feature: CandidateFeature = nested_my_globale_module.candidate_list_global[feature_id]
