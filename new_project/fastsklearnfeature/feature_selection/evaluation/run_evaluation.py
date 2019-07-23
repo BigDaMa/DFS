@@ -50,8 +50,8 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
     best_score_list = []
     best_test_fold_predictions = []
     for parameter_config, score_list in hyperparam_to_score_list.items():
-        #mean_score = np.min(score_list)
-        mean_score = np.mean(score_list)
+        mean_score = np.min(score_list)
+        #mean_score = np.mean(score_list)
         if mean_score > best_mean_cross_val_score:
             best_param = parameter_config
             best_mean_cross_val_score = mean_score
