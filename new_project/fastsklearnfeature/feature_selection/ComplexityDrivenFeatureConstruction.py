@@ -490,6 +490,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
             ##nested cv
+
             new_results_with_nested = []
             for r_result in results:
                 if type(r_result) != type(None):
@@ -658,6 +659,40 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 break
 
 
+
+        '''
+        def extend_all(all_representations: List[CandidateFeature], new_llist):
+            for mylist in new_llist:
+                all_representations.extend(mylist)
+
+        #get all representation
+        all_representations: List[CandidateFeature] = []
+        extend_all(all_representations, cost_2_raw_features.values())
+        extend_all(all_representations, cost_2_unary_transformed.values())
+        extend_all(all_representations, cost_2_binary_transformed.values())
+        extend_all(all_representations, cost_2_combination.values())
+
+        #find top k based on cv score
+        scores = [c.runtime_properties['score'] for c in all_representations]
+        sorted_cv_score_ids = np.argsort(np.array(scores)*-1)
+        checking_k = 10
+        top_k_representations = [all_representations[sorted_id] for sorted_id in sorted_cv_score_ids[0:checking_k]]
+
+        #from top k - select best based on nested cv score
+        top_k_representations = nested_cv_score_parallel(top_k_representations, self.reader.splitted_values['train'],
+                                           self.reader.splitted_target['train'])
+
+        scores = [c.runtime_properties['nested_cv_score'] for c in top_k_representations]
+
+        max_nested_cv_score = -1
+        max_nested_rep = None
+        for eval_candidate in top_k_representations:
+            if eval_candidate.runtime_properties['nested_cv_score'] > max_nested_cv_score:
+                max_nested_cv_score = eval_candidate.runtime_properties['nested_cv_score']
+                max_nested_rep = eval_candidate
+
+        print(max_nested_rep)
+        '''
 
         return max_feature
 

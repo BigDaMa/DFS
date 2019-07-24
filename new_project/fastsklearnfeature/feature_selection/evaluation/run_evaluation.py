@@ -18,6 +18,12 @@ from fastsklearnfeature.transformations.OneHotTransformation import OneHotTransf
 import copy
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 
+from sklearn.metrics import make_scorer
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import log_loss
+
 class hashabledict(dict):
     def __hash__(self):
         return hash(tuple(sorted(self.items())))
@@ -29,6 +35,8 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
 
     hyperparam_to_score_list = {}
 
+    hyperparam_to_additional_score_list = {}
+
     my_keys = list(grid_search_parameters.keys())
 
     test_fold_predictions = {}
@@ -37,6 +45,12 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
         parameter_set = hashabledict(zip(my_keys, parameter_combination))
         hyperparam_to_score_list[parameter_set] = []
         test_fold_predictions[parameter_set] = []
+
+        hyperparam_to_additional_score_list[parameter_set] = {}
+        hyperparam_to_additional_score_list[parameter_set]['accuracy'] = []
+        hyperparam_to_additional_score_list[parameter_set]['f1'] = []
+
+
         for fold in range(len(train_transformed)):
             clf = classifier(**parameter_set)
             clf.fit(train_transformed[fold], target_train_folds[fold])
@@ -45,11 +59,19 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
             #hyperparam_to_score_list[parameter_set].append(score._sign * score._score_func(target_test_folds[fold], y_pred, **score._kwargs))
             hyperparam_to_score_list[parameter_set].append(score(clf, test_transformed[fold], target_test_folds[fold]))
 
+            ##add new scores
+            hyperparam_to_additional_score_list[parameter_set]['accuracy'].append(make_scorer(accuracy_score)(clf, test_transformed[fold], target_test_folds[fold]))
+            hyperparam_to_additional_score_list[parameter_set]['f1'].append(make_scorer(f1_score)(clf, test_transformed[fold], target_test_folds[fold]))
+
+
     best_param = None
     best_mean_cross_val_score = -float("inf")
     best_score_list = []
     best_test_fold_predictions = []
     mean_scores = []
+
+    additional_metric = {}
+
     for parameter_config, score_list in hyperparam_to_score_list.items():
         #mean_score = np.min(score_list)
         mean_score = np.mean(score_list)
@@ -59,6 +81,9 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
             best_mean_cross_val_score = mean_score
             best_score_list = copy.deepcopy(score_list)
             best_test_fold_predictions = test_fold_predictions[parameter_config]
+
+            for k, metric_list in hyperparam_to_additional_score_list[parameter_config].items():
+                additional_metric[k] = np.mean(metric_list)
 
     test_score = -1
     if type(training_all) != type(None):

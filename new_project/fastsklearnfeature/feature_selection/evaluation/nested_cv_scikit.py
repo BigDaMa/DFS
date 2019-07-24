@@ -99,7 +99,7 @@ def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train
 
 		return np.average(nested_cv_scores)
 	except Exception as e:
-		print(e)
+		#print(e)
 		return 0.0
 
 
