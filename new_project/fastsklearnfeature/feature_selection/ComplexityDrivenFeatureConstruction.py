@@ -465,7 +465,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     for check_f in features:
                         if not isinstance(check_f.transformation, MinusTransformation):
                             filtered_features.append(check_f)
-                return check_f
+                return filtered_features
 
             combinations_to_be_applied: List[CandidateFeature] = []
             for p in partition:
