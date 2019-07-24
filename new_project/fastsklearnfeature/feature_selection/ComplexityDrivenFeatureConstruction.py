@@ -10,6 +10,7 @@ import itertools
 from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
+from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.division import get_transformation_for_division
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
@@ -457,6 +458,15 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             partition = self.get_length_2_partition(c)
             #print("combo c: " + str(c) + " partition" + str(partition))
 
+
+            def filter_minus(features: List[CandidateFeature]):
+                filtered_features: List[CandidateFeature] = []
+                if my_globale_module.classifier_global == LogisticRegression:
+                    for check_f in features:
+                        if not isinstance(check_f.transformation, MinusTransformation):
+                            filtered_features.append(check_f)
+                return check_f
+
             combinations_to_be_applied: List[CandidateFeature] = []
             for p in partition:
                 lists_for_each_element: List[List[CandidateFeature]] = [[], []]
@@ -464,9 +474,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     if p[element] in cost_2_raw_features:
                         lists_for_each_element[element].extend(cost_2_raw_features[p[element]])
                     if p[element] in cost_2_unary_transformed:
-                        lists_for_each_element[element].extend(cost_2_unary_transformed[p[element]])
+                        lists_for_each_element[element].extend(filter_minus(cost_2_unary_transformed[p[element]]))
                     if p[element] in cost_2_binary_transformed:
-                        lists_for_each_element[element].extend(cost_2_binary_transformed[p[element]])
+                        lists_for_each_element[element].extend(filter_minus(cost_2_binary_transformed[p[element]]))
                     if p[element] in cost_2_combination:
                         lists_for_each_element[element].extend(cost_2_combination[p[element]])
 
