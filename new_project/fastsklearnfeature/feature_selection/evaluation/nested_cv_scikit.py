@@ -14,6 +14,7 @@ import multiprocessing as mp
 from fastsklearnfeature.feature_selection.evaluation import nested_my_globale_module
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 import itertools
+from sklearn.model_selection import StratifiedKFold
 
 class hashabledict(dict):
 	def __hash__(self):
@@ -69,6 +70,12 @@ def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train
 		for k in old_keys:
 			if not str(k).startswith('c__'):
 				new_parameters['c__' + str(k)] = new_parameters.pop(k)
+
+		preprocessed_folds = []
+		for train, test in StratifiedKFold(n_splits=20, random_state=42).split(
+				splitted_values_train,
+				splitted_target_train):
+			preprocessed_folds.append((train, test))
 
 		fold_ids = []
 		for fold in range(len(preprocessed_folds)):
