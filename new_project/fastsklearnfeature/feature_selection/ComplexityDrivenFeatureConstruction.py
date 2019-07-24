@@ -784,7 +784,7 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
 
     for rotation in range(10):
-        selector = ComplexityDrivenFeatureConstruction(None, c_max=7, folds=10, max_seconds=None, save_logs=True,
+        selector = ComplexityDrivenFeatureConstruction(None, c_max=8, folds=10, max_seconds=None, save_logs=True,
                                                        transformation_producer=get_transformation_for_division,
                                                        reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
                                                        score=make_scorer(roc_auc_score),
