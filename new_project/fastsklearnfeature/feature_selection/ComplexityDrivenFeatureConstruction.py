@@ -11,6 +11,7 @@ from fastsklearnfeature.transformations.Transformation import Transformation
 from fastsklearnfeature.transformations.UnaryTransformation import UnaryTransformation
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
 from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
+from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
 import copy
 from fastsklearnfeature.candidate_generation.feature_space.division import get_transformation_for_division
 from fastsklearnfeature.feature_selection.evaluation.CachedEvaluationFramework import CachedEvaluationFramework
@@ -494,13 +495,14 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
             #now evaluate all from this layer
             #print(current_layer)
+
             print("----------- Evaluation of " + str(len(current_layer)) + " representations -----------")
             results = evaluate_candidates_parallel(current_layer, self.n_jobs)
             print("----------- Evaluation Finished -----------")
 
 
+            '''
             ##nested cv
-
             new_results_with_nested = []
             for r_result in results:
                 if type(r_result) != type(None):
@@ -509,7 +511,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
             for r_result in results:
                 print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(r_result.runtime_properties['test_score']) + ' nested: ' + str(r_result.runtime_properties['nested_cv_score']))
-
+            '''
 
             #print(results)
 

@@ -21,6 +21,8 @@ class groupbythen(sympy.Function):
             new_key = key._args[0]
         if isinstance(key, impute):
             new_key = key._args[0]
+        if isinstance(key, sympy.functions.log):
+            new_key = key._args[0]
 
         if new_value != value or new_key != key:
             return cls(new_value, new_key)
