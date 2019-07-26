@@ -44,6 +44,10 @@ class ComplexityDrivenFeatureConstructionScikit:
 
         self.max_feature_rep = self.fe.run()
 
+        from imblearn.over_sampling import SMOTE
+        sm = SMOTE(random_state=42)
+        features, target = sm.fit_resample(features, target)
+
         self.pipeline = self.generate_pipeline().fit(features, target)
 
 
