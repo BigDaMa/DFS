@@ -104,7 +104,7 @@ def run_nested_cross_validation(feature: CandidateFeature, splitted_values_train
 
 			nested_cv_scores.append(gridsearch(splitted_values_train, splitted_target_train, new_parameters, pipeline, cv_split_ids, score, test_ids))
 
-		return np.average(nested_cv_scores)
+		return np.average(nested_cv_scores), np.std(nested_cv_scores)
 	except Exception as e:
 		#print(e)
 		return 0.0
@@ -148,7 +148,7 @@ def run_nested_cross_validation_global(feature_id: int):
 	preprocessed_folds = my_globale_module.preprocessed_folds_global
 	score = my_globale_module.score_global
 
-	feature.runtime_properties['nested_cv_score'] = run_nested_cross_validation(feature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score)
+	feature.runtime_properties['nested_cv_score'], feature.runtime_properties['nested_cv_score_std'] = run_nested_cross_validation(feature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score)
 	return feature
 
 def nested_cv_score_parallel(candidates: List[CandidateFeature], splitted_values_train, splitted_target_train,  n_jobs: int = int(Config.get_default("parallelism", mp.cpu_count()))) -> List[CandidateFeature]:
