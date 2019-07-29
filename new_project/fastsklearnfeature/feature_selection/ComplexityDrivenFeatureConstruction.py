@@ -502,6 +502,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 
+            '''
             ##nested cv
             new_results_with_nested = []
             for r_result in results:
@@ -511,7 +512,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
             for r_result in results:
                 print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(r_result.runtime_properties['test_score']) + ' nested: ' + str(r_result.runtime_properties['nested_cv_score']))
-
+            '''
 
             #print(results)
 
@@ -796,7 +797,7 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
 
     for rotation in range(10):
-        selector = ComplexityDrivenFeatureConstruction(None, c_max=8, folds=10, max_seconds=None, save_logs=True,
+        selector = ComplexityDrivenFeatureConstruction(None, c_max=8, folds=2, max_seconds=None, save_logs=True,
                                                        transformation_producer=get_transformation_for_division,
                                                        reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
                                                        score=make_scorer(roc_auc_score),
