@@ -345,7 +345,7 @@ def evaluate_candidates_parallel(candidates: List[CandidateFeature], n_jobs: int
     my_globale_module.candidate_list_global = candidates
 
     with mp.Pool(processes=n_jobs) as pool:
-        my_function = evaluate_no_catch
+        my_function = evaluate_catch
         candidates_ids = list(range(len(candidates)))
 
         if Config.get_default("show_progess", 'True') == 'True':
