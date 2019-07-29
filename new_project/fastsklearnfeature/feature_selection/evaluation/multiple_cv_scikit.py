@@ -83,9 +83,6 @@ def multiple_cv_score_parallel(candidates: List[CandidateFeature], splitted_valu
 	nested_my_globale_module.splitted_values_train = splitted_values_train
 	nested_my_globale_module.splitted_target_train = splitted_target_train
 
-	nested_my_globale_module.splitting_seeds = np.random.randint(low=0,high=1000, size=10)
-	nested_my_globale_module.model_seeds = np.random.randint(low=0,high=1000, size=10)
-
 	with mp.Pool(processes=n_jobs) as pool:
 		my_function = run_multiple_cross_validation_global
 		candidates_ids = list(range(len(candidates)))

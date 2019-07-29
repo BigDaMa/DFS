@@ -30,6 +30,58 @@ class hashabledict(dict):
 
 
 
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+def run_10_folds(classifier, train_transformed, target_train_folds, test_transformed, target_test_folds,score, C):
+    parameter_set = {'penalty': 'l2', 'solver': 'lbfgs','class_weight': 'balanced','max_iter': 10000,'multi_class':'auto'}
+    parameter_set['C'] = C
+    score_list = []
+
+    for fold in range(len(train_transformed)):
+        clf = classifier(**parameter_set)
+        clf.fit(train_transformed[fold], target_train_folds[fold])
+        score_list.append(score(clf, test_transformed[fold], target_test_folds[fold]))
+
+    return {'loss':1 - np.mean(score_list), 'status': STATUS_OK}
+
+def hyperopt_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
+                grid_search_parameters, score, classifier, target_train_folds, target_test_folds, train_y_all_target, test_target):
+
+    trials = Trials()
+    best = fmin(fn=lambda C: run_10_folds(classifier, train_transformed, target_train_folds, test_transformed, target_test_folds,score, C), space=hp.loguniform('C', np.log(1e-5), np.log(1e5)), algo=tpe.suggest,
+                max_evals=100, trials=trials)
+    print(best)
+    #print(trials.results)
+
+
+    best_param = {'penalty': 'l2', 'solver': 'lbfgs','class_weight': 'balanced','max_iter': 10000,'multi_class':'auto'}
+    best_param['C'] = best['C']
+    print(best_param)
+    best_mean_cross_val_score = (-1 * trials.best_trial['result']['loss']) + 1.0
+    best_score_list = []
+    best_test_fold_predictions = []
+    mean_scores = []
+
+    additional_metric = {}
+
+    clf = None
+
+    test_score = -1
+    if type(training_all) != type(None):
+        # refit to entire training and test on test set
+        clf = classifier(**best_param)
+        clf.fit(training_all, train_y_all_target)
+        #y_pred = clf.predict(one_test_set_transformed) #toberemoved
+        #test_score = score._sign * score._score_func(test_target, y_pred, **score._kwargs)
+        test_score = score(clf, one_test_set_transformed, test_target)
+        #print('test: ' + str(test_score))
+
+        #np.save('/tmp/true_predictions', self.test_target)
+
+
+    return best_mean_cross_val_score, test_score, best_param, best_test_fold_predictions, best_score_list, clf, mean_scores, additional_metric
+
+
+
 def grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
                 grid_search_parameters, score, classifier, target_train_folds, target_test_folds, train_y_all_target, test_target):
 
@@ -191,6 +243,18 @@ def evaluate(candidate_id: int):
         candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], test_fold_predictions, candidate.runtime_properties['fold_scores'], my_clf, candidate.runtime_properties['mean_scores'], candidate.runtime_properties['additional_metrics'] = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
             my_globale_module.grid_search_parameters_global, my_globale_module.score_global, my_globale_module.classifier_global, my_globale_module.target_train_folds_global, my_globale_module.target_test_folds_global, my_globale_module.train_y_all_target_global, my_globale_module.test_target_global)
 
+        '''
+        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties[
+            'hyperparameters'], test_fold_predictions, candidate.runtime_properties['fold_scores'], my_clf, \
+        candidate.runtime_properties['mean_scores'], candidate.runtime_properties['additional_metrics'] = hyperopt_search(
+            train_transformed, test_transformed, training_all, one_test_set_transformed,
+            my_globale_module.grid_search_parameters_global, my_globale_module.score_global,
+            my_globale_module.classifier_global, my_globale_module.target_train_folds_global,
+            my_globale_module.target_test_folds_global, my_globale_module.train_y_all_target_global,
+            my_globale_module.test_target_global)
+        '''
+
+
 
         #if True:
         #    candidate.runtime_properties['coef_'] = my_clf.coef_
@@ -281,7 +345,7 @@ def evaluate_candidates_parallel(candidates: List[CandidateFeature], n_jobs: int
     my_globale_module.candidate_list_global = candidates
 
     with mp.Pool(processes=n_jobs) as pool:
-        my_function = evaluate_catch
+        my_function = evaluate_no_catch
         candidates_ids = list(range(len(candidates)))
 
         if Config.get_default("show_progess", 'True') == 'True':

@@ -22,6 +22,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import log_loss
 
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
+from fastsklearnfeature.feature_selection.evaluation import nested_my_globale_module
 from fastsklearnfeature.feature_selection.evaluation.run_evaluation import evaluate_candidates_parallel
 from fastsklearnfeature.feature_selection.openml_wrapper.pipeline2openml import candidate2openml
 import numpy as np
@@ -368,6 +369,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
         my_globale_module.materialized_set = set()
         my_globale_module.predictions_set = set()
+
+        nested_my_globale_module.splitting_seeds = np.random.randint(low=0, high=1000, size=10)
+        nested_my_globale_module.model_seeds = np.random.randint(low=0, high=1000, size=10)
 
         #pickle.dump(my_globale_module.target_test_folds_global, open('/tmp/test_groundtruth.p', 'wb+'))
 
