@@ -1,5 +1,6 @@
 from sklearn.model_selection import GridSearchCV
 from fastsklearnfeature.fastfeature_utils.candidate2pipeline import generate_pipeline
+from fastsklearnfeature.fastfeature_utils.candidate2pipeline import generate_smote_pipeline
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import copy
 import numpy as np
@@ -17,6 +18,7 @@ import itertools
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_validate
+import operator
 
 class hashabledict(dict):
 	def __hash__(self):
@@ -34,8 +36,13 @@ def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_tra
 		y_train = splitted_target_train
 
 		pipeline = generate_pipeline(feature, model)
+		#pipeline = generate_smote_pipeline(feature, model)
 
 		multiple_cv_score = []
+
+		hyperparameters2count = {}
+
+		#print(str(feature) + ' before: ' + str(feature.runtime_properties['hyperparameters']))
 
 		for m_i in range(len(nested_my_globale_module.model_seeds)):
 			preprocessed_folds = []
@@ -57,6 +64,12 @@ def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_tra
 			cv.fit(X_train, y_train)
 			multiple_cv_score.append(cv.best_score_)
 
+			if not hashabledict(cv.best_params_) in hyperparameters2count:
+				hyperparameters2count[hashabledict(cv.best_params_)] = 0
+			hyperparameters2count[hashabledict(cv.best_params_)] += 1
+
+
+
 
 			'''
 			new_parameters = copy.deepcopy(feature.runtime_properties['hyperparameters'])
@@ -73,7 +86,18 @@ def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_tra
 			'''
 
 
-		print('multiple cv std: ' + str(np.std(multiple_cv_score)))
+		feature.runtime_properties['hyperparameters'] = max(hyperparameters2count.items(), key=operator.itemgetter(1))[0]
+
+		new_parameters = copy.deepcopy(feature.runtime_properties['hyperparameters'])
+		old_keys = list(new_parameters.keys())
+		for k in old_keys:
+			if str(k).startswith('c__'):
+				new_parameters[str(k[3:])] = new_parameters.pop(k)
+		feature.runtime_properties['hyperparameters'] = new_parameters
+
+
+		#print(str(feature) + ' after: ' + str(feature.runtime_properties['hyperparameters']))
+
 		return np.mean(multiple_cv_score), np.std(multiple_cv_score)
 	except:
 		return 0.0, 0.0

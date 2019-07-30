@@ -37,7 +37,7 @@ class ComplexityDrivenFeatureConstructionScikit:
         self.fe = ComplexityDrivenFeatureConstruction(None, reader=ScikitReader(features, target,
                                                                                 feature_names=self.feature_names,
                                                                                 feature_is_categorical=self.feature_is_categorical),
-                                                      score=self.scoring, c_max=5, folds=10,
+                                                      score=self.scoring, c_max=np.inf, folds=10,
                                                       max_seconds=self.max_time_secs, classifier=self.model,
                                                       grid_search_parameters=self.parameter_grid, n_jobs=self.n_jobs,
                                                       epsilon=self.epsilon)

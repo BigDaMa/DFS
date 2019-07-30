@@ -507,6 +507,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 
+            '''
             ##nested cv
             new_results_with_nested = []
             for r_result in results:
@@ -514,13 +515,13 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     new_results_with_nested.append(r_result)
             #results = nested_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
             results = multiple_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
-
-
             for r_result in results:
                 #print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(r_result.runtime_properties['test_score']) + ' nested: ' + str(r_result.runtime_properties['nested_cv_score']))
                 print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(
                     r_result.runtime_properties['test_score']) + ' nested: ' + str(
                     r_result.runtime_properties['multiple_cv_score']))
+            '''
+
 
             #print(results)
 
@@ -681,6 +682,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 
+
         '''
         def extend_all(all_representations: List[CandidateFeature], new_llist):
             for mylist in new_llist:
@@ -696,24 +698,47 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         #find top k based on cv score
         scores = [c.runtime_properties['score'] for c in all_representations]
         sorted_cv_score_ids = np.argsort(np.array(scores)*-1)
-        checking_k = 10
+        checking_k = 50
         top_k_representations = [all_representations[sorted_id] for sorted_id in sorted_cv_score_ids[0:checking_k]]
 
         #from top k - select best based on nested cv score
-        top_k_representations = nested_cv_score_parallel(top_k_representations, self.reader.splitted_values['train'],
+        top_k_representations = multiple_cv_score_parallel(top_k_representations, self.reader.splitted_values['train'],
                                            self.reader.splitted_target['train'])
 
-        scores = [c.runtime_properties['nested_cv_score'] for c in top_k_representations]
+        scores = [c.runtime_properties['multiple_cv_score'] for c in top_k_representations]
 
         max_nested_cv_score = -1
         max_nested_rep = None
         for eval_candidate in top_k_representations:
-            if eval_candidate.runtime_properties['nested_cv_score'] > max_nested_cv_score:
-                max_nested_cv_score = eval_candidate.runtime_properties['nested_cv_score']
+            if eval_candidate.runtime_properties['multiple_cv_score'] > max_nested_cv_score:
+                max_nested_cv_score = eval_candidate.runtime_properties['multiple_cv_score']
                 max_nested_rep = eval_candidate
 
         print(max_nested_rep)
+        max_feature = max_nested_rep
         '''
+
+        all_features = list(max_feature_per_complexity.values())
+        all_features = multiple_cv_score_parallel(all_features, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
+
+        best_multiple_cv_score = -np.inf
+        best_multiple_cv_candidate = None
+        for all_f in all_features:
+            if all_f.runtime_properties['multiple_cv_score'] > best_multiple_cv_score:
+                best_multiple_cv_score = all_f.runtime_properties['multiple_cv_score']
+                best_multiple_cv_candidate = all_f
+
+        #find the most simple representation that is within the best representation's std
+        complexities = [all_f.get_complexity() for all_f in all_features]
+        ids_complex = np.argsort(complexities)
+        for all_f_i in range(len(all_features)):
+            print(all_features[ids_complex[all_f_i]])
+            if all_features[ids_complex[all_f_i]].runtime_properties['multiple_cv_score'] > best_multiple_cv_candidate.runtime_properties['multiple_cv_score'] - best_multiple_cv_candidate.runtime_properties['multiple_cv_score_std']:
+                max_feature = all_features[ids_complex[all_f_i]]
+                break
+
+        print(max_feature)
+
 
         return max_feature
 
