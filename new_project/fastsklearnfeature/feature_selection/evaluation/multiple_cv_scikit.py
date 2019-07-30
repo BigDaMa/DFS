@@ -15,6 +15,8 @@ from fastsklearnfeature.feature_selection.evaluation import nested_my_globale_mo
 import fastsklearnfeature.feature_selection.evaluation.my_globale_module as my_globale_module
 import itertools
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_validate
 
 class hashabledict(dict):
 	def __hash__(self):
@@ -25,30 +27,25 @@ class hashabledict(dict):
 
 
 
-def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score):
+def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, score):
 
 	try:
 		X_train = splitted_values_train
 		y_train = splitted_target_train
 
-		X_test = splitted_values_train
-		y_test = splitted_target_train
-
 		pipeline = generate_pipeline(feature, model)
-
 
 		multiple_cv_score = []
 
 		for m_i in range(len(nested_my_globale_module.model_seeds)):
 			preprocessed_folds = []
-			for train, test in StratifiedKFold(n_splits=10, random_state=nested_my_globale_module.splitting_seeds[m_i]).split(
+			for train, test in StratifiedKFold(n_splits=len(nested_my_globale_module.splitting_seeds), shuffle=True, random_state=nested_my_globale_module.splitting_seeds[m_i]).split(
 					splitted_values_train,
 					splitted_target_train):
 				preprocessed_folds.append((train, test))
 
 
 			#replace parameter keys
-
 			new_parameters = copy.deepcopy(parameters)
 			new_parameters['random_state'] = [int(nested_my_globale_module.model_seeds[m_i])]
 			old_keys = list(new_parameters.keys())
@@ -56,9 +53,27 @@ def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_tra
 				if not str(k).startswith('c__'):
 					new_parameters['c__' + str(k)] = new_parameters.pop(k)
 
-			cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=40, refit=True)
+			cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=preprocessed_folds)
 			cv.fit(X_train, y_train)
-			multiple_cv_score.append(cv.score(X_test, y_test))
+			multiple_cv_score.append(cv.best_score_)
+
+
+			'''
+			new_parameters = copy.deepcopy(feature.runtime_properties['hyperparameters'])
+			new_parameters['random_state'] = int(nested_my_globale_module.model_seeds[m_i])
+			old_keys = list(new_parameters.keys())
+			for k in old_keys:
+				if not str(k).startswith('c__'):
+					new_parameters['c__' + str(k)] = new_parameters.pop(k)
+
+			pipeline.set_params(**new_parameters)
+
+			cv_results = cross_validate(pipeline, X_train, y_train, scoring=score, cv=preprocessed_folds)
+			multiple_cv_score.append(np.mean(cv_results['test_score']))
+			'''
+
+
+		print('multiple cv std: ' + str(np.std(multiple_cv_score)))
 		return np.mean(multiple_cv_score), np.std(multiple_cv_score)
 	except:
 		return 0.0, 0.0
@@ -72,10 +87,9 @@ def run_multiple_cross_validation_global(feature_id: int):
 
 	parameters = my_globale_module.grid_search_parameters_global
 	model = my_globale_module.classifier_global
-	preprocessed_folds = my_globale_module.preprocessed_folds_global
 	score = my_globale_module.score_global
 
-	feature.runtime_properties['multiple_cv_score'], feature.runtime_properties['multiple_cv_score_std']  = run_multiple_cross_validation(feature, splitted_values_train, splitted_target_train, parameters, model, preprocessed_folds, score)
+	feature.runtime_properties['multiple_cv_score'], feature.runtime_properties['multiple_cv_score_std']  = run_multiple_cross_validation(feature, splitted_values_train, splitted_target_train, parameters, model, score)
 	return feature
 
 def multiple_cv_score_parallel(candidates: List[CandidateFeature], splitted_values_train, splitted_target_train,  n_jobs: int = int(Config.get_default("parallelism", mp.cpu_count()))) -> List[CandidateFeature]:
