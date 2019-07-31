@@ -19,6 +19,12 @@ class ScikitReader:
 
 		self.dataframe = pd.DataFrame(data=self.X_train)
 
+		if type(self.feature_is_categorical) != type(None):
+			for feature_id in range(len(self.feature_is_categorical)):
+				if not self.feature_is_categorical[feature_id]:
+					self.dataframe[self.dataframe.columns[feature_id]] = pd.to_numeric(self.dataframe[self.dataframe.columns[feature_id]])
+
+
 		self.splitted_values = {}
 		self.splitted_target = {}
 
