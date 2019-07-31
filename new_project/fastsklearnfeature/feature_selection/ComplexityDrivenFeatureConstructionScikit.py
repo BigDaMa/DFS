@@ -58,10 +58,17 @@ class ComplexityDrivenFeatureConstructionScikit:
             if 'classifier__' in k:
                 best_hyperparameters[k[12:]] = best_hyperparameters.pop(k)
 
+
         my_pipeline = ImbalancePipeline([('f', PipelineTransformation(self.max_feature_rep.pipeline)),
                                 ('smote', SMOTE()),
                                 ('c', self.fe.classifier(**best_hyperparameters))
                                 ])
+        '''
+        my_pipeline = Pipeline([('f', self.max_feature_rep.pipeline),
+                                         ('c', self.fe.classifier(**best_hyperparameters))
+                                         ])
+        '''
+
         return my_pipeline
 
 
