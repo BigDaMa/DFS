@@ -35,7 +35,7 @@ class OneHotTransformation(BaseEstimator, TransformerMixin, Transformation):
 
     def transform(self, X):
         if self.is_contained:
-            return X == self.value
+            return (X == self.value).astype(int)
         else:
             return np.zeros(X.shape)
 
