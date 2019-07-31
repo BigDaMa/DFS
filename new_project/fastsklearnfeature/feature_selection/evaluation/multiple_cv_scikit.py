@@ -1,5 +1,6 @@
 from sklearn.model_selection import GridSearchCV
 from fastsklearnfeature.fastfeature_utils.candidate2pipeline import generate_pipeline
+from fastsklearnfeature.fastfeature_utils.candidate2pipeline import generate_smote_pipeline
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import copy
 import numpy as np
@@ -30,12 +31,12 @@ class hashabledict(dict):
 
 def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, score):
 
-	try:
+	#try:
 		X_train = splitted_values_train
 		y_train = splitted_target_train
 
-		pipeline = generate_pipeline(feature, model)
-		#pipeline = generate_smote_pipeline(feature, model)
+		#pipeline = generate_pipeline(feature, model)
+		pipeline = generate_smote_pipeline(feature, model)
 
 		multiple_cv_score = []
 
@@ -98,8 +99,8 @@ def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_tra
 		#print(str(feature) + ' after: ' + str(feature.runtime_properties['hyperparameters']))
 
 		return np.mean(multiple_cv_score), np.std(multiple_cv_score)
-	except:
-		return 0.0, 0.0
+	#except:
+	#	return 0.0, 0.0
 
 
 def run_multiple_cross_validation_global(feature_id: int):
@@ -113,6 +114,7 @@ def run_multiple_cross_validation_global(feature_id: int):
 	score = my_globale_module.score_global
 
 	feature.runtime_properties['multiple_cv_score'], feature.runtime_properties['multiple_cv_score_std']  = run_multiple_cross_validation(feature, splitted_values_train, splitted_target_train, parameters, model, score)
+
 	return feature
 
 def multiple_cv_score_parallel(candidates: List[CandidateFeature], splitted_values_train, splitted_target_train,  n_jobs: int = int(Config.get_default("parallelism", mp.cpu_count()))) -> List[CandidateFeature]:

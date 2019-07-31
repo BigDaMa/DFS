@@ -370,8 +370,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         my_globale_module.materialized_set = set()
         my_globale_module.predictions_set = set()
 
-        nested_my_globale_module.splitting_seeds = np.random.randint(low=0, high=1000, size=10)
-        nested_my_globale_module.model_seeds = np.random.randint(low=0, high=1000, size=10)
+        number_of_multiple_cvs = 20
+        nested_my_globale_module.splitting_seeds = np.random.randint(low=0, high=10000, size=number_of_multiple_cvs)
+        nested_my_globale_module.model_seeds = np.random.randint(low=0, high=10000, size=number_of_multiple_cvs)
 
         #pickle.dump(my_globale_module.target_test_folds_global, open('/tmp/test_groundtruth.p', 'wb+'))
 
@@ -732,7 +733,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         complexities = [all_f.get_complexity() for all_f in all_features]
         ids_complex = np.argsort(complexities)
         for all_f_i in range(len(all_features)):
-            print(all_features[ids_complex[all_f_i]])
+            print(str(all_features[ids_complex[all_f_i]]) + ' mcv: ' + str(all_features[ids_complex[all_f_i]].runtime_properties['multiple_cv_score']) + ' mcv_std: ' + str(
+                all_features[ids_complex[all_f_i]].runtime_properties['multiple_cv_score_std']))
+
             if all_features[ids_complex[all_f_i]].runtime_properties['multiple_cv_score'] > best_multiple_cv_candidate.runtime_properties['multiple_cv_score'] - best_multiple_cv_candidate.runtime_properties['multiple_cv_score_std']:
                 max_feature = all_features[ids_complex[all_f_i]]
                 break
@@ -830,7 +833,7 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
 
     for rotation in range(10):
-        selector = ComplexityDrivenFeatureConstruction(None, c_max=8, folds=10, max_seconds=None, save_logs=True,
+        selector = ComplexityDrivenFeatureConstruction(None, c_max=3, folds=10, max_seconds=None, save_logs=True,
                                                        transformation_producer=get_transformation_for_division,
                                                        reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
                                                        score=make_scorer(roc_auc_score),

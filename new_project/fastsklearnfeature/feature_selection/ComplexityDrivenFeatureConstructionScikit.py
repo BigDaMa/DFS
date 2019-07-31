@@ -10,7 +10,9 @@ from fastsklearnfeature.reader.ScikitReader import ScikitReader
 from sklearn.pipeline import Pipeline
 import numpy as np
 from sklearn.metrics import accuracy_score
-
+from imblearn.pipeline import Pipeline as ImbalancePipeline
+from imblearn.over_sampling import SMOTE
+from fastsklearnfeature.transformations.sampling.PipelineTransformation import PipelineTransformation
 
 import warnings
 
@@ -44,10 +46,6 @@ class ComplexityDrivenFeatureConstructionScikit:
 
         self.max_feature_rep = self.fe.run()
 
-        from imblearn.over_sampling import SMOTE
-        sm = SMOTE(random_state=42)
-        features, target = sm.fit_resample(features, target)
-
         self.pipeline = self.generate_pipeline().fit(features, target)
 
 
@@ -60,7 +58,8 @@ class ComplexityDrivenFeatureConstructionScikit:
             if 'classifier__' in k:
                 best_hyperparameters[k[12:]] = best_hyperparameters.pop(k)
 
-        my_pipeline = Pipeline([('f', self.max_feature_rep.pipeline),
+        my_pipeline = ImbalancePipeline([('f', PipelineTransformation(self.max_feature_rep.pipeline)),
+                                ('smote', SMOTE()),
                                 ('c', self.fe.classifier(**best_hyperparameters))
                                 ])
         return my_pipeline

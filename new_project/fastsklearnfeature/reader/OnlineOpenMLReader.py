@@ -37,7 +37,12 @@ class OnlineOpenMLReader:
         train_indices = np.array(train_indices, dtype=np.int)
         test_indices = np.array(test_indices, dtype=np.int)
 
-        X, y, categorical_indicator, attribute_names = dataset.get_data(target=dataset.default_target_attribute, return_categorical_indicator=True, return_attribute_names=True)
+        try:
+            X, y, categorical_indicator, attribute_names = dataset.get_data(target=dataset.default_target_attribute, dataset_format='array')
+        except:
+            X, y, categorical_indicator, attribute_names = dataset.get_data(target=dataset.default_target_attribute,
+                                                                            return_categorical_indicator=True,
+                                                                            return_attribute_names=True)
 
         self.dataframe = pd.DataFrame(data=X, columns=attribute_names)
 

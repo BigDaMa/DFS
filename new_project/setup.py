@@ -22,7 +22,7 @@ setup(
     include_package_data=True,
     install_requires=["numpy",
                       "pandas",
-                      "scikit-learn==0.20.3",
+                      "scikit-learn==0.21",
                       "xgboost",
                       "matplotlib",
                       "numpy_indexed",
@@ -31,7 +31,7 @@ setup(
                       "joblib",
                       "sympy",
                       "tqdm",
-                      "openml==0.8.0"],
+                      "openml==0.9.0"],
     packages=find_packages(exclude=('tests', 'docs'))
 )
 
