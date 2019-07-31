@@ -14,7 +14,7 @@ We provide a small jupyter notebook as an example: [Example Notebook](../master/
 ## Setup 
 ```
 cd new_project/
-python3.6 setup.py install --user
+python3.7 -m pip install .
 ```
 
 ## Experiments
