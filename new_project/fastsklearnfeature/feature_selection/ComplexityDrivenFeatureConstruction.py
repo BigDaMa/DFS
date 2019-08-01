@@ -376,87 +376,89 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
         #pickle.dump(my_globale_module.target_test_folds_global, open('/tmp/test_groundtruth.p', 'wb+'))
 
+        max_feature_depth = 3
 
         c = 1
         while(True):
             current_layer: List[CandidateFeature] = []
 
-            #0th
-            if c == 1:
-                cost_2_raw_features[c]: List[CandidateFeature] = []
-                #print(self.raw_features)
-                for raw_f in self.raw_features:
-                    sympy_representation = sympy.Symbol('X' + str(raw_f.column_id))
-                    raw_f.sympy_representation = sympy_representation
-                    all_evaluated_features.add(sympy_representation)
-                    if raw_f.is_numeric():
-                        if raw_f.properties['missing_values']:
+            if c <= max_feature_depth:
+                #0th
+                if c == 1:
+                    cost_2_raw_features[c]: List[CandidateFeature] = []
+                    #print(self.raw_features)
+                    for raw_f in self.raw_features:
+                        sympy_representation = sympy.Symbol('X' + str(raw_f.column_id))
+                        raw_f.sympy_representation = sympy_representation
+                        all_evaluated_features.add(sympy_representation)
+                        if raw_f.is_numeric():
+                            if raw_f.properties['missing_values']:
+                                raw_f.runtime_properties['score'] = 0.0
+                                cost_2_raw_features[c].append(raw_f)
+                            else:
+                                current_layer.append(raw_f)
+                            #print("numeric: " + str(raw_f))
+                        else:
                             raw_f.runtime_properties['score'] = 0.0
                             cost_2_raw_features[c].append(raw_f)
-                        else:
-                            current_layer.append(raw_f)
-                        #print("numeric: " + str(raw_f))
-                    else:
-                        raw_f.runtime_properties['score'] = 0.0
-                        cost_2_raw_features[c].append(raw_f)
-                        #print("nonnumeric: " + str(raw_f))
+                            #print("nonnumeric: " + str(raw_f))
 
-                    self.materialize_raw_features(raw_f)
-                    #raw_f.derive_properties(raw_f.runtime_properties['train_transformed'][0])
+                        self.materialize_raw_features(raw_f)
+                        #raw_f.derive_properties(raw_f.runtime_properties['train_transformed'][0])
 
-            # first unary
-            # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
-            unary_candidates_to_be_applied: List[CandidateFeature] = []
-            if (c - 1) in cost_2_raw_features:
-                unary_candidates_to_be_applied.extend(cost_2_raw_features[c - 1])
-            if (c - 1) in cost_2_unary_transformed:
-                unary_candidates_to_be_applied.extend(cost_2_unary_transformed[c - 1])
-            if (c - 1) in cost_2_binary_transformed:
-                unary_candidates_to_be_applied.extend(cost_2_binary_transformed[c - 1])
+                # first unary
+                # we apply all unary transformation to all c-1 in the repo (except combinations and other unary?)
+                unary_candidates_to_be_applied: List[CandidateFeature] = []
+                if (c - 1) in cost_2_raw_features:
+                    unary_candidates_to_be_applied.extend(cost_2_raw_features[c - 1])
+                if (c - 1) in cost_2_unary_transformed:
+                    unary_candidates_to_be_applied.extend(cost_2_unary_transformed[c - 1])
+                if (c - 1) in cost_2_binary_transformed:
+                    unary_candidates_to_be_applied.extend(cost_2_binary_transformed[c - 1])
 
-            all_unary_features = self.generate_features(unary_transformations, unary_candidates_to_be_applied, all_evaluated_features)
-            current_layer.extend(all_unary_features)
+                all_unary_features = self.generate_features(unary_transformations, unary_candidates_to_be_applied, all_evaluated_features)
+                current_layer.extend(all_unary_features)
 
-            #second binary
-            #get length 2 partitions for current cost
-            partition = self.get_length_2_partition(c-1)
-            #print("bin: c: " + str(c) + " partition" + str(partition))
+                #second binary
+                #get length 2 partitions for current cost
+                partition = self.get_length_2_partition(c-1)
+                #print("bin: c: " + str(c) + " partition" + str(partition))
 
-            #apply cross product from partitions
-            binary_candidates_to_be_applied: List[CandidateFeature] = []
-            for p in partition:
-                lists_for_each_element: List[List[CandidateFeature]] = [[], []]
-                for element in range(2):
-                    if p[element] in cost_2_raw_features:
-                        lists_for_each_element[element].extend(cost_2_raw_features[p[element]])
-                    if p[element] in cost_2_unary_transformed:
-                        lists_for_each_element[element].extend(cost_2_unary_transformed[p[element]])
-                    if p[element] in cost_2_binary_transformed:
-                        lists_for_each_element[element].extend(cost_2_binary_transformed[p[element]])
+                #apply cross product from partitions
+                binary_candidates_to_be_applied: List[CandidateFeature] = []
+                for p in partition:
+                    lists_for_each_element: List[List[CandidateFeature]] = [[], []]
+                    for element in range(2):
+                        if p[element] in cost_2_raw_features:
+                            lists_for_each_element[element].extend(cost_2_raw_features[p[element]])
+                        if p[element] in cost_2_unary_transformed:
+                            lists_for_each_element[element].extend(cost_2_unary_transformed[p[element]])
+                        if p[element] in cost_2_binary_transformed:
+                            lists_for_each_element[element].extend(cost_2_binary_transformed[p[element]])
 
-                for bt in binary_transformations:
-                    list_of_combinations = self.generate_merge(lists_for_each_element[0], lists_for_each_element[1], bt.parent_feature_order_matters, bt.parent_feature_repetition_is_allowed)
-                    #print(list_of_combinations)
-                    for combo in list_of_combinations:
-                        if bt.is_applicable(combo):
-                            sympy_representation = bt.get_sympy_representation(
-                                [p.get_sympy_representation() for p in combo])
-                            try:
-                                if len(sympy_representation.free_symbols) > 0:  # if expression is not constant
-                                    if not sympy_representation in all_evaluated_features:
-                                        bin_candidate = CandidateFeature(copy.deepcopy(bt), combo)
-                                        bin_candidate.sympy_representation = copy.deepcopy(sympy_representation)
-                                        all_evaluated_features.add(sympy_representation)
-                                        binary_candidates_to_be_applied.append(bin_candidate)
+                    for bt in binary_transformations:
+                        list_of_combinations = self.generate_merge(lists_for_each_element[0], lists_for_each_element[1], bt.parent_feature_order_matters, bt.parent_feature_repetition_is_allowed)
+                        #print(list_of_combinations)
+                        for combo in list_of_combinations:
+                            if bt.is_applicable(combo):
+                                sympy_representation = bt.get_sympy_representation(
+                                    [p.get_sympy_representation() for p in combo])
+                                try:
+                                    if len(sympy_representation.free_symbols) > 0:  # if expression is not constant
+                                        if not sympy_representation in all_evaluated_features:
+                                            bin_candidate = CandidateFeature(copy.deepcopy(bt), combo)
+                                            bin_candidate.sympy_representation = copy.deepcopy(sympy_representation)
+                                            all_evaluated_features.add(sympy_representation)
+                                            binary_candidates_to_be_applied.append(bin_candidate)
+                                        else:
+                                            #print(str(bin_candidate) + " skipped: " + str(sympy_representation))
+                                            pass
                                     else:
                                         #print(str(bin_candidate) + " skipped: " + str(sympy_representation))
                                         pass
-                                else:
-                                    #print(str(bin_candidate) + " skipped: " + str(sympy_representation))
+                                except:
                                     pass
-                            except:
-                                pass
-            current_layer.extend(binary_candidates_to_be_applied)
+                current_layer.extend(binary_candidates_to_be_applied)
 
             #third: feature combinations
             #first variant: treat combination as a transformation
