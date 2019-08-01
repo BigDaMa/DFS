@@ -114,6 +114,7 @@ def run_multiple_cross_validation_global(feature_id: int):
 	score = my_globale_module.score_global
 
 	feature.runtime_properties['multiple_cv_score'], feature.runtime_properties['multiple_cv_score_std']  = run_multiple_cross_validation(feature, splitted_values_train, splitted_target_train, parameters, model, score)
+	feature.runtime_properties['score'] = feature.runtime_properties['multiple_cv_score']
 
 	return feature
 

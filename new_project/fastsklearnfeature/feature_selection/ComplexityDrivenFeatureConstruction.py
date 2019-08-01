@@ -54,7 +54,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                  reader=None,
                  upload2openml=False,
                  remove_parents=True,
-                 n_jobs=None
+                 n_jobs=None,
+                 max_feature_depth=np.inf
                  ):
         super(ComplexityDrivenFeatureConstruction, self).__init__(dataset_config, classifier, grid_search_parameters,
                                                         transformation_producer)
@@ -75,6 +76,8 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
             self.n_jobs = int(Config.get_default("parallelism", mp.cpu_count()))
         else:
             self.n_jobs = n_jobs
+
+        self.max_feature_depth = max_feature_depth
 
         #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
     def partition(self, number):
@@ -370,19 +373,18 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         my_globale_module.materialized_set = set()
         my_globale_module.predictions_set = set()
 
-        number_of_multiple_cvs = 20
+        number_of_multiple_cvs = 10
         nested_my_globale_module.splitting_seeds = np.random.randint(low=0, high=10000, size=number_of_multiple_cvs)
         nested_my_globale_module.model_seeds = np.random.randint(low=0, high=10000, size=number_of_multiple_cvs)
 
         #pickle.dump(my_globale_module.target_test_folds_global, open('/tmp/test_groundtruth.p', 'wb+'))
 
-        max_feature_depth = 3
 
         c = 1
         while(True):
             current_layer: List[CandidateFeature] = []
 
-            if c <= max_feature_depth:
+            if c <= self.max_feature_depth:
                 #0th
                 if c == 1:
                     cost_2_raw_features[c]: List[CandidateFeature] = []
@@ -510,7 +512,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 
-            '''
+
             ##nested cv
             new_results_with_nested = []
             for r_result in results:
@@ -518,6 +520,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                     new_results_with_nested.append(r_result)
             #results = nested_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
             results = multiple_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
+            '''
             for r_result in results:
                 #print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(r_result.runtime_properties['test_score']) + ' nested: ' + str(r_result.runtime_properties['nested_cv_score']))
                 print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(
@@ -775,11 +778,11 @@ if __name__ == '__main__':
 
     from fastsklearnfeature.feature_selection.openml_wrapper.openMLdict import openMLname2task
 
-    #task_id = openMLname2task['transfusion'] #interesting
+    task_id = openMLname2task['transfusion'] #interesting
     #task_id = openMLname2task['iris'] # feature selection is enough
     #task_id = openMLname2task['breast cancer']#only feature selection
     #task_id = openMLname2task['contraceptive'] #until 3 only feature selection
-    task_id = openMLname2task['german credit'] #cool with onehot
+    #task_id = openMLname2task['german credit'] #cool with onehot
     #task_id = openMLname2task['banknote'] #raw features are already amazing
     #task_id = openMLname2task['heart-statlog']
     #task_id = openMLname2task['musk'] # feature selection only
@@ -839,7 +842,7 @@ if __name__ == '__main__':
                                                        transformation_producer=get_transformation_for_division,
                                                        reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
                                                        score=make_scorer(roc_auc_score),
-                                                       remove_parents=False, upload2openml=True, epsilon=0)
+                                                       remove_parents=False, upload2openml=True, epsilon=-np.inf)
         selector.run()
 
     '''

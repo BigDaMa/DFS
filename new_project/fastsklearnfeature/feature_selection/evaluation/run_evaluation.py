@@ -80,9 +80,63 @@ def hyperopt_search(train_transformed, test_transformed, training_all, one_test_
 
     return best_mean_cross_val_score, test_score, best_param, best_test_fold_predictions, best_score_list, clf, mean_scores, additional_metric
 
+def calculate_likelyhood(model, X, y):
+    one_class_index = -1
+    for class_index in range(len(model.classes_)):
+        if model.classes_[class_index] == 1:
+            one_class_index = class_index
+            break
+
+    y_hat = model.predict_proba(X)[:, one_class_index]
+    # y_hat = model.predict(X)
+    resid = y - y_hat
+    sse = sum(resid ** 2)
+    return sse
+
+#https://www.reddit.com/r/statistics/comments/5h2rbw/does_python_have_a_package_for_aicbic/
+def calculate_AIC_for_classification(model, X, y, k):
+    L = calculate_likelyhood(model, X, y)
+    AIC = 2 * k - 2 * np.log(L)
+    return AIC
+
+def calculate_BIC_for_classification(model, X, y, k):
+    L = calculate_likelyhood(model, X, y)
+    n = X.shape[0]
+    BIC = np.log(n) * k - 2 * np.log(L)
+    return BIC
+
+def calculate_AICc_for_classification(model, X, y, k):
+    n = X.shape[0]
+    AIC = calculate_AIC_for_classification(model, X, y, k)
+
+    AICc = AIC + ((2*k**2 + 2*k)/(n-k-1))
+    return AICc
+
+def calculate_consistency(X,y):
+    key2labels = {}
+
+    for row_id in range(X.shape[0]):
+        key = tuple(X[row_id])
+        if not key in key2labels:
+            key2labels[key] = set()
+        key2labels[key].add(y[row_id])
+
+    inconsistent_values = set()
+    for k, v in key2labels.items():
+        if len(v) > 1:
+            inconsistent_values.add(k)
+
+    consistency_counter = 0
+    for row_id in range(X.shape[0]):
+        key = tuple(X[row_id])
+        if not key in inconsistent_values:
+            consistency_counter += 1
+
+    return float(consistency_counter) / X.shape[0]
 
 
-def grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
+
+def grid_search(candidate, train_transformed, test_transformed, training_all, one_test_set_transformed,
                 grid_search_parameters, score, classifier, target_train_folds, target_test_folds, train_y_all_target, test_target):
 
     hyperparam_to_score_list = {}
@@ -102,6 +156,16 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
         hyperparam_to_additional_score_list[parameter_set]['accuracy'] = []
         hyperparam_to_additional_score_list[parameter_set]['f1'] = []
 
+        hyperparam_to_additional_score_list[parameter_set]['AIC_feature_number'] = []
+        hyperparam_to_additional_score_list[parameter_set]['AICc_feature_number'] = []
+        hyperparam_to_additional_score_list[parameter_set]['BIC_feature_number'] = []
+
+        hyperparam_to_additional_score_list[parameter_set]['AIC_complexity'] = []
+        hyperparam_to_additional_score_list[parameter_set]['AICc_complexity'] = []
+        hyperparam_to_additional_score_list[parameter_set]['BIC_complexity'] = []
+
+        hyperparam_to_additional_score_list[parameter_set]['consistency'] = []
+
 
         for fold in range(len(train_transformed)):
             clf = classifier(**parameter_set)
@@ -114,6 +178,18 @@ def grid_search(train_transformed, test_transformed, training_all, one_test_set_
             ##add new scores
             hyperparam_to_additional_score_list[parameter_set]['accuracy'].append(make_scorer(accuracy_score)(clf, test_transformed[fold], target_test_folds[fold]))
             hyperparam_to_additional_score_list[parameter_set]['f1'].append(make_scorer(f1_score)(clf, test_transformed[fold], target_test_folds[fold]))
+
+            k = test_transformed[fold].shape[1]
+            hyperparam_to_additional_score_list[parameter_set]['AIC_feature_number'].append(calculate_AIC_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['AICc_feature_number'].append(calculate_AICc_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['BIC_feature_number'].append(calculate_BIC_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
+
+            k = candidate.get_complexity()
+            hyperparam_to_additional_score_list[parameter_set]['AIC_complexity'].append(calculate_AIC_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['AICc_complexity'].append(calculate_AICc_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['BIC_complexity'].append(calculate_BIC_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
+
+            hyperparam_to_additional_score_list[parameter_set]['consistency'].append(calculate_consistency(test_transformed[fold], target_test_folds[fold]))
 
 
     best_param = None
@@ -240,7 +316,7 @@ def evaluate(candidate_id: int):
         candidate.runtime_properties['passed'] = True
     else:
         candidate.runtime_properties['passed'] = False
-        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], test_fold_predictions, candidate.runtime_properties['fold_scores'], my_clf, candidate.runtime_properties['mean_scores'], candidate.runtime_properties['additional_metrics'] = grid_search(train_transformed, test_transformed, training_all, one_test_set_transformed,
+        candidate.runtime_properties['score'], candidate.runtime_properties['test_score'], candidate.runtime_properties['hyperparameters'], test_fold_predictions, candidate.runtime_properties['fold_scores'], my_clf, candidate.runtime_properties['mean_scores'], candidate.runtime_properties['additional_metrics'] = grid_search(candidate, train_transformed, test_transformed, training_all, one_test_set_transformed,
             my_globale_module.grid_search_parameters_global, my_globale_module.score_global, my_globale_module.classifier_global, my_globale_module.target_train_folds_global, my_globale_module.target_test_folds_global, my_globale_module.train_y_all_target_global, my_globale_module.test_target_global)
 
         '''
