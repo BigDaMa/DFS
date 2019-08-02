@@ -31,7 +31,7 @@ class hashabledict(dict):
 
 def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, score):
 
-	#try:
+	try:
 		X_train = splitted_values_train
 		y_train = splitted_target_train
 
@@ -99,8 +99,8 @@ def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_tra
 		#print(str(feature) + ' after: ' + str(feature.runtime_properties['hyperparameters']))
 
 		return np.mean(multiple_cv_score), np.std(multiple_cv_score)
-	#except:
-	#	return 0.0, 0.0
+	except:
+		return 0.0, 0.0
 
 
 def run_multiple_cross_validation_global(feature_id: int):
