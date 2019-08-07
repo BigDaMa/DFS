@@ -80,7 +80,9 @@ def hyperopt_search(train_transformed, test_transformed, training_all, one_test_
 
     return best_mean_cross_val_score, test_score, best_param, best_test_fold_predictions, best_score_list, clf, mean_scores, additional_metric
 
-def calculate_likelyhood(model, X, y):
+# residual sum of squares
+# sum of squared errors
+def calculate_rss(model, X, y):
     one_class_index = -1
     for class_index in range(len(model.classes_)):
         if model.classes_[class_index] == 1:
@@ -93,23 +95,24 @@ def calculate_likelyhood(model, X, y):
     sse = sum(resid ** 2)
     return sse
 
-#https://www.reddit.com/r/statistics/comments/5h2rbw/does_python_have_a_package_for_aicbic/
-def calculate_AIC_for_classification(model, X, y, k):
-    L = calculate_likelyhood(model, X, y)
-    AIC = 2 * k - 2 * np.log(L)
-    return AIC
-
-def calculate_BIC_for_classification(model, X, y, k):
-    L = calculate_likelyhood(model, X, y)
+def calculate_BIC_for_classification_paper(model, X, y, k):
+    L = calculate_rss(model, X, y)
     n = X.shape[0]
-    BIC = np.log(n) * k - 2 * np.log(L)
+    BIC = np.log(n) * k + float(X.shape[0]) * np.log(L / float(X.shape[0]))
     return BIC
 
-def calculate_AICc_for_classification(model, X, y, k):
-    n = X.shape[0]
-    AIC = calculate_AIC_for_classification(model, X, y, k)
+#http://www.sortie-nd.org/lme/Statistical%20Papers/Burnham_and_Anderson_2004_Multimodel_Inference.pdf
+def calculate_AIC_for_classification_paper(model, X, y, k):
+    L = calculate_rss(model, X, y)
 
-    AICc = AIC + ((2*k**2 + 2*k)/(n-k-1))
+    AIC = 2 * k + float(X.shape[0]) * np.log(L / float(X.shape[0]))
+    return AIC
+
+def calculate_AICc_for_classification_paper(model, X, y, k):
+    n = X.shape[0]
+    AIC = calculate_AIC_for_classification_paper(model, X, y, k)
+
+    AICc = AIC + ((2 * k * (k + 1)) / (n - k - 1))
     return AICc
 
 def calculate_consistency(X,y):
@@ -166,6 +169,9 @@ def grid_search(candidate, train_transformed, test_transformed, training_all, on
 
         hyperparam_to_additional_score_list[parameter_set]['consistency'] = []
 
+        hyperparam_to_additional_score_list[parameter_set]['rss'] = []
+        hyperparam_to_additional_score_list[parameter_set]['n'] = []
+
 
         for fold in range(len(train_transformed)):
             clf = classifier(**parameter_set)
@@ -179,15 +185,18 @@ def grid_search(candidate, train_transformed, test_transformed, training_all, on
             hyperparam_to_additional_score_list[parameter_set]['accuracy'].append(make_scorer(accuracy_score)(clf, test_transformed[fold], target_test_folds[fold]))
             hyperparam_to_additional_score_list[parameter_set]['f1'].append(make_scorer(f1_score)(clf, test_transformed[fold], target_test_folds[fold]))
 
+            hyperparam_to_additional_score_list[parameter_set]['rss'].append(calculate_rss(clf, test_transformed[fold], target_test_folds[fold]))
+            hyperparam_to_additional_score_list[parameter_set]['n'].append(len(target_test_folds[fold]))
+
             k = test_transformed[fold].shape[1]
-            hyperparam_to_additional_score_list[parameter_set]['AIC_feature_number'].append(calculate_AIC_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
-            hyperparam_to_additional_score_list[parameter_set]['AICc_feature_number'].append(calculate_AICc_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
-            hyperparam_to_additional_score_list[parameter_set]['BIC_feature_number'].append(calculate_BIC_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['AIC_feature_number'].append(calculate_AIC_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['AICc_feature_number'].append(calculate_AICc_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['BIC_feature_number'].append(calculate_BIC_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
 
             k = candidate.get_complexity()
-            hyperparam_to_additional_score_list[parameter_set]['AIC_complexity'].append(calculate_AIC_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
-            hyperparam_to_additional_score_list[parameter_set]['AICc_complexity'].append(calculate_AICc_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
-            hyperparam_to_additional_score_list[parameter_set]['BIC_complexity'].append(calculate_BIC_for_classification(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['AIC_complexity'].append(calculate_AIC_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['AICc_complexity'].append(calculate_AICc_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
+            hyperparam_to_additional_score_list[parameter_set]['BIC_complexity'].append(calculate_BIC_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
 
             hyperparam_to_additional_score_list[parameter_set]['consistency'].append(calculate_consistency(test_transformed[fold], target_test_folds[fold]))
 
@@ -211,7 +220,7 @@ def grid_search(candidate, train_transformed, test_transformed, training_all, on
             best_test_fold_predictions = test_fold_predictions[parameter_config]
 
             for k, metric_list in hyperparam_to_additional_score_list[parameter_config].items():
-                additional_metric[k] = np.mean(metric_list)
+                additional_metric[k] = metric_list
 
     test_score = -1
     if type(training_all) != type(None):

@@ -514,13 +514,14 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
             ##nested cv
-            '''
+
             new_results_with_nested = []
             for r_result in results:
                 if type(r_result) != type(None):
                     new_results_with_nested.append(r_result)
             #results = nested_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
             results = multiple_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
+            '''
             for r_result in results:
                 #print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(r_result.runtime_properties['test_score']) + ' nested: ' + str(r_result.runtime_properties['nested_cv_score']))
                 print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(
@@ -837,12 +838,13 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(f1_score, average='micro'))
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
 
-    for rotation in range(10):
-        selector = ComplexityDrivenFeatureConstruction(None, c_max=7, folds=10, max_seconds=None, save_logs=True,
+    #for rotation in range(10):
+    for rotation in range(1):
+        selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True,
                                                        transformation_producer=get_transformation_for_division,
                                                        reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
                                                        score=make_scorer(roc_auc_score),
-                                                       remove_parents=False, upload2openml=True, epsilon=-np.inf)
+                                                       remove_parents=False, upload2openml=True, epsilon=0)
         selector.run()
 
     '''
