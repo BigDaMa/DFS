@@ -19,6 +19,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_validate
 import operator
+from sklearn.metrics import make_scorer
 
 class hashabledict(dict):
 	def __hash__(self):
@@ -26,19 +27,33 @@ class hashabledict(dict):
 
 
 
+def customAICc(y, p, k=0):
+	resid = y - p
+	sse = sum(resid ** 2)
+
+	n = float(len(y))
+
+	AIC = 2 * k + n * np.log(sse / n)
+	AICc = AIC + ((2 * k * (k + 1)) / (n - k - 1))
+
+	return AICc
+
+
 
 
 
 def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_train, splitted_target_train, parameters, model, score):
 
-	try:
+	#try:
 		X_train = splitted_values_train
 		y_train = splitted_target_train
 
-		#pipeline = generate_pipeline(feature, model)
-		pipeline = generate_smote_pipeline(feature, model)
+		pipeline = generate_pipeline(feature, model)
+		#pipeline = generate_smote_pipeline(feature, model)
 
 		multiple_cv_score = []
+
+		multiple_cv_complexity_score = []
 
 		hyperparameters2count = {}
 
@@ -60,15 +75,17 @@ def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_tra
 				if not str(k).startswith('c__'):
 					new_parameters['c__' + str(k)] = new_parameters.pop(k)
 
-			cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=score, cv=preprocessed_folds)
+			scoring = {'accuracy': score, 'complexity': make_scorer(customAICc, greater_is_better=False, needs_proba=True, k=feature.get_complexity())}
+
+			cv = GridSearchCV(pipeline, param_grid=new_parameters, scoring=scoring, cv=preprocessed_folds, refit='accuracy')
 			cv.fit(X_train, y_train)
 			multiple_cv_score.append(cv.best_score_)
+
+			multiple_cv_complexity_score.append(cv.cv_results_['mean_test_complexity'][cv.best_index_])
 
 			if not hashabledict(cv.best_params_) in hyperparameters2count:
 				hyperparameters2count[hashabledict(cv.best_params_)] = 0
 			hyperparameters2count[hashabledict(cv.best_params_)] += 1
-
-
 
 
 			'''
@@ -96,11 +113,14 @@ def run_multiple_cross_validation(feature: CandidateFeature, splitted_values_tra
 		feature.runtime_properties['hyperparameters'] = new_parameters
 
 
+		print(str(feature) + ' AICc: ' + str(np.mean(multiple_cv_complexity_score)))
+
+
 		#print(str(feature) + ' after: ' + str(feature.runtime_properties['hyperparameters']))
 
 		return np.mean(multiple_cv_score), np.std(multiple_cv_score)
-	except:
-		return 0.0, 0.0
+	#except:
+	#	return 0.0, 0.0
 
 
 def run_multiple_cross_validation_global(feature_id: int):

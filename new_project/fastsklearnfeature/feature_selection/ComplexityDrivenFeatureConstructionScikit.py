@@ -39,7 +39,7 @@ class ComplexityDrivenFeatureConstructionScikit:
         self.fe = ComplexityDrivenFeatureConstruction(None, reader=ScikitReader(features, target,
                                                                                 feature_names=self.feature_names,
                                                                                 feature_is_categorical=self.feature_is_categorical),
-                                                      score=self.scoring, c_max=5, folds=10,
+                                                      score=self.scoring, c_max=6, folds=10,
                                                       max_seconds=self.max_time_secs, classifier=self.model,
                                                       grid_search_parameters=self.parameter_grid, n_jobs=self.n_jobs,
                                                       epsilon=self.epsilon)
@@ -58,7 +58,7 @@ class ComplexityDrivenFeatureConstructionScikit:
             if 'classifier__' in k:
                 best_hyperparameters[k[12:]] = best_hyperparameters.pop(k)
 
-
+        '''
         my_pipeline = ImbalancePipeline([('f', PipelineTransformation(self.max_feature_rep.pipeline)),
                                 ('smote', SMOTE()),
                                 ('c', self.fe.classifier(**best_hyperparameters))
@@ -67,7 +67,7 @@ class ComplexityDrivenFeatureConstructionScikit:
         my_pipeline = Pipeline([('f', self.max_feature_rep.pipeline),
                                          ('c', self.fe.classifier(**best_hyperparameters))
                                          ])
-        '''
+
 
         return my_pipeline
 

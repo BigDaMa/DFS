@@ -514,14 +514,13 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
             ##nested cv
-
+            '''
             new_results_with_nested = []
             for r_result in results:
                 if type(r_result) != type(None):
                     new_results_with_nested.append(r_result)
             #results = nested_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
             results = multiple_cv_score_parallel(new_results_with_nested, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
-            '''
             for r_result in results:
                 #print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(r_result.runtime_properties['test_score']) + ' nested: ' + str(r_result.runtime_properties['nested_cv_score']))
                 print(str(r_result) + ' cv: ' + str(r_result.runtime_properties['score']) + ' test: ' + str(
@@ -690,7 +689,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
 
 
-        '''
+
         def extend_all(all_representations: List[CandidateFeature], new_llist):
             for mylist in new_llist:
                 all_representations.extend(mylist)
@@ -701,6 +700,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         extend_all(all_representations, cost_2_unary_transformed.values())
         extend_all(all_representations, cost_2_binary_transformed.values())
         extend_all(all_representations, cost_2_combination.values())
+        '''
 
         #find top k based on cv score
         scores = [c.runtime_properties['score'] for c in all_representations]
@@ -725,6 +725,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         max_feature = max_nested_rep
         '''
 
+        '''
         all_features = list(max_feature_per_complexity.values())
         all_features = multiple_cv_score_parallel(all_features, self.reader.splitted_values['train'], self.reader.splitted_target['train'])
 
@@ -747,7 +748,25 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                 break
 
         print(max_feature)
+        '''
 
+        '''
+        #min AICc selection
+        min_aicc = np.inf
+        min_aicc_feature = None
+        for rep in list(max_feature_per_complexity.values()):
+            if 'additional_metrics' in rep.runtime_properties:
+                current_aicc = np.mean(rep.runtime_properties['additional_metrics']['AICc_complexity'])
+                if current_aicc < min_aicc:
+                    min_aicc = current_aicc
+                    min_aicc_feature = rep
+        max_feature = min_aicc_feature
+        print(max_feature)
+        '''
+
+        all_features = list(max_feature_per_complexity.values())
+        all_features = multiple_cv_score_parallel(all_features, self.reader.splitted_values['train'],
+                                                  self.reader.splitted_target['train'])
 
         return max_feature
 
@@ -840,10 +859,10 @@ if __name__ == '__main__':
 
     #for rotation in range(10):
     for rotation in range(1):
-        selector = ComplexityDrivenFeatureConstruction(None, c_max=10, folds=10, max_seconds=None, save_logs=True,
+        selector = ComplexityDrivenFeatureConstruction(None, c_max=3, folds=10, max_seconds=None, save_logs=True,
                                                        transformation_producer=get_transformation_for_division,
                                                        reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
-                                                       score=make_scorer(roc_auc_score),
+                                                       score=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True),
                                                        remove_parents=False, upload2openml=True, epsilon=0)
         selector.run()
 
