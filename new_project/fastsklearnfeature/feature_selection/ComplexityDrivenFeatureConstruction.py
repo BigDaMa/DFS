@@ -761,7 +761,11 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         for rep in list(max_feature_per_complexity.values()):
             curr = np.mean(rep.runtime_properties['additional_metrics']['AICc_complexity'])
             print(str(rep) + ': ' + str(curr) + ' AICc min: ' + str(np.min(rep.runtime_properties['additional_metrics']['AICc_complexity'])) + ' AICc std: ' + str(np.std(rep.runtime_properties['additional_metrics']['AICc_complexity'])) + ' P: ' + str(np.exp((min(all_aiccs) - curr)/2)) + ' CV AUC: ' + str(rep.runtime_properties['score']))
-        
+
+            if np.min(rep.runtime_properties['additional_metrics']['AICc_complexity']) < min_aicc:
+                min_aicc = np.min(rep.runtime_properties['additional_metrics']['AICc_complexity'])
+                min_aicc_feature = rep
+        max_feature = min_aicc_feature
 
         return max_feature
 
