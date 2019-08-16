@@ -750,23 +750,18 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         print(max_feature)
         '''
 
-        '''
         #min AICc selection
         min_aicc = np.inf
         min_aicc_feature = None
-        for rep in list(max_feature_per_complexity.values()):
-            if 'additional_metrics' in rep.runtime_properties:
-                current_aicc = np.mean(rep.runtime_properties['additional_metrics']['AICc_complexity'])
-                if current_aicc < min_aicc:
-                    min_aicc = current_aicc
-                    min_aicc_feature = rep
-        max_feature = min_aicc_feature
-        print(max_feature)
-        '''
 
-        all_features = list(max_feature_per_complexity.values())
-        all_features = multiple_cv_score_parallel(all_features, self.reader.splitted_values['train'],
-                                                  self.reader.splitted_target['train'])
+        all_aiccs = []
+        for rep in list(max_feature_per_complexity.values()):
+            all_aiccs.append(np.mean(rep.runtime_properties['additional_metrics']['AICc_complexity']))
+
+        for rep in list(max_feature_per_complexity.values()):
+            curr = np.mean(rep.runtime_properties['additional_metrics']['AICc_complexity'])
+            print(str(rep) + ': ' + str(curr) + ' AICc min: ' + str(np.min(rep.runtime_properties['additional_metrics']['AICc_complexity'])) + ' AICc std: ' + str(np.std(rep.runtime_properties['additional_metrics']['AICc_complexity'])) + ' P: ' + str(np.exp((min(all_aiccs) - curr)/2)) + ' CV AUC: ' + str(rep.runtime_properties['score']))
+        
 
         return max_feature
 
