@@ -2,6 +2,7 @@ from fastsklearnfeature.transformations.Transformation import Transformation
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 import sympy
+from sklearn.preprocessing import MinMaxScaler
 
 
 class ConcatenationFunction(sympy.Function):
@@ -31,12 +32,30 @@ class ConcatenationFunction(sympy.Function):
 
 class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
     def __init__(self, number_parent_features):
+        #self.minmaxscaler = MinMaxScaler()
         Transformation.__init__(self, 'identity',
                  number_parent_features, output_dimensions=number_parent_features,
                  parent_feature_order_matters=False, parent_feature_repetition_is_allowed=False)
 
+
     def transform(self, X):
         return X
+
+    '''
+    def fit(self, X, y=None):
+        try:
+            self.minmaxscaler.fit(X)
+        except:
+            pass
+
+        return self
+
+    def transform(self, X):
+        try:
+            return self.minmaxscaler.transform(X)
+        except:
+            return X
+    '''
 
     def is_applicable(self, feature_combination):
         #the aggregated column has to be numeric

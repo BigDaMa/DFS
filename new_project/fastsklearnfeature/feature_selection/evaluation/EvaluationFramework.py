@@ -95,6 +95,7 @@ def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, pr
                                                                                       'False') == 'True':
         refit = True
 
+    print(grid_search_parameters)
     clf = GridSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score, iid=False,
                        error_score='raise', refit=refit, n_jobs=cv_jobs)
     clf.fit(train_data, current_target) #dataset.splitted_values['train']
@@ -107,7 +108,7 @@ def evaluate(candidate: CandidateFeature, classifier, grid_search_parameters, pr
         test_fold_predictions.append(clf.predict(train_data[preprocessed_folds[fold][1]]) == current_target[preprocessed_folds[fold][1]])
     candidate.runtime_properties['test_fold_predictions'] = test_fold_predictions
 
-    if Config.get_default('score.test', 'False') == 'True':
+    if Config.get_default('score.test', 'False') == 'True' and len(test_data) > 0:
         if Config.get_default('instance.selection', 'False') == 'True':
             clf = GridSearchCV(pipeline, grid_search_parameters, cv=preprocessed_folds, scoring=score,
                                iid=False, error_score='raise', refit=True)

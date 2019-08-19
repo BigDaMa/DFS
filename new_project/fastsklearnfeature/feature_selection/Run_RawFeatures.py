@@ -6,9 +6,12 @@ import multiprocessing as mp
 from fastsklearnfeature.configuration.Config import Config
 import itertools
 from fastsklearnfeature.transformations.Transformation import Transformation
+from fastsklearnfeature.transformations.ImputationTransformation import ImputationTransformation
+from fastsklearnfeature.transformations.generators.OneHotGenerator import OneHotGenerator
 from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
+from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
+from fastsklearnfeature.transformations.StandardScalingTransformation import StandardScalingTransformation
 import copy
-from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 from fastsklearnfeature.feature_selection.evaluation.EvaluationFramework import EvaluationFramework
 from sklearn.metrics import make_scorer
 from sklearn.metrics import f1_score
@@ -31,7 +34,6 @@ class Run_RawFeatures(EvaluationFramework):
                                                                                                 'classifier__max_iter': [10000],
                                                                                                 'classifier__multi_class':['auto']
                                                                                                 },
-                 transformation_producer=get_transformation_for_feature_space,
                  score=make_scorer(f1_score, average='micro'),
                  reader=None,
                  folds=10
@@ -39,160 +41,9 @@ class Run_RawFeatures(EvaluationFramework):
         self.dataset_config = dataset_config
         self.classifier = classifier
         self.grid_search_parameters = grid_search_parameters
-        self.transformation_producer = transformation_producer
         self.score = score
         self.reader = reader
         self.folds = folds
-
-
-
-
-    #https://stackoverflow.com/questions/10035752/elegant-python-code-for-integer-partitioning
-    def partition(self, number):
-        answer = set()
-        answer.add((number,))
-        for x in range(1, number):
-            for y in self.partition(number - x):
-                answer.add(tuple(sorted((x,) + y)))
-        return answer
-
-    def get_all_features_below_n_cost(self, cost):
-        filtered_candidates = []
-        for i in range(len(self.candidates)):
-            if (self.candidates[i].get_number_of_transformations() + 1) <= cost:
-                filtered_candidates.append(self.candidates[i])
-        return filtered_candidates
-
-    def get_all_features_equal_n_cost(self, cost, candidates):
-        filtered_candidates = []
-        for i in range(len(candidates)):
-            if (candidates[i].get_number_of_transformations() + 1) == cost:
-                filtered_candidates.append(candidates[i])
-        return filtered_candidates
-
-
-
-    def get_all_possible_representations_for_step_x(self, x, candidates):
-
-        all_representations = set()
-        partitions = self.partition(x)
-
-        #get candidates of partitions
-        candidates_with_cost_x = {}
-        for i in range(x+1):
-            candidates_with_cost_x[i] = self.get_all_features_equal_n_cost(i, candidates)
-
-        for p in partitions:
-            current_list = itertools.product(*[candidates_with_cost_x[pi] for pi in p])
-            for c_output in current_list:
-                if len(set(c_output)) == len(p):
-                    all_representations.add(frozenset(c_output))
-
-        return all_representations
-
-
-    def filter_candidate(self, candidate):
-        working_features: List[CandidateFeature] = []
-        try:
-            candidate.fit(self.dataset.splitted_values['train'])
-            candidate.transform(self.dataset.splitted_values['train'])
-            working_features.append(candidate)
-        except:
-            pass
-        return working_features
-
-
-    def filter_failing_in_parallel(self):
-        pool = mp.Pool(processes=int(Config.get("parallelism")))
-        results = pool.map(self.filter_candidate, self.candidates)
-        return list(itertools.chain(*results))
-
-
-    def generate_features(self, transformations: List[Transformation], features: List[CandidateFeature]) -> List[CandidateFeature]:
-        generated_features: List[CandidateFeature] = []
-        for t_i in transformations:
-            for f_i in t_i.get_combinations(features):
-                if t_i.is_applicable(f_i):
-                    generated_features.append(CandidateFeature(copy.deepcopy(t_i), f_i)) # do we need a deep copy here?
-                    #if output is multidimensional adapt here
-        return generated_features
-
-
-    def get_length_2_partition(self, cost: int) -> List[List[int]]:
-        partition: List[List[int]] = []
-
-        p = cost - 1
-        while p >= cost - p:
-            partition.append([p, cost - p])
-            p = p - 1
-        return partition
-
-    #generate combinations for binary transformations
-    def generate_merge(self, a: List[CandidateFeature], b: List[CandidateFeature], order_matters=False, repetition_allowed=False) -> List[List[CandidateFeature]]:
-        # e.g. sum
-        if not order_matters and repetition_allowed:
-            return list(itertools.product(*[a, b]))
-
-        # feature concat, but does not work
-        if not order_matters and not repetition_allowed:
-            return [[x, y] for x, y in itertools.product(*[a, b]) if x != y]
-
-        if order_matters and repetition_allowed:
-            order = set(list(itertools.product(*[a, b])))
-            order = order.union(set(list(itertools.product(*[b, a]))))
-            return list(order)
-
-        # e.g. subtraction
-        if order_matters and not repetition_allowed:
-            order = [[x, y] for x, y in itertools.product(*[a, b]) if x != y]
-            order.extend([[x, y] for x, y in itertools.product(*[b, a]) if x != y])
-            return order
-
-
-
-
-    def get_features_from_identity_candidate(self, identity: CandidateFeature):
-        my_list = set()
-        if not isinstance(identity.transformation, IdentityTransformation):
-            return set([str(identity)])
-
-        for p in identity.parents:
-            if not isinstance(p.transformation, IdentityTransformation):
-                my_list.add(str(p))
-            else:
-                my_list = my_list.union(self.get_features_from_identity_candidate(p))
-        return my_list
-
-
-    def generate_merge_for_combination(self, a: List[CandidateFeature], b: List[CandidateFeature]) -> Set[Set[CandidateFeature]]:
-        # feature concat, but does not work
-        #if not order_matters and not repetition_allowed:
-        #    return [[x, y] for x, y in itertools.product(*[a, b]) if x != y]
-        result_list: Set[Set[CandidateFeature]] = set()
-
-        for a_i in range(len(a)):
-            for b_i in range(len(b)):
-                #we have to check whether they intersect or not
-                #so we climb down the transformation pipeline and gather all concatenated features
-                set_a = self.get_features_from_identity_candidate(a[a_i])
-                set_b = self.get_features_from_identity_candidate(b[b_i])
-                if len(set_a.intersection(set_b)) == 0:
-                    result_list.add(frozenset([a[a_i], b[b_i]]))
-
-        return result_list
-
-
-    # filter candidates that use one raw feature twice
-    def filter_non_unique_combinations(self, candidates: List[CandidateFeature]):
-        filtered_list: List[CandidateFeature] = []
-        for candidate in candidates:
-            all_raw_features = candidate.get_raw_attributes()
-            if len(all_raw_features) == len(set(all_raw_features)):
-                filtered_list.append(candidate)
-        return filtered_list
-
-
-
 
     def run(self):
         self.global_starting_time = time.time()
@@ -204,16 +55,20 @@ class Run_RawFeatures(EvaluationFramework):
 
         myfolds = copy.deepcopy(list(self.preprocessed_folds))
 
-        '''
+
         baseline_features: List[CandidateFeature] = []
         for r in self.raw_features:
-            if r.is_numeric() and not r.properties['categorical']:
+            if r.is_numeric() and (not 'categorical' in r.properties or not r.properties['categorical']):
                 if not r.properties['missing_values']:
                     baseline_features.append(r)
                 else:
                     baseline_features.append(CandidateFeature(ImputationTransformation(), [r]))
             else:
                 baseline_features.extend([CandidateFeature(t, [r]) for t in OneHotGenerator(self.train_X_all, [r]).produce()])
+
+        #scale everything
+        for bf_i in range(len(baseline_features)):
+            baseline_features[bf_i] = CandidateFeature(StandardScalingTransformation(), [baseline_features[bf_i]])
 
 
         print(len(baseline_features))
@@ -222,7 +77,7 @@ class Run_RawFeatures(EvaluationFramework):
         '''
         categorical_ids = []
         for r in self.raw_features:
-            if r.properties['categorical']:
+            if 'categorical' in r.properties and r.properties['categorical']:
                 categorical_ids.append(r.column_id)
 
         combo = CandidateFeature(IdentityTransformation(0), self.raw_features)
@@ -231,12 +86,13 @@ class Run_RawFeatures(EvaluationFramework):
                                          ('onehot', OneHotEncoder(categorical_features=categorical_ids)), ('scaling', StandardScaler(with_mean=False))])
         else:
             combo.pipeline = Pipeline(steps=[('imputation', SimpleImputer(strategy='mean')), ('scaling', StandardScaler(with_mean=False))])
+        '''
 
         results = self.evaluate_candidates([combo], myfolds)
 
-        print(results[0].runtime_properties)
+        #print(results[0].runtime_properties)
 
-        candidate2openml(results[0], self.classifier, self.reader.task, 'RawFeatureBaseline')
+        #candidate2openml(results[0], self.classifier, self.reader.task, 'RawFeatureBaseline')
 
         return results[0]
 
@@ -290,6 +146,7 @@ if __name__ == '__main__':
     # task_id = openMLname2task['eeg_eye_state']
     #task_id = openMLname2task['MagicTelescope']
     #task_id = openMLname2task['mushroom']
+    #task_id = openMLname2task['kc2']
 
     dataset = None
 
