@@ -1,3 +1,6 @@
 import numpy as np
 def identity(X):
-    return X.reshape(-1, 1)
+    try:
+        return X.reshape(-1, 1).astype('float64')
+    except:
+        return X.reshape(-1, 1)

@@ -700,6 +700,9 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         extend_all(all_representations, cost_2_unary_transformed.values())
         extend_all(all_representations, cost_2_binary_transformed.values())
         extend_all(all_representations, cost_2_combination.values())
+
+        self.all_representations = all_representations
+
         '''
 
         #find top k based on cv score
@@ -758,14 +761,39 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
         for rep in list(max_feature_per_complexity.values()):
             all_aiccs.append(np.mean(rep.runtime_properties['additional_metrics']['AICc_complexity']))
 
+        def calculate_AIC_for_classification_paper(rss, n, k):
+            AIC = 2 * k + float(n) * np.log(rss / float(n))
+            return AIC
+
+        def calculate_AICc_for_classification_paper(rss, n, k):
+            AIC = calculate_AIC_for_classification_paper(rss, n, k)
+            AICc = AIC + ((2 * k * (k + 1)) / (n - k - 1))
+            return AICc
+
+
+        def calc_global_aicc(rep):
+            return calculate_AICc_for_classification_paper(np.sum(rep.runtime_properties['additional_metrics']['rss']), np.sum(rep.runtime_properties['additional_metrics']['n']), rep.get_complexity())
+
+        def is_better(old_aics, new_aics):
+            print(np.sum(np.array(new_aics) < np.array(old_aics)))
+            return np.sum(np.array(new_aics) < np.array(old_aics)) > len(new_aics) / 2.0
+
         for rep in list(max_feature_per_complexity.values()):
             curr = np.mean(rep.runtime_properties['additional_metrics']['AICc_complexity'])
-            print(str(rep) + ': ' + str(curr) + ' AICc min: ' + str(np.min(rep.runtime_properties['additional_metrics']['AICc_complexity'])) + ' AICc std: ' + str(np.std(rep.runtime_properties['additional_metrics']['AICc_complexity'])) + ' P: ' + str(np.exp((min(all_aiccs) - curr)/2)) + ' CV AUC: ' + str(rep.runtime_properties['score']))
+            #print(str(rep) + ': ' + str(curr) + ' AICc min: ' + str(np.min(rep.runtime_properties['additional_metrics']['AICc_complexity'])) + ' AICc std: ' + str(np.std(rep.runtime_properties['additional_metrics']['AICc_complexity'])) + ' P: ' + str(np.exp((min(all_aiccs) - curr)/2)) + ' CV AUC: ' + str(rep.runtime_properties['score']))
+            print(str(rep) + ':' + str(rep.runtime_properties['additional_metrics']['AICc_complexity']))
+            print(str(rep) + ':' + str(rep.runtime_properties['additional_metrics']['rss']))
+            print(str(rep) + ':' + str(rep.runtime_properties['additional_metrics']['n']))
 
-            if np.min(rep.runtime_properties['additional_metrics']['AICc_complexity']) < min_aicc:
-                min_aicc = np.min(rep.runtime_properties['additional_metrics']['AICc_complexity'])
+            print(str(rep) + 'global_aicc: ' + str(calc_global_aicc(rep)))
+
+            #if type(min_aicc_feature) == type(None) or is_better(min_aicc_feature.runtime_properties['additional_metrics']['AICc_complexity'], rep.runtime_properties['additional_metrics']['AICc_complexity']):
+            if type(min_aicc_feature) == type(None) or calc_global_aicc(rep) < calc_global_aicc(min_aicc_feature):
+                #min_aicc = np.min(rep.runtime_properties['additional_metrics']['AICc_complexity'])
                 min_aicc_feature = rep
         max_feature = min_aicc_feature
+
+        print(max_feature)
 
         return max_feature
 
@@ -826,6 +854,7 @@ if __name__ == '__main__':
     #task_id = openMLname2task['glass']
     #task_id = openMLname2task['kc2']
     #task_id = openMLname2task['australia']
+    #task_id = openMLname2task['ada_prior']
     #dataset = None
 
 
@@ -857,8 +886,8 @@ if __name__ == '__main__':
     #selector = ComplexityDrivenFeatureConstruction(None, c_max=4, folds=10, max_seconds=None, save_logs=True, transformation_producer=get_transformation_for_division, reader=OnlineOpenMLReader(task_id, test_folds=1), score=make_scorer(roc_auc_score), epsilon=-np.inf, remove_parents=False, upload2openml=True)
 
     #for rotation in range(10):
-    for rotation in range(1):
-        selector = ComplexityDrivenFeatureConstruction(None, c_max=3, folds=10, max_seconds=None, save_logs=True,
+    for rotation in range(10):
+        selector = ComplexityDrivenFeatureConstruction(None, c_max=5, folds=10, max_seconds=None, save_logs=True,
                                                        transformation_producer=get_transformation_for_division,
                                                        reader=OnlineOpenMLReader(task_id, test_folds=1, rotate_test=rotation),
                                                        score=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True),

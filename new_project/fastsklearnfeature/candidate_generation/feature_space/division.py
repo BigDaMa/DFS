@@ -31,7 +31,7 @@ def get_transformation_for_division(train_X_all, raw_features):
 
     unary_transformations.append(OneDivisionTransformation())
     unary_transformations.append(MinusTransformation())
-    #unary_transformations.append(LogTransformation())
+    unary_transformations.append(LogTransformation())
 
     unary_transformations.append(ImputationTransformation('mean'))
     #unary_transformations.append(ImputationTransformation('median'))

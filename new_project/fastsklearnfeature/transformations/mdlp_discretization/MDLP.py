@@ -265,6 +265,7 @@ class MDLP_Discretizer(TransformerMixin):
         :param out_bins_path: path to save bins description
         :return:
         '''
+        data = np.array(data, dtype=np.float)
         for attr in self._col_idx:
             if len(self._cuts[attr]) == 0:
                 # data[:, attr] = 'All'

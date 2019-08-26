@@ -32,4 +32,5 @@ openMLname2task['glass'] = 40
 openMLname2task['titanic'] = 146230
 openMLname2task['kc2'] = 3913
 openMLname2task['australia'] = 146818
+openMLname2task['ada_prior'] = 3890
 
