@@ -193,7 +193,7 @@ def grid_search(candidate, train_transformed, test_transformed, training_all, on
             hyperparam_to_additional_score_list[parameter_set]['AICc_feature_number'].append(calculate_AICc_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
             hyperparam_to_additional_score_list[parameter_set]['BIC_feature_number'].append(calculate_BIC_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
 
-            k = candidate.get_complexity()
+            k = candidate.get_complexity() + test_transformed[fold].shape[1] + 1
             hyperparam_to_additional_score_list[parameter_set]['AIC_complexity'].append(calculate_AIC_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
             hyperparam_to_additional_score_list[parameter_set]['AICc_complexity'].append(calculate_AICc_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
             hyperparam_to_additional_score_list[parameter_set]['BIC_complexity'].append(calculate_BIC_for_classification_paper(clf, test_transformed[fold], target_test_folds[fold], k))
