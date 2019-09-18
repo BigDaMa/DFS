@@ -17,13 +17,20 @@ class ScikitReader:
 
 	def read(self) -> List[RawFeature]:
 
-		self.dataframe = pd.DataFrame(data=self.X_train)
+		self.dataframe = pd.DataFrame(data=self.X_train, columns=self.feature_names)
+
 
 		if type(self.feature_is_categorical) != type(None):
 			for feature_id in range(len(self.feature_is_categorical)):
 				if not self.feature_is_categorical[feature_id]:
 					self.dataframe[self.dataframe.columns[feature_id]] = pd.to_numeric(self.dataframe[self.dataframe.columns[feature_id]])
 
+		if type(self.feature_is_categorical) == type(None):
+			for feature_id in range(len(self.dataframe.columns)):
+				try:
+					self.dataframe[self.dataframe.columns[feature_id]] = pd.to_numeric(self.dataframe[self.dataframe.columns[feature_id]])
+				except:
+					pass
 
 		self.splitted_values = {}
 		self.splitted_target = {}
@@ -41,9 +48,13 @@ class ScikitReader:
 
 			rf = RawFeature(feature_name, attribute_i, {})
 			rf.derive_properties(self.dataframe[self.dataframe.columns[attribute_i]].values)
+			if not rf.is_numeric():
+				rf.properties['categorical'] = True
 			if type(self.feature_is_categorical) != type(None):
 				rf.properties['categorical'] = self.feature_is_categorical[attribute_i]
 			self.raw_features.append(rf)
+
+		print(self.raw_features)
 
 		return self.raw_features
 
