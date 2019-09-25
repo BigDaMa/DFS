@@ -171,6 +171,7 @@ def grid_search(candidate, train_transformed, test_transformed, training_all, on
 
         hyperparam_to_additional_score_list[parameter_set]['rss'] = []
         hyperparam_to_additional_score_list[parameter_set]['n'] = []
+        hyperparam_to_additional_score_list[parameter_set]['coefficients'] = []
 
 
         for fold in range(len(train_transformed)):
@@ -182,6 +183,10 @@ def grid_search(candidate, train_transformed, test_transformed, training_all, on
             hyperparam_to_score_list[parameter_set].append(score(clf, test_transformed[fold], target_test_folds[fold]))
 
             ##add new scores
+            hyperparam_to_additional_score_list[parameter_set]['coefficients'].append(clf.coef_)
+
+
+
             hyperparam_to_additional_score_list[parameter_set]['accuracy'].append(make_scorer(accuracy_score)(clf, test_transformed[fold], target_test_folds[fold]))
             hyperparam_to_additional_score_list[parameter_set]['f1'].append(make_scorer(f1_score)(clf, test_transformed[fold], target_test_folds[fold]))
 
@@ -425,12 +430,15 @@ def evaluate_no_catch(candidate_id: int):
 
     return result
 
-def evaluate_candidates_parallel(candidates: List[CandidateFeature], n_jobs: int = int(Config.get_default("parallelism", mp.cpu_count()))) -> List[CandidateFeature]:
+def evaluate_candidates_parallel(candidates: List[CandidateFeature], n_jobs: int = int(Config.get_default("parallelism", mp.cpu_count())), catch_exception=True) -> List[CandidateFeature]:
 
     my_globale_module.candidate_list_global = candidates
 
     with mp.Pool(processes=n_jobs) as pool:
-        my_function = evaluate_catch
+        if catch_exception:
+            my_function = evaluate_catch
+        else:
+            my_function = evaluate_no_catch
         candidates_ids = list(range(len(candidates)))
 
         if Config.get_default("show_progess", 'True') == 'True':
