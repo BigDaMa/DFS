@@ -14,6 +14,7 @@ from pymoo.factory import get_crossover, get_mutation, get_sampling
 from pymoo.optimize import minimize
 from pymoo.algorithms.nsga2 import NSGA2
 import matplotlib.pyplot as plt
+from fastsklearnfeature.interactiveAutoML.Runner import Runner
 
 which_experiment = 'experiment3'#'experiment1'
 
@@ -32,7 +33,7 @@ for f in numeric_representations:
 numeric_representations = filtered
 '''
 
-y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_experiment) + "/y_test.p", "rb"))
+y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_experiment) + "/y_test.p", "rb")).values
 
 #todo: measure TP for each group and add objective
 #todo: try misclassification constraint
@@ -41,12 +42,33 @@ y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_exp
 bit2results= {}
 
 
+my_runner = Runner(c=1.0)
+
 
 # define an objective function
 def objective(features):
-	score, test, pred_test, std_score, proba_pred_test = run_pipeline(features, c=1.0, runs=1)
+	score, test, pred_test, std_score, proba_pred_test = my_runner.run_pipeline(features, runs=1)
+
 	#print(features)
 
+	assert len(y_test) == len(pred_test)
+	which_observation_should_be_predicted_correctly = 333#131
+	print(proba_pred_test[which_observation_should_be_predicted_correctly])
+
+	true_class_index = -1
+	for c_i in range(len(my_runner.pipeline.classes_)):
+		if my_runner.pipeline.classes_[c_i] == y_test[which_observation_should_be_predicted_correctly]:
+			true_class_index = c_i
+			break
+
+	print(proba_pred_test[which_observation_should_be_predicted_correctly][true_class_index])
+
+	uncertainty_that_observation_is_classified_correctly = 1.0 - proba_pred_test[which_observation_should_be_predicted_correctly][true_class_index]
+
+	print(str(pred_test[which_observation_should_be_predicted_correctly]) + ' ?= true: ' + str(y_test[which_observation_should_be_predicted_correctly]))
+
+	#constraint_satisfied = pred_test[which_observation_should_be_predicted_correctly] == y_test[which_observation_should_be_predicted_correctly]
+	constraint_satisfied = -proba_pred_test[which_observation_should_be_predicted_correctly][true_class_index] + 0.5
 
 	complexity = 0
 	for f in range(len(numeric_representations)):
@@ -55,10 +77,13 @@ def objective(features):
 			complexity += numeric_representations[f].get_complexity()
 
 	print('cv: ' + str(score) + ' test: ' + str(test) + ' complexity: ' + str(complexity))
+	print("constraint: " + str(constraint_satisfied))
 
-	bit2results[tuple(features)] = [1.0 - score, complexity, std_score, 1.0 - test]
+	bit2results[tuple(features)] = [1.0 - score, complexity, proba_pred_test[which_observation_should_be_predicted_correctly][true_class_index], 1.0 - test]
 
-	return 1.0 - score, complexity, std_score
+
+
+	return 1.0 - score, complexity, std_score, constraint_satisfied
 
 class MyProblem(Problem):
 
@@ -72,14 +97,21 @@ class MyProblem(Problem):
 		f2_all = []
 		f3_all = []
 
-		for i in range(len(x)):
-			f1, f2, f3 = objective(x[i])
-			f1_all.append(f1)
-			f2_all.append(f2)
-			f3_all.append(f3)
+		g1_all = []
 
-		out["F"] = anp.column_stack([f1_all, f2_all])
-		#out["G"] = anp.column_stack([g1])
+		for i in range(len(x)):
+			loss, complexity, uncertainty_obs, c1 = objective(x[i])
+			f1_all.append(loss)
+			f2_all.append(complexity)
+			f3_all.append(uncertainty_obs)
+
+			g1_all.append(c1)
+
+
+
+		#out["F"] = anp.column_stack([f1_all, f2_all, g1_all])
+		out["F"] = anp.column_stack([g1_all, f2_all])
+		#out["G"] = anp.column_stack([g1_all])
 
 
 
@@ -102,7 +134,7 @@ algorithm = NSGA2(pop_size=5,
 
 res = minimize(problem,
                algorithm,
-               ('n_gen', 100),
+               ('n_gen', 20),
                disp=False)
 
 print("Best solution found: %s" % res.X.astype(np.int))

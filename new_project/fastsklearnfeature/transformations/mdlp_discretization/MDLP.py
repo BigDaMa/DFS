@@ -51,7 +51,11 @@ class MDLP_Discretizer(TransformerMixin):
 
     def fit(self, X, y):
         self._data_raw = X  # copy of original input data
-        self._class_labels = y.reshape(-1, 1)  # make sure class labels is a column vector
+
+        if isinstance(y, pd.DataFrame):
+            self._class_labels = y.values.reshape(-1, 1)
+        else:
+            self._class_labels = y#y.reshape(-1, 1)  # make sure class labels is a column vector
         self._classes = np.unique(self._class_labels)
 
 

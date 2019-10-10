@@ -18,13 +18,22 @@ from fastsklearnfeature.reader.ScikitReader import ScikitReader
 from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
 import pickle
 
+'''
 data = pd.read_csv('/home/felix/phd/interactiveAutoML/dataset_31_credit-g.csv')
-
 y = data['class']
+'''
 
-data_no_class = data[data.columns.difference(['class'])]
+data = pd.read_csv('/home/felix/phd/interactiveAutoML/madelon.csv')
+class_column_name = 'Class'
+name = 'madelon'
 
-X = data[data.columns.difference(['class'])].values
+
+
+
+y = data[class_column_name]
+data_no_class = data[data.columns.difference([class_column_name])]
+
+X = data[data.columns.difference([class_column_name])].values
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.50, random_state=42, stratify=y)
 
@@ -35,8 +44,8 @@ parameter_grid = {'penalty': ['l2'], 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000], 
 auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
 fe = ComplexityDrivenFeatureConstruction(None, reader=ScikitReader(X_train, y_train,
-                                                                                feature_names=data[data.columns.difference(['class'])].columns),
-                                                      score=auc, c_max=3, folds=10,
+                                                                                feature_names=data[data.columns.difference([class_column_name])].columns),
+                                                      score=auc, c_max=2, folds=10,
                                                       classifier=LogisticRegression,
                                                       grid_search_parameters=parameter_grid, n_jobs=4,
                                                       epsilon=0.0)
@@ -63,13 +72,13 @@ print(len(numeric_representations))
 
 #then, we can code a program that delivers everything we need
 
-pickle.dump(numeric_representations, open("/home/felix/phd/feature_constraints/experiment3/features.p", "wb"))
+pickle.dump(numeric_representations, open("/home/felix/phd/feature_constraints/"+ name + "/features.p", "wb"))
 
 #X_train, X_test, y_train, y_test
 
-pickle.dump(data[data.columns.difference(['class'])].columns, open("/home/felix/phd/feature_constraints/experiment3/names.p", "wb"))
+pickle.dump(data[data.columns.difference([class_column_name])].columns, open("/home/felix/phd/feature_constraints/"+ name + "/names.p", "wb"))
 
-pickle.dump(X_train, open("/home/felix/phd/feature_constraints/experiment3/X_train.p", "wb"))
-pickle.dump(X_test, open("/home/felix/phd/feature_constraints/experiment3/X_test.p", "wb"))
-pickle.dump(y_train, open("/home/felix/phd/feature_constraints/experiment3/y_train.p", "wb"))
-pickle.dump(y_test, open("/home/felix/phd/feature_constraints/experiment3/y_test.p", "wb"))
+pickle.dump(X_train, open("/home/felix/phd/feature_constraints/"+ name + "/X_train.p", "wb"))
+pickle.dump(X_test, open("/home/felix/phd/feature_constraints/"+ name + "/X_test.p", "wb"))
+pickle.dump(y_train, open("/home/felix/phd/feature_constraints/"+ name + "/y_train.p", "wb"))
+pickle.dump(y_test, open("/home/felix/phd/feature_constraints/"+ name + "/y_test.p", "wb"))

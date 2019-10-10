@@ -58,6 +58,7 @@ def run_pipeline(which_features_to_use, c=None, runs=1):
 	cv_scores = []
 	test_scores = []
 	pred_test = None
+	proba_pred_test = None
 
 	if runs > 1:
 		for r in range(runs):
@@ -66,6 +67,7 @@ def run_pipeline(which_features_to_use, c=None, runs=1):
 			pipeline.fit(X_train, y_train)
 
 			pred_test = pipeline.predict(X_test)
+			proba_pred_test = pipeline.predict_proba(X_test)
 
 			test_auc = auc(pipeline, X_test, y_test)
 
@@ -80,6 +82,7 @@ def run_pipeline(which_features_to_use, c=None, runs=1):
 		pipeline.fit(X_train, y_train)
 
 		pred_test = pipeline.predict(X_test)
+		proba_pred_test = pipeline.predict_proba(X_test)
 
 		test_auc = auc(pipeline, X_test, y_test)
 
@@ -88,7 +91,9 @@ def run_pipeline(which_features_to_use, c=None, runs=1):
 		loss = pipeline.cv_results_['mean_test_score'][pipeline.best_index_]
 		test_scores.append(test_auc)
 
-	return loss, np.average(test_scores), pred_test, std_loss
+		print(pipeline.classes_)
+
+	return loss, np.average(test_scores), pred_test, std_loss, proba_pred_test
 
 
 def main():

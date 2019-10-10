@@ -32,7 +32,7 @@ for f in numeric_representations:
 numeric_representations = filtered
 '''
 
-y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_experiment) + "/y_test.p", "rb"))
+y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_experiment) + "/y_test.p", "rb")).values
 
 #todo: measure TP for each group and add objective
 #todo: try misclassification constraint
@@ -47,6 +47,12 @@ def objective(features):
 	score, test, pred_test, std_score, proba_pred_test = run_pipeline(features, c=1.0, runs=1)
 	#print(features)
 
+	assert len(y_test) == len(pred_test)
+	which_observation_should_be_predicted_correctly = 130
+	print(str(pred_test[which_observation_should_be_predicted_correctly]) + ' ?= ' + str(y_test[which_observation_should_be_predicted_correctly]))
+
+	constraint_satisfied = pred_test[which_observation_should_be_predicted_correctly] == y_test[which_observation_should_be_predicted_correctly]
+
 
 	complexity = 0
 	for f in range(len(numeric_representations)):
@@ -58,28 +64,35 @@ def objective(features):
 
 	bit2results[tuple(features)] = [1.0 - score, complexity, std_score, 1.0 - test]
 
-	return 1.0 - score, complexity, std_score
+	return 1.0 - score, complexity, std_score, constraint_satisfied
 
 class MyProblem(Problem):
 
 	def __init__(self):
 		super().__init__(n_var=len(numeric_representations),
                          n_obj=2,
-                         n_constr=0, xl=0, xu=1, type_var=anp.bool)
+                         n_constr=1, xl=0, xu=1, type_var=anp.bool)
 
 	def _evaluate(self, x, out, *args, **kwargs):
 		f1_all = []
 		f2_all = []
 		f3_all = []
 
+		g1_all = []
+
 		for i in range(len(x)):
-			f1, f2, f3 = objective(x[i])
+			f1, f2, f3, c1 = objective(x[i])
 			f1_all.append(f1)
 			f2_all.append(f2)
 			f3_all.append(f3)
 
+			g1 = -c1+1
+			g1_all.append(g1)
+
+
+
 		out["F"] = anp.column_stack([f1_all, f2_all])
-		#out["G"] = anp.column_stack([g1])
+		out["G"] = anp.column_stack([g1_all])
 
 
 
@@ -102,7 +115,7 @@ algorithm = NSGA2(pop_size=5,
 
 res = minimize(problem,
                algorithm,
-               ('n_gen', 100),
+               ('n_gen', 2),
                disp=False)
 
 print("Best solution found: %s" % res.X.astype(np.int))

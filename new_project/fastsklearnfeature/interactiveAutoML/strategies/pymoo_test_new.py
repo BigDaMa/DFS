@@ -14,6 +14,8 @@ from pymoo.factory import get_crossover, get_mutation, get_sampling
 from pymoo.optimize import minimize
 from pymoo.algorithms.nsga2 import NSGA2
 import matplotlib.pyplot as plt
+from fastsklearnfeature.interactiveAutoML.Runner import Runner
+import copy
 
 which_experiment = 'experiment3'#'experiment1'
 
@@ -32,7 +34,15 @@ for f in numeric_representations:
 numeric_representations = filtered
 '''
 
-y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_experiment) + "/y_test.p", "rb"))
+y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_experiment) + "/y_test.p", "rb")).values
+#print(y_test)
+
+my_names: List[CandidateFeature] = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_experiment) + "/names.p", "rb"))
+print(my_names)
+
+X_train = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_experiment) + "/X_train.p", "rb"))
+
+#print(X_train[:,7])
 
 #todo: measure TP for each group and add objective
 #todo: try misclassification constraint
@@ -40,31 +50,59 @@ y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_exp
 
 bit2results= {}
 
+foreigner = np.array(X_train[:,7])
+gender = np.array(['female' in personal_status for personal_status in X_train[:,15]])
+
+my_runner = Runner(c=1.0, sensitive=gender, labels=['bad', 'good'])
+#my_runner = Runner(c=1.0, sensitive=foreigner, labels=['bad', 'good'])
+
+
+history = []
 
 
 # define an objective function
 def objective(features):
-	score, test, pred_test, std_score, proba_pred_test = run_pipeline(features, c=1.0, runs=1)
+	#_, test, pred_test, std_score, proba_pred_test = my_runner.run_pipeline(features, runs=1)
+	results = my_runner.run_pipeline(features, runs=1)
+
 	#print(features)
 
+	'''
+	assert len(y_test) == len(pred_test)
+	which_observation_should_be_predicted_correctly = 333#131
+	print(proba_pred_test[which_observation_should_be_predicted_correctly])
 
-	complexity = 0
-	for f in range(len(numeric_representations)):
-		if features[f]:
-			#complexity += np.square(numeric_representations[f].get_complexity())
-			complexity += numeric_representations[f].get_complexity()
+	true_class_index = -1
+	for c_i in range(len(my_runner.pipeline.classes_)):
+		if my_runner.pipeline.classes_[c_i] == y_test[which_observation_should_be_predicted_correctly]:
+			true_class_index = c_i
+			break
 
-	print('cv: ' + str(score) + ' test: ' + str(test) + ' complexity: ' + str(complexity))
+	print(proba_pred_test[which_observation_should_be_predicted_correctly][true_class_index])
 
-	bit2results[tuple(features)] = [1.0 - score, complexity, std_score, 1.0 - test]
+	uncertainty_that_observation_is_classified_correctly = 1.0 - proba_pred_test[which_observation_should_be_predicted_correctly][true_class_index]
 
-	return 1.0 - score, complexity, std_score
+	print(str(pred_test[which_observation_should_be_predicted_correctly]) + ' ?= true: ' + str(y_test[which_observation_should_be_predicted_correctly]))
+
+	#constraint_satisfied = pred_test[which_observation_should_be_predicted_correctly] == y_test[which_observation_should_be_predicted_correctly]
+	constraint_satisfied = -proba_pred_test[which_observation_should_be_predicted_correctly][true_class_index] + 0.5
+	print("constraint: " + str(constraint_satisfied))
+	'''
+
+	bit2results[tuple(features)] = [1.0 - results['auc'], results['complexity'], 1.0 - results['test_auc'], results['fair']]
+
+	print(bit2results[tuple(features)])
+
+	history.append(copy.deepcopy(results))
+	pickle.dump(history, open("/tmp/evoltionary_feature_selection.p", "wb"))
+
+	return results
 
 class MyProblem(Problem):
 
 	def __init__(self):
 		super().__init__(n_var=len(numeric_representations),
-                         n_obj=2,
+                         n_obj=3,
                          n_constr=0, xl=0, xu=1, type_var=anp.bool)
 
 	def _evaluate(self, x, out, *args, **kwargs):
@@ -72,14 +110,21 @@ class MyProblem(Problem):
 		f2_all = []
 		f3_all = []
 
-		for i in range(len(x)):
-			f1, f2, f3 = objective(x[i])
-			f1_all.append(f1)
-			f2_all.append(f2)
-			f3_all.append(f3)
+		g1_all = []
 
-		out["F"] = anp.column_stack([f1_all, f2_all])
-		#out["G"] = anp.column_stack([g1])
+		for i in range(len(x)):
+			results = objective(x[i])
+			f1_all.append(1.0 - results['auc'])
+			f2_all.append(results['complexity'])
+			f3_all.append(results['fair'])
+
+			#g1_all.append(c1)
+
+		#out["F"] = anp.column_stack([f1_all, f2_all, f3_all])
+		out["F"] = anp.column_stack([f1_all, f2_all, f3_all])
+		#out["F"] = anp.column_stack([f1_all, f2_all])
+		#out["F"] = anp.column_stack([g1_all, f2_all])
+		#out["G"] = anp.column_stack([g1_all])
 
 
 
@@ -132,3 +177,4 @@ plt.show()
 print('all all: ')
 for _,v in bit2results.items():
 	print(str(v) +',')
+

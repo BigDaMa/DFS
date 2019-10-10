@@ -13,8 +13,12 @@ from fastsklearnfeature.candidates.RawFeature import RawFeature
 from fastsklearnfeature.transformations.OneHotTransformation import OneHotTransformation
 from typing import List, Dict, Set
 from ortools.sat.python import cp_model
+from fastsklearnfeature.interactiveAutoML.Runner import Runner
 
 numeric_representations: List[CandidateFeature] = pickle.load(open("/home/felix/phd/feature_constraints/experiment1/features.p", "rb"))
+
+
+my_runner = Runner(c=1.0, labels=['bad', 'good'])
 
 filtered = numeric_representations
 '''
@@ -32,9 +36,9 @@ y_test = pickle.load(open("/home/felix/phd/feature_constraints/experiment1/y_tes
 
 # define an objective function
 def objective(features) -> float:
-    score, test, pred_test = run_pipeline(features, c=1.0)
-    print(score)
-    return score
+    results = my_runner.run_pipeline(features)
+    print(results['auc'])
+    return results['auc']
 
 
 # Create the mip solver with the CBC backend.
@@ -53,7 +57,8 @@ for i in range(len(numeric_representations)):
 #solver.Add(np.sum([x, 7 * y]) <= 17.5)
 
 # x <= 3.5.
-model.Add(bool(objective(feature_bools) > 0.79))
+model.Add(lambda x: bool(objective(x) > 0.79))
+
 
 
 

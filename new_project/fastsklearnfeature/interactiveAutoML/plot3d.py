@@ -1057,6 +1057,15 @@ plt.ylabel('test loss')
 plt.show()
 
 fig = plt.figure()
+cs = plt.scatter(matrix[:,1].A1, matrix[:,0].A1, c=matrix[:,3].A1, cmap='cool')
+cbar = fig.colorbar(cs)
+plt.xlabel('complexity')
+plt.ylabel('cv loss')
+plt.show()
+
+
+
+fig = plt.figure()
 ax = plt.axes(projection='3d')
 
 
