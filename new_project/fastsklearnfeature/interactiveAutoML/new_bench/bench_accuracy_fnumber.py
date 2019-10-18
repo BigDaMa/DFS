@@ -47,6 +47,9 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import
 from fastsklearnfeature.interactiveAutoML.feature_selection.RedundancyRemoval import RedundancyRemoval
 from fastsklearnfeature.interactiveAutoML.feature_selection.MajoritySelection import MajoritySelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.ALSelection import ALSelection
+from fastsklearnfeature.interactiveAutoML.feature_selection.HyperOptSelection import HyperOptSelection
+from fastsklearnfeature.interactiveAutoML.feature_selection.TraceRFECV import TraceRFECV
+from fastsklearnfeature.interactiveAutoML.feature_selection.SequentialSelection import SequentialSelection
 
 from fastsklearnfeature.feature_selection.ComplexityDrivenFeatureConstruction import ComplexityDrivenFeatureConstruction
 from fastsklearnfeature.reader.ScikitReader import ScikitReader
@@ -113,6 +116,7 @@ parameter_grid = {'penalty': ['l2'], 'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000], 
 
 auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
+'''
 fe = ComplexityDrivenFeatureConstruction(None, reader=ScikitReader(X_train, y_train, feature_names=['V' + str(i) for i in range(X_train.shape[1])]),
                                                       score=auc, c_max=1, folds=2,
                                                       classifier=LogisticRegression,
@@ -156,70 +160,60 @@ all_standardized = CandidateFeature(MinMaxScalingTransformation(), [all_features
 
 #foreigner = np.array(X_train[:,7])
 #gender = np.array(['female' in personal_status for personal_status in X_train[:,15]])
+'''
+
+scoring = {'auc': make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)}
 
 
-for count_i in range(10):
-	my_pipeline = Pipeline([('features', all_standardized.pipeline),
-							#('selection', L1Selection()),
-							#('selection', SelectKBest(score_func=mutual_info_classif,k=10)),
-							#('selection', SelectKBest(score_func=f_classif, k=10)),
-							#('selection', SelectKBest(score_func=chi2,k=10)),
-							#('selection', SelectKBest(score_func=f_oneway,k=10)),
-							#('selection', RFE(LogisticRegression(penalty='l1', C=0.1), n_features_to_select=20)),
-							#('selection', SelectFromModel(LogisticRegression(penalty='l1', C=0.0375))),
-							#('selection', SelectFromModel(DecisionTreeClassifier(),max_features=10)),
-							#('selection', SFS(LogisticRegression(penalty='l1', C=1), k_features=10, forward=True, floating=False, scoring=auc, cv=10)),
-							#('selection', RedundancyRemoval()), #takes really long
-							#('selection', MajoritySelection([SelectKBest(score_func=f_classif, k=20), SelectKBest(score_func=mutual_info_classif, k=20), SelectFromModel(DecisionTreeClassifier())])),
-							#('selection', MaskSelection(mask)),
-							#('new_construction', ConstructionTransformer(c_max=3, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=10)), #helps to uncover non-linear relationships
-							('selection', ALSelection(batch_size=20, sample_size=10000)),
-							#('new_construction', ConstructionTransformer(c_max=3, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=10)),
-							#('selection2', ALSelection()),
-							# helps to uncover non-linear relationships
-
-							#('selection', SelectFromModel(DecisionTreeClassifier())),
-							#('pca', PCA(n_components=10)), #no improvement
-							('model', LogisticRegression())
-							#('model', KNeighborsClassifier())
-							])
-
-	'''
-	parameter_grid = {'model__penalty': ['l2'], 'model__C': [0.001, 0.01, 0.1, 1, 10, 100, 1000], 'model__solver': ['lbfgs'],
-							  'model__class_weight': ['balanced'], 'model__max_iter': [10000], 'model__multi_class': ['auto']}
-	'''
-	parameter_grid = {'model__penalty': ['l2'], 'model__C': [1], 'model__solver': ['lbfgs'],
-							  'model__class_weight': ['balanced'], 'model__max_iter': [10000], 'model__multi_class': ['auto']}
-
-	#parameter_grid = {'model__n_neighbors': [3]}
-
-	scoring = {'auc': make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)}
-
-	'''
-	kfolds = StratifiedKFold(10, shuffle=True, random_state=42)
-	gridcv = GridSearchCV(my_pipeline, parameter_grid, cv=kfolds.split(X_train, y_train), scoring=scoring, n_jobs=4, refit='auc')
-	gridcv.fit(X_train, pd.DataFrame(y_train))
-	
-	feature_precision = precision_score(mask, gridcv.best_estimator_.named_steps['selection']._get_support_mask())
-	feature_recall = recall_score(mask, gridcv.best_estimator_.named_steps['selection']._get_support_mask())
-	
-	print("Feature precision: " + str(feature_precision) + ' Feature recall: ' + str(feature_recall))
-	
-	
-	test_score = gridcv.score(X_test, pd.DataFrame(y_test))
-	
-	print('cv score: ' + str(gridcv.best_score_))
-	'''
-
-	parameter_grid = {'model__penalty': 'l2', 'model__C': 1, 'model__solver': 'lbfgs',
-							  'model__class_weight': 'balanced', 'model__max_iter': 10000, 'model__multi_class': 'auto'}
-
-	my_pipeline.set_params(**parameter_grid)
-	my_pipeline.fit(X_train, pd.DataFrame(y_train))
+#for count_i in range(10):
+parameter_grid = {'model__penalty': ['l2'], 'model__C': [1], 'model__solver': ['lbfgs'],
+				  'model__class_weight': ['balanced'], 'model__max_iter': [10000], 'model__multi_class': ['auto']}
 
 
-	test_score = auc(my_pipeline, X_test, pd.DataFrame(y_test))
-	print('test score: ' + str(test_score))
-	with open("/tmp/test.txt", "a") as myfile:
-		myfile.write(str(test_score) + '\n')
+kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+
+
+
+my_pipeline = Pipeline([#('features', all_standardized.pipeline),
+						#('selection', L1Selection()),
+						#('selection', SelectKBest(score_func=mutual_info_classif,k=10)),
+						#('selection', SelectKBest(score_func=f_classif, k=10)),
+						#('selection', SelectKBest(score_func=chi2,k=10)),
+						#('selection', SelectKBest(score_func=f_oneway,k=10)),
+						#('selection', RFE(LogisticRegression(penalty='l1', C=0.1), n_features_to_select=20)),
+						#('selection', SelectFromModel(LogisticRegression(penalty='l1', C=0.0375))),
+						#('selection', SelectFromModel(DecisionTreeClassifier(),max_features=10)),
+						#('selection', SFS(LogisticRegression(penalty='l1', C=1), k_features=10, forward=True, floating=False, scoring=auc, cv=10)),
+						#('selection', RedundancyRemoval()), #takes really long
+						#('selection', MajoritySelection([SelectKBest(score_func=f_classif, k=20), SelectKBest(score_func=mutual_info_classif, k=20), SelectFromModel(DecisionTreeClassifier())])),
+						#('selection', MaskSelection(mask)),
+						#('new_construction', ConstructionTransformer(c_max=3, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=10)), #helps to uncover non-linear relationships
+						#('selection', HyperOptSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=10, min_accuracy=0.63, model=LogisticRegression(), parameters=parameter_grid, cv=10, scoring=auc)),
+						#('selection', SequentialSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=5, min_accuracy=0.60, model=DecisionTreeClassifier(), parameters=parameter_grid, kfold=kfold, scoring=auc, forward=True)),
+						('selection', SequentialSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=495, min_accuracy=0.64, model=DecisionTreeClassifier(), parameters=parameter_grid, kfold=kfold, scoring=auc, forward=False)),
+						#('selection', ALSelection(batch_size=20, sample_size=10000)),
+						#('new_construction', ConstructionTransformer(c_max=3, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=10)),
+						#('selection2', ALSelection()),
+						# helps to uncover non-linear relationships
+
+						#('selection', SelectFromModel(DecisionTreeClassifier())),
+						#('pca', PCA(n_components=10)), #no improvement
+						('model', LogisticRegression())
+						#('model', KNeighborsClassifier())
+						])
+
+
+
+parameter_grid = {'model__penalty': 'l2', 'model__C': 1, 'model__solver': 'lbfgs',
+				  'model__class_weight': 'balanced', 'model__max_iter': 10000, 'model__multi_class': 'auto'}
+
+
+my_pipeline.set_params(**parameter_grid)
+my_pipeline.fit(X_train, pd.DataFrame(y_train))
+
+
+test_score = auc(my_pipeline, X_test, pd.DataFrame(y_test))
+print('test score: ' + str(test_score))
+with open("/tmp/test.txt", "a") as myfile:
+	myfile.write(str(test_score) + '\n')
 
