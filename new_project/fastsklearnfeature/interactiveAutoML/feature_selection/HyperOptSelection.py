@@ -13,7 +13,7 @@ from sklearn.model_selection import GridSearchCV
 import copy
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.pyll.base import scope
-
+import time
 
 
 class HyperOptSelection(BaseEstimator, SelectorMixin):
@@ -33,6 +33,10 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 	def fit(self, X, y=None):
 		map_k_to_result = {}
 
+		self.log_results_ = []
+
+		start_time = time.time()
+
 
 		def objective(k):
 			if k in map_k_to_result:
@@ -46,10 +50,12 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 
 			result = {'loss': -1 * cv_eval.best_score_, 'status': STATUS_OK, 'mask': cv_eval.best_estimator_.named_steps['select']._get_support_mask()}
 			map_k_to_result[k] = result
+
+			self.log_results_.append([k, cv_eval.best_score_, time.time() - start_time])
+
 			return result
 
 		trials = Trials()
-		best = None
 		space = None
 		for i in range(1, self.max_complexity):
 			if i == 1:

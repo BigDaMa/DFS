@@ -49,7 +49,7 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.MajoritySelection im
 from fastsklearnfeature.interactiveAutoML.feature_selection.ALSelection import ALSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.HyperOptSelection import HyperOptSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.TraceRFECV import TraceRFECV
-from fastsklearnfeature.interactiveAutoML.feature_selection.SequentialSelection import SequentialSelection
+from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import SequentialSelection
 
 from fastsklearnfeature.feature_selection.ComplexityDrivenFeatureConstruction import ComplexityDrivenFeatureConstruction
 from fastsklearnfeature.reader.ScikitReader import ScikitReader
@@ -60,6 +60,7 @@ from sklearn.metrics import precision_score
 from sklearn.feature_selection import SelectKBest
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 '''
@@ -82,8 +83,8 @@ y_test = pickle.load(open("/home/felix/phd/feature_constraints/" + str(which_exp
 
 
 #Madelon:
-X_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.data', delimiter=' ', header=None).values[:,0:500]
-y_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.labels', delimiter=' ', header=None).values
+X_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
+y_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.labels', delimiter=' ', header=None).values [0:100]
 
 X_test = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_valid.data', delimiter=' ', header=None).values[:,0:500]
 y_test = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_valid.labels', delimiter=' ', header=None).values
@@ -175,41 +176,24 @@ kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
 
 my_pipeline = Pipeline([#('features', all_standardized.pipeline),
-						#('selection', L1Selection()),
-						#('selection', SelectKBest(score_func=mutual_info_classif,k=10)),
-						#('selection', SelectKBest(score_func=f_classif, k=10)),
-						#('selection', SelectKBest(score_func=chi2,k=10)),
-						#('selection', SelectKBest(score_func=f_oneway,k=10)),
-						#('selection', RFE(LogisticRegression(penalty='l1', C=0.1), n_features_to_select=20)),
-						#('selection', SelectFromModel(LogisticRegression(penalty='l1', C=0.0375))),
-						#('selection', SelectFromModel(DecisionTreeClassifier(),max_features=10)),
-						#('selection', SFS(LogisticRegression(penalty='l1', C=1), k_features=10, forward=True, floating=False, scoring=auc, cv=10)),
-						#('selection', RedundancyRemoval()), #takes really long
-						#('selection', MajoritySelection([SelectKBest(score_func=f_classif, k=20), SelectKBest(score_func=mutual_info_classif, k=20), SelectFromModel(DecisionTreeClassifier())])),
-						#('selection', MaskSelection(mask)),
-						#('new_construction', ConstructionTransformer(c_max=3, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=10)), #helps to uncover non-linear relationships
-						#('selection', HyperOptSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=10, min_accuracy=0.63, model=LogisticRegression(), parameters=parameter_grid, cv=10, scoring=auc)),
-						#('selection', SequentialSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=5, min_accuracy=0.60, model=DecisionTreeClassifier(), parameters=parameter_grid, kfold=kfold, scoring=auc, forward=True)),
-						('selection', SequentialSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=495, min_accuracy=0.64, model=DecisionTreeClassifier(), parameters=parameter_grid, kfold=kfold, scoring=auc, forward=False)),
-						#('selection', ALSelection(batch_size=20, sample_size=10000)),
-						#('new_construction', ConstructionTransformer(c_max=3, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=10)),
-						#('selection2', ALSelection()),
-						# helps to uncover non-linear relationships
+						('scale', StandardScaler()),
+						('selection', SequentialSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=495, min_accuracy=0.80, model=DecisionTreeClassifier(), parameters={}, kfold=kfold, scoring=auc, forward=False, fit_time_out=60)),
+						#('selection', HyperOptSelection  (SelectKBest(score_func=mutual_info_classif), max_complexity=495, min_accuracy=0.49, model=DecisionTreeClassifier(), parameters={}, cv=kfold, scoring=auc)),
 
-						#('selection', SelectFromModel(DecisionTreeClassifier())),
-						#('pca', PCA(n_components=10)), #no improvement
-						('model', LogisticRegression())
+						('model', DecisionTreeClassifier())
 						#('model', KNeighborsClassifier())
 						])
 
 
 
-parameter_grid = {'model__penalty': 'l2', 'model__C': 1, 'model__solver': 'lbfgs',
-				  'model__class_weight': 'balanced', 'model__max_iter': 10000, 'model__multi_class': 'auto'}
+parameter_grid = {}#{'model__penalty': 'l2', 'model__C': 1, 'model__solver': 'lbfgs', 'model__class_weight': 'balanced', 'model__max_iter': 10000, 'model__multi_class': 'auto'}
 
 
 my_pipeline.set_params(**parameter_grid)
 my_pipeline.fit(X_train, pd.DataFrame(y_train))
+
+data = pd.DataFrame(data=my_pipeline.named_steps['selection'].log_results_, columns=['complexity', 'accuracy', 'time'])
+data.to_csv('/home/felix/phd/feature_constraints/bench_experiments/sequentialf.csv', index=False)
 
 
 test_score = auc(my_pipeline, X_test, pd.DataFrame(y_test))
