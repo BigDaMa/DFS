@@ -1,4 +1,7 @@
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_sequential_search
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_forward_seq_search
+
 import autograd.numpy as anp
 import numpy as np
 from pymoo.util.misc import stack
@@ -50,7 +53,6 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.RedundancyRemoval im
 from fastsklearnfeature.interactiveAutoML.feature_selection.MajoritySelection import MajoritySelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.ALSelection import ALSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.HyperOptSelection import HyperOptSelection
-from fastsklearnfeature.interactiveAutoML.feature_selection.TraceRFECV import TraceRFECV
 from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import BackwardSelection
 
 from fastsklearnfeature.feature_selection.ComplexityDrivenFeatureConstruction import ComplexityDrivenFeatureConstruction
@@ -70,44 +72,62 @@ from sklearn.ensemble import RandomForestRegressor
 import scipy.special
 import seaborn as sns
 import matplotlib.pyplot as plt
+from fastsklearnfeature.configuration.Config import Config
 
-X_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
-y_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.labels', delimiter=' ', header=None).values [0:100]
+X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
+y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
 
-print("loaded")
+
+name = 'hyperopt'
 
 # generate grid
 complexity_grid = np.arange(1, X_train.shape[1]+1)
-accuracy_grid = np.arange(0.0, 1.0, 1.0 / len(complexity_grid))
+max_acc = 0.7
+accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
 
-print(complexity_grid)
-print(accuracy_grid)
+#print(complexity_grid)
+#print(accuracy_grid)
 
 grid = list(itertools.product(complexity_grid, accuracy_grid))
 
-print(len(grid))
+#print(len(grid))
 
 meta_X_data = np.matrix(grid)
 
 
 #run 10 random combinations
-ids = np.random.choice(len(grid), size=10, replace=False, p=None)
+
+random_combinations=10
+ids = np.random.choice(len(grid), size=random_combinations, replace=False, p=None)
 
 kfold = StratifiedKFold(n_splits=10, shuffle=False)
 scoring = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
-max_time = 1 * 30
+max_time = 20 * 60
 
-meta_X_train = np.zeros((10, 2))
+meta_X_train = np.zeros((random_combinations, 2))
 runtimes = []
 
 
-for rounds in range(10):
+for rounds in range(20):
 	for i in range(len(ids)):
 		complexity = meta_X_data[ids[i], 0]
 		accuracy = meta_X_data[ids[i], 1]
+		print("min acc: " + str(accuracy))
 		try:
-			runtime = run_sequential_search(X_train, y_train, model=LogisticRegression(random_state=42), kfold=copy.deepcopy(kfold), scoring=scoring, forward=True, max_complexity=int(complexity), min_accuracy=accuracy, fit_time_out=max_time)
+			#runtime = run_sequential_search(X_train, y_train, model=DecisionTreeClassifier(), kfold=copy.deepcopy(kfold), scoring=scoring, max_complexity=int(complexity), min_accuracy=accuracy, fit_time_out=max_time)
+
+			runtime = run_hyperopt_search(X_train, y_train, model=DecisionTreeClassifier(),
+											kfold=copy.deepcopy(kfold), scoring=scoring,
+											max_complexity=int(complexity), min_accuracy=accuracy,
+											fit_time_out=max_time)
+
+
+			'''
+			runtime = run_forward_seq_search(X_train, y_train, model=DecisionTreeClassifier(),
+											kfold=copy.deepcopy(kfold), scoring=scoring, max_complexity=int(complexity),
+											min_accuracy=accuracy, fit_time_out=max_time)
+			'''
 		except:
 			runtime = max_time
 		print(runtime)
@@ -120,6 +140,8 @@ for rounds in range(10):
 
 	al_model = RandomForestRegressor(n_estimators=10)
 	al_model.fit(meta_X_train, runtimes)
+
+	pickle.dump(al_model, open("/tmp/model" + str(meta_X_train.shape[0]) + "_" + name +".p", "wb"))
 
 	print(runtimes)
 
@@ -142,7 +164,9 @@ for rounds in range(10):
 	df = pd.DataFrame.from_dict(np.array([meta_X_data[:, 0].A1, meta_X_data[:, 1].A1, runtime_predictions]).T)
 	df.columns = ['Max Complexity', 'Min Accuracy', 'Estimated Runtime']
 	pivotted = df.pivot('Max Complexity', 'Min Accuracy', 'Estimated Runtime')
-	sns.heatmap(pivotted, cmap='RdBu')
-	plt.show()
+	sns_plot = sns.heatmap(pivotted, cmap='RdBu')
+	fig = sns_plot.get_figure()
+	fig.savefig("/tmp/output" + str(meta_X_train.shape[0]) + "_" + name + ".png", bbox_inches='tight')
+	plt.clf()
 
 

@@ -17,7 +17,7 @@ import time
 
 
 class HyperOptSelection(BaseEstimator, SelectorMixin):
-	def __init__(self, selection_strategy, max_complexity=None, min_accuracy=None, model=None, parameters=None, cv=None, scoring=None):
+	def __init__(self, selection_strategy, max_complexity=None, min_accuracy=None, model=None, parameters=None, cv=None, scoring=None, fit_time_out=None):
 		self.selection_strategy = selection_strategy
 		self.my_pipeline = Pipeline([('select', self.selection_strategy),
 									 ('model', model)
@@ -27,6 +27,7 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 		self.max_complexity = max_complexity
 		self.min_accuracy = min_accuracy
 		self.scoring = scoring
+		self.fit_time_out = fit_time_out
 
 
 
@@ -66,6 +67,9 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 			fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
 			if trials.best_trial['result']['loss'] * -1 >= self.min_accuracy:
 				self.mask_ = trials.best_trial['result']['mask']
+				return self
+
+			if type(self.fit_time_out) != type(None) and self.fit_time_out < time.time() - start_time:
 				return self
 
 
