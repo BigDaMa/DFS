@@ -1,7 +1,6 @@
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_sequential_search
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_forward_seq_search
-from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_al_k_search
 
 import autograd.numpy as anp
 import numpy as np
@@ -79,11 +78,11 @@ X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', d
 y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
 
 
-name = 'al_k'
+name = 'hyperopt'
 
 # generate grid
 complexity_grid = np.arange(1, X_train.shape[1]+1)
-max_acc = 0.8
+max_acc = 0.7
 accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
 
 #print(complexity_grid)
@@ -96,83 +95,32 @@ grid = list(itertools.product(complexity_grid, accuracy_grid))
 meta_X_data = np.matrix(grid)
 
 
-#run 10 random combinations
+old_model = "/tmp/model11_hyperopt.p"
 
-random_combinations=10
-ids = np.random.choice(len(grid), size=random_combinations, replace=False, p=None)
+al_model = pickle.load(open(old_model, "rb"))
 
-kfold = StratifiedKFold(n_splits=10, shuffle=False)
-scoring = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
+# calculate uncertainty of predictions for sampled pairs
+predictions = []
+for tree in range(al_model.n_estimators):
+	predictions.append(al_model.estimators_[tree].predict(meta_X_data))
 
-max_time = 20 * 60
+print(predictions)
 
-meta_X_train = np.zeros((random_combinations, 2))
-runtimes = []
+uncertainty = np.matrix(np.std(np.matrix(predictions).transpose(), axis=1)).A1
 
+print('mean uncertainty: ' + str(np.average(uncertainty)))
 
-for rounds in range(20):
-	for i in range(len(ids)):
-		complexity = meta_X_data[ids[i], 0]
-		accuracy = meta_X_data[ids[i], 1]
-		print("min acc: " + str(accuracy))
-		#try:
-		'''
-		runtime = run_sequential_search(X_train, y_train, model=DecisionTreeClassifier(), kfold=copy.deepcopy(kfold), scoring=scoring, max_complexity=int(complexity), min_accuracy=accuracy, fit_time_out=max_time)
-		
-		runtime = run_hyperopt_search(X_train, y_train, model=DecisionTreeClassifier(),
-										kfold=copy.deepcopy(kfold), scoring=scoring,
-										max_complexity=int(complexity), min_accuracy=accuracy,
-										fit_time_out=max_time)
+uncertainty_sorted_ids = np.argsort(uncertainty * -1)
+ids = [uncertainty_sorted_ids[0]]
 
+runtime_predictions = al_model.predict(meta_X_data)
 
-		
-		runtime = run_forward_seq_search(X_train, y_train, model=DecisionTreeClassifier(),
-										kfold=copy.deepcopy(kfold), scoring=scoring, max_complexity=int(complexity),
-										min_accuracy=accuracy, fit_time_out=max_time)
-		'''
-		runtime = run_al_k_search(X_train, y_train, model=DecisionTreeClassifier(),
-										kfold=copy.deepcopy(kfold), scoring=scoring, max_complexity=int(complexity),
-										min_accuracy=accuracy, fit_time_out=max_time)
-
-		#except:
-		#	runtime = max_time
-		print(runtime)
-
-		if rounds==0:
-			meta_X_train[i] = meta_X_data[ids[i]]
-		else:
-			meta_X_train = np.vstack([meta_X_train, meta_X_data[ids[i]]])
-		runtimes.append(runtime)
-
-	al_model = RandomForestRegressor(n_estimators=10)
-	al_model.fit(meta_X_train, runtimes)
-
-	pickle.dump(al_model, open("/tmp/model" + str(meta_X_train.shape[0]) + "_" + name +".p", "wb"))
-
-	print(runtimes)
-
-	# calculate uncertainty of predictions for sampled pairs
-	predictions = []
-	for tree in range(al_model.n_estimators):
-		predictions.append(al_model.estimators_[tree].predict(meta_X_data))
-
-	print(predictions)
-
-	uncertainty = np.matrix(np.std(np.matrix(predictions).transpose(), axis=1)).A1
-
-	print('mean uncertainty: ' + str(np.average(uncertainty)))
-
-	uncertainty_sorted_ids = np.argsort(uncertainty * -1)
-	ids = [uncertainty_sorted_ids[0]]
-
-	runtime_predictions = al_model.predict(meta_X_data)
-
-	df = pd.DataFrame.from_dict(np.array([meta_X_data[:, 0].A1, meta_X_data[:, 1].A1, runtime_predictions]).T)
-	df.columns = ['Max Complexity', 'Min Accuracy', 'Estimated Runtime']
-	pivotted = df.pivot('Max Complexity', 'Min Accuracy', 'Estimated Runtime')
-	sns_plot = sns.heatmap(pivotted, cmap='RdBu')
-	fig = sns_plot.get_figure()
-	fig.savefig("/tmp/output" + str(meta_X_train.shape[0]) + "_" + name + ".png", bbox_inches='tight')
-	plt.clf()
+df = pd.DataFrame.from_dict(np.array([meta_X_data[:, 0].A1, meta_X_data[:, 1].A1, runtime_predictions]).T)
+df.columns = ['Max Complexity', 'Min Accuracy', 'Estimated Runtime']
+pivotted = df.pivot('Max Complexity', 'Min Accuracy', 'Estimated Runtime')
+sns_plot = sns.heatmap(pivotted, cmap='RdBu')
+fig = sns_plot.get_figure()
+fig.savefig("/tmp/output_picture_old.png", bbox_inches='tight')
+plt.clf()
 
 

@@ -41,6 +41,7 @@ class ForwardSequentialSelection(BaseEstimator, SelectorMixin):
 				cv_eval = GridSearchCV(estimator=self.model, param_grid=self.parameters, cv=self.kfold, scoring=self.scoring)
 				cv_eval.fit(X[:, current_feature_list], y)
 				evaluations.append(cv_eval.best_score_)
+				print("cv: " + str(cv_eval.best_score_))
 
 				if k <= self.max_complexity and np.max(evaluations) >= self.min_accuracy:
 					current_best_features.append(rest_features[np.argmax(evaluations)])

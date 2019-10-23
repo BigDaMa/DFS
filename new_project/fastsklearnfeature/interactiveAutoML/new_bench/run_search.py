@@ -51,6 +51,7 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.ALSelection import A
 from fastsklearnfeature.interactiveAutoML.feature_selection.HyperOptSelection import HyperOptSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import BackwardSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.ForwardSequentialSelection import ForwardSequentialSelection
+from fastsklearnfeature.interactiveAutoML.feature_selection.ALSelectionK import ALSelectionK
 
 from fastsklearnfeature.feature_selection.ComplexityDrivenFeatureConstruction import ComplexityDrivenFeatureConstruction
 from fastsklearnfeature.reader.ScikitReader import ScikitReader
@@ -98,6 +99,19 @@ def run_forward_seq_search(X_train, y_train, model=None, kfold=None, scoring=mak
 	my_pipeline = Pipeline([('scale', StandardScaler()),
 							('selection', ForwardSequentialSelection(max_complexity=max_complexity, min_accuracy=min_accuracy, model=model, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							('model', model)
+							])
+
+	parameter_grid = {}
+	my_pipeline.set_params(**parameter_grid)
+	my_pipeline.fit(X_train, pd.DataFrame(y_train))
+	return time.time() - start_time
+
+def run_al_k_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+
+	start_time = time.time()
+
+	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
+	my_pipeline = Pipeline([('selection', ALSelectionK(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							])
 
 	parameter_grid = {}
