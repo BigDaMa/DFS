@@ -19,7 +19,7 @@ import time
 
 
 class ALSelectionK(BaseEstimator, SelectorMixin):
-    def __init__(self, model=None, parameters=None, kfold=None, scoring=None, batch_size=1, sample_size=10000, max_complexity=None, min_accuracy=None, fit_time_out=None):
+    def __init__(self, model=None, parameters=None, kfold=None, scoring=None, batch_size=2, sample_size=10000, max_complexity=None, min_accuracy=None, fit_time_out=None):
         name = 'L1Selection'
         self.kfold = kfold
         self.batch_size = batch_size
@@ -118,7 +118,9 @@ class ALSelectionK(BaseEstimator, SelectorMixin):
             #get top k pairs with respect accuracy and uncertainty
             uncertainty_sorted_ids = np.argsort(uncertainty * -1)
 
-            sorted = set(uncertainty_sorted_ids[0:int(self.batch_size)])
+            sorted = set(uncertainty_sorted_ids[0:int(self.batch_size / 2.0)])
+            sorted = sorted.union(accuracy_sorted_ids[0:int(self.batch_size / 2.0)])
+            sorted = list(sorted)
 
 
             errors = []
