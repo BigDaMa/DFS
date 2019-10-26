@@ -74,6 +74,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from fastsklearnfeature.configuration.Config import Config
 
+
 X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
 y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
 
@@ -82,48 +83,104 @@ name = 'hyperopt'
 
 # generate grid
 complexity_grid = np.arange(1, X_train.shape[1]+1)
-max_acc = 0.7
+max_acc = 0.8
 accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
 
-#print(complexity_grid)
-#print(accuracy_grid)
+def get_estimated_runtimes(old_model = "/tmp/model11_hyperopt.p"):
 
-grid = list(itertools.product(complexity_grid, accuracy_grid))
+	#print(complexity_grid)
+	#print(accuracy_grid)
 
-#print(len(grid))
+	grid = list(itertools.product(complexity_grid, accuracy_grid))
 
-meta_X_data = np.matrix(grid)
+	#print(len(grid))
 
-
-old_model = "/tmp/model11_hyperopt.p"
-
-al_model = pickle.load(open(old_model, "rb"))
-
-# calculate uncertainty of predictions for sampled pairs
-predictions = []
-for tree in range(al_model.n_estimators):
-	predictions.append(al_model.estimators_[tree].predict(meta_X_data))
-
-print(predictions)
-
-uncertainty = np.matrix(np.std(np.matrix(predictions).transpose(), axis=1)).A1
-
-print('mean uncertainty: ' + str(np.average(uncertainty)))
-
-uncertainty_sorted_ids = np.argsort(uncertainty * -1)
-ids = [uncertainty_sorted_ids[0]]
-
-runtime_predictions = al_model.predict(meta_X_data)
-
-df = pd.DataFrame.from_dict(np.array([meta_X_data[:, 0].A1, meta_X_data[:, 1].A1, runtime_predictions]).T)
-df.columns = ['Max Complexity', 'Min Accuracy', 'Estimated Runtime']
-pivotted = df.pivot('Max Complexity', 'Min Accuracy', 'Estimated Runtime')
-sns_plot = sns.heatmap(pivotted, cmap='RdBu')
-
-print(pivotted)
-
-fig = sns_plot.get_figure()
-fig.savefig("/tmp/output_picture_old.png", bbox_inches='tight')
-plt.clf()
+	meta_X_data = np.matrix(grid)
 
 
+
+
+	al_model = pickle.load(open(old_model, "rb"))
+
+	# calculate uncertainty of predictions for sampled pairs
+	predictions = []
+	for tree in range(al_model.n_estimators):
+		predictions.append(al_model.estimators_[tree].predict(meta_X_data))
+
+	print(predictions)
+
+	uncertainty = np.matrix(np.std(np.matrix(predictions).transpose(), axis=1)).A1
+
+	print('mean uncertainty: ' + str(np.average(uncertainty)))
+
+	uncertainty_sorted_ids = np.argsort(uncertainty * -1)
+	ids = [uncertainty_sorted_ids[0]]
+
+	runtime_predictions = al_model.predict(meta_X_data)
+
+	df = pd.DataFrame.from_dict(np.array([meta_X_data[:, 0].A1, meta_X_data[:, 1].A1, runtime_predictions]).T)
+	df.columns = ['Max Complexity', 'Min Accuracy', 'Estimated Runtime']
+	pivotted = df.pivot('Max Complexity', 'Min Accuracy', 'Estimated Runtime')
+
+	'''
+	sns_plot = sns.heatmap(pivotted, cmap='RdBu')
+	
+	print(pivotted)
+	
+	fig = sns_plot.get_figure()
+	fig.savefig("/tmp/output_picture_old.png", bbox_inches='tight')
+	plt.clf()
+	'''
+	return pivotted
+
+hyperopt_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/model29_hyperopt.p')
+forward_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/model29_forward.p')
+backward_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/model32_backward.p')
+al_k_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/model29_al_k.p')
+
+min_matrix = np.array([hyperopt_times.values,
+						forward_times.values,
+						backward_times.values,
+						al_k_times.values])
+
+min_matrix = np.min(min_matrix, axis=0)
+
+
+print(hyperopt_times.values > min_matrix)
+
+plt.subplot(321)
+sns.heatmap(hyperopt_times.values > min_matrix, cmap='RdBu')
+plt.title('Hyperopt BestK')
+
+plt.subplot(322)
+sns.heatmap(forward_times.values > min_matrix, cmap='RdBu')
+plt.title('Forward Selection')
+
+plt.subplot(323)
+sns.heatmap(backward_times.values > min_matrix, cmap='RdBu')
+plt.title('Recursive Feature Elimination')
+
+plt.subplot(324)
+sns.heatmap(al_k_times.values > min_matrix, cmap='RdBu')
+plt.title('Active Learning for k')
+
+plt.show()
+
+plt.subplot(321)
+sns.heatmap(hyperopt_times, cmap='RdBu', vmin=0, vmax=1200)
+plt.title('Hyperopt BestK')
+
+plt.subplot(322)
+sns.heatmap(forward_times, cmap='RdBu', vmin=0, vmax=1200)
+plt.title('Forward Selection')
+
+plt.subplot(323)
+sns.heatmap(backward_times, cmap='RdBu', vmin=0, vmax=1200)
+plt.title('Recursive Feature Elimination')
+
+plt.subplot(324)
+sns.heatmap(al_k_times, cmap='RdBu', vmin=0, vmax=1200)
+plt.title('Active Learning for k')
+
+plt.subplots_adjust(hspace=1.5)
+plt.show()

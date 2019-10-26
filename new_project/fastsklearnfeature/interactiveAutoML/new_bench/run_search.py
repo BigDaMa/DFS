@@ -70,9 +70,8 @@ from fastsklearnfeature.interactiveAutoML.new_bench import my_global_utils1
 def run_sequential_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
 
 	start_time = time.time()
-	my_pipeline = Pipeline([('scale', StandardScaler()),
-							('selection', BackwardSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=model, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
-							('model', model)
+	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
+	my_pipeline = Pipeline([('selection', BackwardSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							])
 
 	parameter_grid = {}
@@ -83,9 +82,8 @@ def run_sequential_search(X_train, y_train, model=None, kfold=None, scoring=make
 def run_hyperopt_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
 
 	start_time = time.time()
-	my_pipeline = Pipeline([('scale', StandardScaler()),
-							('selection', HyperOptSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=model, parameters={}, cv=kfold, scoring=scoring, fit_time_out=fit_time_out)),
-							('model', model)
+	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
+	my_pipeline = Pipeline([('selection', HyperOptSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, cv=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							])
 
 	parameter_grid = {}
@@ -96,9 +94,8 @@ def run_hyperopt_search(X_train, y_train, model=None, kfold=None, scoring=make_s
 def run_forward_seq_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
 
 	start_time = time.time()
-	my_pipeline = Pipeline([('scale', StandardScaler()),
-							('selection', ForwardSequentialSelection(max_complexity=max_complexity, min_accuracy=min_accuracy, model=model, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
-							('model', model)
+	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
+	my_pipeline = Pipeline([('selection', ForwardSequentialSelection(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							])
 
 	parameter_grid = {}

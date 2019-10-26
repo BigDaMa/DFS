@@ -70,6 +70,7 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import multiprocessing as mp
 import itertools
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
 import scipy.special
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -78,12 +79,12 @@ from fastsklearnfeature.configuration.Config import Config
 X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
 y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
 
-
-name = 'al_k'
+my_search_strategy = run_hyperopt_search#run_al_k_search
+name = my_search_strategy.__name__
 
 # generate grid
 complexity_grid = np.arange(1, X_train.shape[1]+1)
-max_acc = 0.8
+max_acc = 1.0
 accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
 
 #print(complexity_grid)
@@ -98,7 +99,7 @@ meta_X_data = np.matrix(grid)
 
 #run 10 random combinations
 
-random_combinations=10
+random_combinations = 10
 ids = np.random.choice(len(grid), size=random_combinations, replace=False, p=None)
 
 kfold = StratifiedKFold(n_splits=10, shuffle=False)
@@ -108,6 +109,7 @@ max_time = 20 * 60
 
 meta_X_train = np.zeros((random_combinations, 2))
 runtimes = []
+success_check = []
 
 
 for rounds in range(20):
@@ -115,27 +117,19 @@ for rounds in range(20):
 		complexity = meta_X_data[ids[i], 0]
 		accuracy = meta_X_data[ids[i], 1]
 		print("min acc: " + str(accuracy))
-		#try:
-		'''
-		runtime = run_sequential_search(X_train, y_train, model=DecisionTreeClassifier(), kfold=copy.deepcopy(kfold), scoring=scoring, max_complexity=int(complexity), min_accuracy=accuracy, fit_time_out=max_time)
-		
-		runtime = run_hyperopt_search(X_train, y_train, model=DecisionTreeClassifier(),
-										kfold=copy.deepcopy(kfold), scoring=scoring,
-										max_complexity=int(complexity), min_accuracy=accuracy,
-										fit_time_out=max_time)
+		try:
+			runtime = my_search_strategy(X_train, y_train,
+										    model=DecisionTreeClassifier(),
+											kfold=copy.deepcopy(kfold),
+										 	scoring=scoring,
+										 	max_complexity=int(complexity),
+											min_accuracy=accuracy,
+										 	fit_time_out=max_time)
+			success_check.append(True)
 
-
-		
-		runtime = run_forward_seq_search(X_train, y_train, model=DecisionTreeClassifier(),
-										kfold=copy.deepcopy(kfold), scoring=scoring, max_complexity=int(complexity),
-										min_accuracy=accuracy, fit_time_out=max_time)
-		'''
-		runtime = run_al_k_search(X_train, y_train, model=DecisionTreeClassifier(),
-										kfold=copy.deepcopy(kfold), scoring=scoring, max_complexity=int(complexity),
-										min_accuracy=accuracy, fit_time_out=max_time)
-
-		#except:
-		#	runtime = max_time
+		except:
+			runtime = max_time
+			success_check.append(False)
 		print(runtime)
 
 		if rounds==0:
@@ -147,7 +141,7 @@ for rounds in range(20):
 	al_model = RandomForestRegressor(n_estimators=10)
 	al_model.fit(meta_X_train, runtimes)
 
-	pickle.dump(al_model, open("/tmp/model" + str(meta_X_train.shape[0]) + "_" + name +".p", "wb"))
+	pickle.dump(al_model, open("/tmp/model" + str(meta_X_train.shape[0]) + "_" + name + ".p", "wb"))
 
 	print(runtimes)
 
@@ -164,6 +158,30 @@ for rounds in range(20):
 
 	uncertainty_sorted_ids = np.argsort(uncertainty * -1)
 	ids = [uncertainty_sorted_ids[0]]
+
+	#predict search failure
+	if len(np.unique(np.array(success_check))) == 2:
+		al_success_model = RandomForestClassifier(n_estimators=10)
+		al_success_model.fit(meta_X_train, success_check)
+
+		pickle.dump(al_model, open("/tmp/success_model" + str(meta_X_train.shape[0]) + "_" + name + ".p", "wb"))
+
+		# calculate uncertainty of predictions for sampled pairs
+		predictions = []
+		for tree in range(al_success_model.n_estimators):
+			predictions.append(al_success_model.estimators_[tree].predict_proba(meta_X_data)[:, 0])
+
+		print(predictions)
+
+		uncertainty = np.matrix(np.std(np.matrix(predictions).transpose(), axis=1)).A1
+
+		print('mean uncertainty: ' + str(np.average(uncertainty)))
+
+		uncertainty_sorted_ids = np.argsort(uncertainty * -1)
+		ids.append(uncertainty_sorted_ids[0])
+
+
+
 
 	runtime_predictions = al_model.predict(meta_X_data)
 
