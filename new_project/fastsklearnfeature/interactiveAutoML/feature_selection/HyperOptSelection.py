@@ -58,7 +58,8 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 
 		trials = Trials()
 		space = None
-		for i in range(1, self.max_complexity):
+		i = 1
+		while True:
 			if i == 1:
 				space = scope.int(hp.quniform('k', self.max_complexity, self.max_complexity, 1))
 			else:
@@ -71,6 +72,8 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 
 			if type(self.fit_time_out) != type(None) and self.fit_time_out < time.time() - start_time:
 				return self
+
+			i += 1
 
 
 
