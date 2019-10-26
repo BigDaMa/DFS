@@ -72,6 +72,7 @@ def run_sequential_search(X_train, y_train, model=None, kfold=None, scoring=make
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
 	my_pipeline = Pipeline([('selection', BackwardSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+							('cmodel', model)
 							])
 
 	parameter_grid = {}
@@ -84,6 +85,7 @@ def run_hyperopt_search(X_train, y_train, model=None, kfold=None, scoring=make_s
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
 	my_pipeline = Pipeline([('selection', HyperOptSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, cv=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+							('cmodel', model)
 							])
 
 	parameter_grid = {}
@@ -96,6 +98,7 @@ def run_forward_seq_search(X_train, y_train, model=None, kfold=None, scoring=mak
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
 	my_pipeline = Pipeline([('selection', ForwardSequentialSelection(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+							('cmodel', model)
 							])
 
 	parameter_grid = {}
@@ -109,6 +112,7 @@ def run_al_k_search(X_train, y_train, model=None, kfold=None, scoring=make_score
 
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
 	my_pipeline = Pipeline([('selection', ALSelectionK(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+							('cmodel', model)
 							])
 
 	parameter_grid = {}

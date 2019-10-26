@@ -87,6 +87,7 @@ complexity_grid = np.arange(1, X_train.shape[1]+1)
 max_acc = 1.0
 accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
 
+
 #print(complexity_grid)
 #print(accuracy_grid)
 
@@ -113,6 +114,7 @@ success_check = []
 
 
 for rounds in range(20):
+	print("number of ids: " + str(len(ids)))
 	for i in range(len(ids)):
 		complexity = meta_X_data[ids[i], 0]
 		accuracy = meta_X_data[ids[i], 1]
@@ -130,6 +132,7 @@ for rounds in range(20):
 		except:
 			runtime = max_time
 			success_check.append(False)
+			print("did not find a solution")
 		print(runtime)
 
 		if rounds==0:
@@ -164,7 +167,7 @@ for rounds in range(20):
 		al_success_model = RandomForestClassifier(n_estimators=10)
 		al_success_model.fit(meta_X_train, success_check)
 
-		pickle.dump(al_model, open("/tmp/success_model" + str(meta_X_train.shape[0]) + "_" + name + ".p", "wb"))
+		pickle.dump(al_success_model, open("/tmp/success_model" + str(meta_X_train.shape[0]) + "_" + name + ".p", "wb"))
 
 		# calculate uncertainty of predictions for sampled pairs
 		predictions = []
