@@ -98,8 +98,12 @@ def get_estimated_runtimes(old_model = "/tmp/model11_hyperopt.p"):
 
 	return pivotted
 
-hyperopt_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/model48_run_hyperopt_search.p')
-hyperopt_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/success_model48_run_hyperopt_search.p')
+#hyperopt_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/model48_run_hyperopt_search.p')
+#hyperopt_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/success_model48_run_hyperopt_search.p')
+
+hyperopt_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/new_hyper/model48_run_hyperopt_search.p')
+hyperopt_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/new_hyper/success_model48_run_hyperopt_search.p')
+
 
 alk_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/model46_run_al_k_search.p')
 alk_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/success_model46_run_al_k_search.p')

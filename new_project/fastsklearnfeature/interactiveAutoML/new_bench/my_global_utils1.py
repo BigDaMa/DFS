@@ -7,3 +7,8 @@ forward=True
 max_complexity=None
 min_accuracy=None
 fit_time_out=None
+
+
+data_name = None
+my_search_strategy = []
+max_time = None
