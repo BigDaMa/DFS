@@ -76,8 +76,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from fastsklearnfeature.configuration.Config import Config
 
-#X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
-#y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
 
 def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy = run_hyperopt_search, max_time = 20 * 60):
 
