@@ -52,20 +52,18 @@ def my_function(id):
 	run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy, max_time)
 
 
-my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000]
-my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values
-my_global_utils1.data_name = 'ARCENE'
 
-
-#X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
-#y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
+my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:100,:]
+my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values[0:100]
+my_global_utils1.data_name = 'ARCENE_sample'
 
 
 '''
-my_global_utils1.X_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
-my_global_utils1.y_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.labels', delimiter=' ', header=None).values [0:100]
+my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
+my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
 my_global_utils1.data_name = 'madelon_sample'
 '''
+
 
 my_global_utils1.my_search_strategy = [run_sequential_search, run_hyperopt_search, run_forward_seq_search, run_al_k_search]
 
