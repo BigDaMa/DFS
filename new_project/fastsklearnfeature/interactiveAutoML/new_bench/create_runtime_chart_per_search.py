@@ -141,7 +141,10 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 		al_model = RandomForestRegressor(n_estimators=10)
 		al_model.fit(meta_X_train, runtimes)
 
-		pickle.dump(al_model, open("/tmp/model" + str(meta_X_train.shape[0]) + "_" + name + '_data_' + data_name +".p", "wb"))
+		pfile = open("/tmp/model" + str(meta_X_train.shape[0]) + "_" + name + '_data_' + data_name +".p", "wb")
+		pickle.dump(al_model, pfile)
+		pfile.flush()
+		pfile.close()
 
 		print(runtimes)
 
@@ -164,7 +167,10 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 			al_success_model = RandomForestClassifier(n_estimators=10)
 			al_success_model.fit(meta_X_train, success_check)
 
-			pickle.dump(al_success_model, open("/tmp/success_model" + str(meta_X_train.shape[0]) + "_" + name + '_data_' + data_name +".p", "wb"))
+			pfile = open("/tmp/success_model" + str(meta_X_train.shape[0]) + "_" + name + '_data_' + data_name +".p", "wb")
+			pickle.dump(al_success_model, pfile)
+			pfile.flush()
+			pfile.close()
 
 			# calculate uncertainty of predictions for sampled pairs
 			predictions = []
