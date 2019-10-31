@@ -107,7 +107,7 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 	#ids = np.random.choice(len(grid), size=random_combinations, replace=False, p=None)
 
 	for i in range(0, len(accuracy_grid), int(len(accuracy_grid)/float(random_combinations))):
-		ids.append(len(grid) - i)
+		ids.append(len(grid) - i - 1)
 
 
 
