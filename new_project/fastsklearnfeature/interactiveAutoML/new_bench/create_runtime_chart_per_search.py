@@ -84,13 +84,16 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 	# generate grid
 	complexity_grid = np.arange(1, X_train.shape[1]+1)
 	max_acc = 1.0
-	accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
+	#accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
+	accuracy_grid = np.arange(0.0, max_acc, max_acc / 100.0)
 
 
 	#print(complexity_grid)
 	#print(accuracy_grid)
 
 	grid = list(itertools.product(complexity_grid, accuracy_grid))
+
+	print(grid)
 
 	#print(len(grid))
 
@@ -100,7 +103,13 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 	#run 10 random combinations
 
 	random_combinations = 10
-	ids = np.random.choice(len(grid), size=random_combinations, replace=False, p=None)
+	ids = []
+	#ids = np.random.choice(len(grid), size=random_combinations, replace=False, p=None)
+
+	for i in range(0, len(accuracy_grid), int(len(accuracy_grid)/float(random_combinations))):
+		ids.append(len(grid) - i)
+
+
 
 	kfold = StratifiedKFold(n_splits=10, shuffle=False)
 	scoring = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
@@ -199,4 +208,8 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 		fig.savefig("/tmp/output" + str(meta_X_train.shape[0]) + "_" + name + '_data_' + data_name +".png", bbox_inches='tight')
 		plt.clf()
 
-
+'''
+X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:100,:]
+y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values[0:100]
+run_experiments_for_strategy(X_train, y_train, 'arcene_sample', run_hyperopt_search, max_time = 20 * 60)
+'''
