@@ -65,7 +65,8 @@ my_global_utils1.data_name = 'madelon_sample'
 '''
 
 
-my_global_utils1.my_search_strategy = [run_sequential_search, run_hyperopt_search, run_forward_seq_search, run_al_k_search]
+#my_global_utils1.my_search_strategy = [run_sequential_search, run_hyperopt_search, run_forward_seq_search, run_al_k_search]
+my_global_utils1.my_search_strategy = [run_hyperopt_search]
 
 
 n_jobs = len(my_global_utils1.my_search_strategy)

@@ -93,8 +93,6 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 
 	grid = list(itertools.product(complexity_grid, accuracy_grid))
 
-	print(grid)
-
 	#print(len(grid))
 
 	meta_X_data = np.matrix(grid)
@@ -198,6 +196,7 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 
 
 
+		'''
 		runtime_predictions = al_model.predict(meta_X_data)
 
 		df = pd.DataFrame.from_dict(np.array([meta_X_data[:, 0].A1, meta_X_data[:, 1].A1, runtime_predictions]).T)
@@ -207,6 +206,7 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 		fig = sns_plot.get_figure()
 		fig.savefig("/tmp/output" + str(meta_X_train.shape[0]) + "_" + name + '_data_' + data_name +".png", bbox_inches='tight')
 		plt.clf()
+		'''
 
 '''
 X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:100,:]
