@@ -60,6 +60,13 @@ class ALSelectionK(BaseEstimator, SelectorMixin):
             print(str(col_i) + ': ' + str(logregGS.best_score_))
             X_train[col_i, col_i] = True
 
+            if logregGS.best_score_ >= self.min_accuracy:
+                self.feature_mask = X_train[col_i, :]
+                return self
+
+            if type(self.fit_time_out) != type(None) and self.fit_time_out < time.time() - start_time:
+                return self
+
         y_train = p
 
         #probabilities = calculate_average_score_per_feature(X_train, y_train)
