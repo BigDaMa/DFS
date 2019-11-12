@@ -52,17 +52,18 @@ def my_function(id):
 	run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy, max_time)
 
 
-'''
-my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:100,:]
-my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values[0:100]
-my_global_utils1.data_name = 'ARCENE_sample'
-'''
+
+my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:1000,:]
+my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values[0:1000]
+my_global_utils1.data_name = 'ARCENE_sample1k'
 
 
+'''
 data = pd.read_csv(Config.get('data_path') + '/musk/musk.csv', delimiter=',', header=0)
 my_global_utils1.y_train = data['class']
 my_global_utils1.X_train = data[data.columns.difference(['class', 'ID', 'molecule_name', 'conformation_name'])].values
 my_global_utils1.data_name = 'musk'
+'''
 
 
 '''
