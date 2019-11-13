@@ -52,6 +52,7 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.HyperOptSelection im
 from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import BackwardSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.ForwardSequentialSelection import ForwardSequentialSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.ALSelectionK import ALSelectionK
+from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
 
 from fastsklearnfeature.feature_selection.ComplexityDrivenFeatureConstruction import ComplexityDrivenFeatureConstruction
 from fastsklearnfeature.reader.ScikitReader import ScikitReader
@@ -80,11 +81,24 @@ def run_sequential_search(X_train, y_train, model=None, kfold=None, scoring=make
 	my_pipeline.fit(X_train, pd.DataFrame(y_train))
 	return time.time() - start_time
 
-def run_hyperopt_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_hyperopt_search_kbest_info(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
 
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
 	my_pipeline = Pipeline([('selection', HyperOptSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, cv=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+							('cmodel', model)
+							])
+
+	parameter_grid = {}
+	my_pipeline.set_params(**parameter_grid)
+	my_pipeline.fit(X_train, pd.DataFrame(y_train))
+	return time.time() - start_time
+
+def run_hyperopt_search_fcbf(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+
+	start_time = time.time()
+	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
+	my_pipeline = Pipeline([('selection', HyperOptSelection(SelectKBest(score_func=fcbf), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, cv=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							('cmodel', model)
 							])
 

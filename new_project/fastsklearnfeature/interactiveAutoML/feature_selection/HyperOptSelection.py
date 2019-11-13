@@ -14,12 +14,15 @@ import copy
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.pyll.base import scope
 import time
+import pandas as pd
+
+import fastsklearnfeature.interactiveAutoML.feature_selection.WrapperBestK as wrap
 
 
 class HyperOptSelection(BaseEstimator, SelectorMixin):
 	def __init__(self, selection_strategy, max_complexity=None, min_accuracy=None, model=None, parameters=None, cv=None, scoring=None, fit_time_out=None):
 		self.selection_strategy = selection_strategy
-		self.my_pipeline = Pipeline([('select', self.selection_strategy),
+		self.my_pipeline = Pipeline([('select', wrap.WrapperBestK(self.selection_strategy)),
 									 ('model', model)
 									 ])
 		self.parameters = parameters
@@ -28,7 +31,6 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 		self.min_accuracy = min_accuracy
 		self.scoring = scoring
 		self.fit_time_out = fit_time_out
-
 
 
 	def fit(self, X, y=None):
@@ -47,7 +49,7 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 			parameters['select__' + 'k'] = [int(k)]
 
 			cv_eval = GridSearchCV(estimator=self.my_pipeline, param_grid=parameters, cv=self.cv, scoring=self.scoring)
-			cv_eval.fit(X, y)
+			cv_eval.fit(pd.DataFrame(X), y)
 
 			result = {'loss': -1 * cv_eval.best_score_, 'status': STATUS_OK, 'mask': cv_eval.best_estimator_.named_steps['select']._get_support_mask()}
 			map_k_to_result[k] = result
@@ -68,9 +70,11 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 			fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
 			if trials.best_trial['result']['loss'] * -1 >= self.min_accuracy:
 				self.mask_ = trials.best_trial['result']['mask']
+				wrap.map_fold2ranking = {}
 				return self
 
 			if type(self.fit_time_out) != type(None) and self.fit_time_out < time.time() - start_time:
+				wrap.map_fold2ranking = {}
 				return self
 
 			i += 1

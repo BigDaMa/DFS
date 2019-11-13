@@ -1,5 +1,5 @@
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_sequential_search
-from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_info
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_forward_seq_search
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_al_k_search
 
@@ -77,7 +77,7 @@ import matplotlib.pyplot as plt
 from fastsklearnfeature.configuration.Config import Config
 
 
-def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy = run_hyperopt_search, max_time = 20 * 60):
+def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy = run_hyperopt_search_kbest_info, max_time =20 * 60):
 
 	name = my_search_strategy.__name__
 

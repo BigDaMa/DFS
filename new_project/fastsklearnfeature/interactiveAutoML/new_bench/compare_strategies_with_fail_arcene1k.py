@@ -75,65 +75,146 @@ import matplotlib.pyplot as plt
 from fastsklearnfeature.configuration.Config import Config
 
 
-X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
-y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
+#X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
+#y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
+
+'''
+X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:100,:]
+y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values[0:100]
+data_name = 'ARCENE_sample'
+'''
+
+X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:1000,:]
+y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values[0:1000]
+data_name = 'ARCENE_sample1k'
 
 
-name = 'hyperopt'
+
 
 # generate grid
 complexity_grid = np.arange(1, X_train.shape[1]+1)
-max_acc = 0.8
-accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
+max_acc = 1.0
+accuracy_grid = np.arange(0.0, max_acc, max_acc / 100.0)
 
 def get_estimated_runtimes(old_model = "/tmp/model11_hyperopt.p"):
 
-	#print(complexity_grid)
-	#print(accuracy_grid)
-
 	grid = list(itertools.product(complexity_grid, accuracy_grid))
-
-	#print(len(grid))
-
 	meta_X_data = np.matrix(grid)
 
-
-
-
 	al_model = pickle.load(open(old_model, "rb"))
-
-	# calculate uncertainty of predictions for sampled pairs
-	predictions = []
-	for tree in range(al_model.n_estimators):
-		predictions.append(al_model.estimators_[tree].predict(meta_X_data))
-
-	print(predictions)
-
-	uncertainty = np.matrix(np.std(np.matrix(predictions).transpose(), axis=1)).A1
-
-	print('mean uncertainty: ' + str(np.average(uncertainty)))
-
-	uncertainty_sorted_ids = np.argsort(uncertainty * -1)
-	ids = [uncertainty_sorted_ids[0]]
-
 	runtime_predictions = al_model.predict(meta_X_data)
 
 	df = pd.DataFrame.from_dict(np.array([meta_X_data[:, 0].A1, meta_X_data[:, 1].A1, runtime_predictions]).T)
 	df.columns = ['Max Complexity', 'Min Accuracy', 'Estimated Runtime']
 	pivotted = df.pivot('Max Complexity', 'Min Accuracy', 'Estimated Runtime')
 
-	'''
-	sns_plot = sns.heatmap(pivotted, cmap='RdBu')
-	
-	print(pivotted)
-	
-	fig = sns_plot.get_figure()
-	fig.savefig("/tmp/output_picture_old.png", bbox_inches='tight')
-	plt.clf()
-	'''
 	return pivotted
 
-hyperopt_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/model29_hyperopt.p')
+#hyperopt_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/model48_run_hyperopt_search.p')
+#hyperopt_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/new/success_model48_run_hyperopt_search.p')
+
+hyperopt_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/newest/model48_run_hyperopt_search_data_'+ data_name +'.p')
+hyperopt_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/newest/success_model48_run_hyperopt_search_data_'+ data_name +'.p')
+
+
+alk_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/newest/model14_run_al_k_search_data_'+ data_name +'.p')
+alk_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/newest/success_model14_run_al_k_search_data_'+ data_name +'.p')
+
+forward_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/newest/model48_run_forward_seq_search_data_'+ data_name +'.p')
+forward_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/newest/success_model48_run_forward_seq_search_data_'+ data_name +'.p')
+
+rfe_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/newest/model48_run_sequential_search_data_'+ data_name +'.p')
+rfe_failure = get_estimated_runtimes('/home/felix/phd/bench_feature_select/newest/success_model48_run_sequential_search_data_'+ data_name +'.p')
+
+
+
+min_matrix = np.array([hyperopt_times.values,
+						forward_times.values,
+						alk_times.values,
+					    rfe_times.values
+					   ])
+
+min_matrix = np.min(min_matrix, axis=0)
+
+def get_best_scatter(times, successes):
+	best_x = []
+	best_y = []
+	for x in range(min_matrix.shape[0]):
+		for y in range(min_matrix.shape[1]):
+			if times.values[x, y] <= min_matrix[x, y] and successes.values[x, y]:
+				best_x.append(complexity_grid[x])
+				best_y.append(accuracy_grid[y])
+	return best_x, best_y
+
+
+forward_best_x, forward_best_y = get_best_scatter(forward_times, forward_failure)
+alk_best_x, alk_best_y = get_best_scatter(alk_times, alk_failure)
+hyperopt_best_x, hyperopt_best_y = get_best_scatter(hyperopt_times, hyperopt_failure)
+rfe_best_x, rfe_best_y = get_best_scatter(rfe_times, rfe_failure)
+
+plt.scatter(forward_best_x, forward_best_y, color='blue', marker='+', label='forward selection')
+plt.scatter(alk_best_x, alk_best_y, facecolors='none', edgecolors='r', label='AL k selection')
+plt.scatter(hyperopt_best_x, hyperopt_best_y, color='yellow', label='Hyperopt best k selection')
+plt.scatter(rfe_best_x, rfe_best_y, color='green', label='Recursive Feature Elimination')
+plt.xlabel('complexity')
+plt.ylabel('accuracy')
+plt.ylim([0.0, 1.0])
+plt.legend()
+plt.show()
+
+
+
+plt.subplot(321)
+sns.heatmap(hyperopt_times, cmap='RdBu', vmin=0, vmax=1200)
+plt.title('Hyperopt BestK')
+
+plt.subplot(322)
+sns.heatmap(alk_times, cmap='RdBu', vmin=0, vmax=1200)
+plt.title('Active Learning K')
+
+plt.subplot(323)
+sns.heatmap(forward_times, cmap='RdBu', vmin=0, vmax=1200)
+plt.title('Forward Selection')
+
+plt.subplot(324)
+sns.heatmap(rfe_times, cmap='RdBu', vmin=0, vmax=1200)
+plt.title('Recursive Feature Elimination')
+
+plt.subplots_adjust(hspace=1.5)
+plt.show()
+
+
+plt.subplot(321)
+sns.heatmap(hyperopt_failure, cmap='RdBu')
+plt.title('Hyperopt BestK')
+
+plt.subplot(322)
+sns.heatmap(alk_failure, cmap='RdBu')
+plt.title('Active Learning K')
+
+plt.subplot(323)
+sns.heatmap(forward_failure, cmap='RdBu')
+plt.title('Forward Selection')
+
+plt.subplot(324)
+sns.heatmap(rfe_failure, cmap='RdBu')
+plt.title('Recursive Feature Elimination')
+
+plt.subplots_adjust(hspace=1.5)
+plt.show()
+
+'''
+sns.heatmap(hyperopt_times, cmap='RdBu')
+plt.title('Hyperopt BestK Time')
+plt.show()
+
+sns.heatmap(hyperopt_failure, cmap='RdBu')
+plt.title('Hyperopt BestK Success')
+plt.show()
+'''
+
+
+'''
 forward_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/model29_forward.p')
 backward_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/model32_backward.p')
 al_k_times = get_estimated_runtimes('/home/felix/phd/bench_feature_select/model29_al_k.p')
@@ -184,3 +265,4 @@ plt.title('Active Learning for k')
 
 plt.subplots_adjust(hspace=1.5)
 plt.show()
+'''

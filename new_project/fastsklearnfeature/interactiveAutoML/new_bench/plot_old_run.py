@@ -1,5 +1,5 @@
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_sequential_search
-from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_info
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_forward_seq_search
 
 import autograd.numpy as anp

@@ -38,9 +38,10 @@ import multiprocessing as mp
 from fastsklearnfeature.interactiveAutoML.new_bench import my_global_utils1
 
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_sequential_search
-from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_info
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_forward_seq_search
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_al_k_search
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_fcbf
 from fastsklearnfeature.configuration.Config import Config
 
 def my_function(id):
@@ -73,9 +74,10 @@ my_global_utils1.data_name = 'madelon_sample'
 '''
 
 
-my_global_utils1.my_search_strategy = [run_sequential_search, run_hyperopt_search, run_forward_seq_search, run_al_k_search]
-#my_global_utils1.my_search_strategy = [run_al_k_search]
-my_global_utils1.max_time = 20 * 60
+#my_global_utils1.my_search_strategy = [run_sequential_search, run_hyperopt_search_kbest_info, run_forward_seq_search, run_al_k_search]
+my_global_utils1.my_search_strategy = [run_hyperopt_search_fcbf]
+#my_global_utils1.max_time = 20 * 60
+my_global_utils1.max_time = 10 * 60
 
 
 n_jobs = len(my_global_utils1.my_search_strategy)
