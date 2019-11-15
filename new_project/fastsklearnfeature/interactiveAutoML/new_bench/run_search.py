@@ -30,24 +30,10 @@ from sklearn.model_selection import StratifiedKFold
 import argparse
 import warnings
 warnings.filterwarnings("ignore")
-import numpy as np
-from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
 import pandas as pd
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.feature_selection import mutual_info_classif
-from sklearn.feature_selection import f_classif
-from sklearn.feature_selection import chi2
-from sklearn.feature_selection import f_oneway
-from sklearn.feature_selection import RFE
-from sklearn.feature_selection import SelectFromModel
-from sklearn.tree import DecisionTreeClassifier
 import time
 
-from fastsklearnfeature.interactiveAutoML.feature_selection.L1Selection import L1Selection
-from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
-from fastsklearnfeature.interactiveAutoML.feature_selection.RedundancyRemoval import RedundancyRemoval
-from fastsklearnfeature.interactiveAutoML.feature_selection.MajoritySelection import MajoritySelection
-from fastsklearnfeature.interactiveAutoML.feature_selection.ALSelection import ALSelection
+
 from fastsklearnfeature.interactiveAutoML.feature_selection.HyperOptSelection import HyperOptSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import BackwardSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.ForwardSequentialSelection import ForwardSequentialSelection
@@ -55,25 +41,19 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.ALSelectionK import 
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import variance
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import model_score
-from sklearn.preprocessing import OneHotEncoder
 
-
-from fastsklearnfeature.feature_selection.ComplexityDrivenFeatureConstruction import ComplexityDrivenFeatureConstruction
-from fastsklearnfeature.reader.ScikitReader import ScikitReader
-from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
-from fastsklearnfeature.interactiveAutoML.feature_selection.ConstructionTransformation import ConstructionTransformer
-from sklearn.metrics import recall_score
-from sklearn.metrics import precision_score
-from sklearn.feature_selection import SelectKBest
-from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-import multiprocessing as mp
 from fastsklearnfeature.interactiveAutoML.new_bench import my_global_utils1
 
+from sklearn.feature_selection import SelectKBest
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.svm import LinearSVC
+
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import chi2
+
 from skrebate import ReliefF
 
 
@@ -229,22 +209,4 @@ def my_function(id):
 		pass
 
 	return time.time() - start
-
-'''
-
-my_global_utils1.X_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
-my_global_utils1.y_train = pd.read_csv('/home/felix/Software/UCI-Madelon-Dataset/assets/madelon_train.labels', delimiter=' ', header=None).values [0:100]
-
-my_global_utils1.model = DecisionTreeClassifier()
-my_global_utils1.kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-my_global_utils1.scoring = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
-my_global_utils1.forward = False
-my_global_utils1.max_complexity = 10
-my_global_utils1.min_accuracy = 0.6
-my_global_utils1.fit_time_out = 60 * 5
-
-n_jobs = 4
-with mp.Pool(processes=n_jobs) as pool:
-	results = pool.map(my_function, range(2))
-'''
 
