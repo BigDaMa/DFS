@@ -15,7 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
 
 
-def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy = run_hyperopt_search_kbest_info, max_time =20 * 60):
+def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy = None, max_time =20 * 60):
 
 	name = my_search_strategy.__name__
 	xshape = OneHotEncoder(handle_unknown='ignore', sparse=False).fit_transform(X_train).shape[1]
