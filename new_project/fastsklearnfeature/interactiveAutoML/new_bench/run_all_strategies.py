@@ -86,9 +86,6 @@ my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_forest, run_hyp
 									   run_sequential_search, run_forward_seq_search, run_al_k_search
 									  ]
 
-my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_forest]
-
-
 #my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_l1]
 
 #my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_forest]
