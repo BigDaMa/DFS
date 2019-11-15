@@ -37,7 +37,17 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 import multiprocessing as mp
 from fastsklearnfeature.interactiveAutoML.new_bench import my_global_utils1
 
-from fastsklearnfeature.interactiveAutoML.new_bench.run_search import *
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_forest
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_l1
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_fcbf
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_relieff
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_info
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_chi2
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_f_classif
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_variance
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_sequential_search
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_forward_seq_search
+from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_al_k_search
 from fastsklearnfeature.configuration.Config import Config
 
 def my_function(id):
@@ -105,7 +115,7 @@ my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_forest, run_hyp
 									   run_hyperopt_search_kbest_fcbf, run_hyperopt_search_kbest_relieff,
 									   run_hyperopt_search_kbest_info, run_hyperopt_search_kbest_chi2, run_hyperopt_search_kbest_f_classif, run_hyperopt_search_kbest_variance,
 									   run_sequential_search, run_forward_seq_search, run_al_k_search
-									   ]
+									  ]
 
 
 #my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_l1]
