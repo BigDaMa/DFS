@@ -126,19 +126,19 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 			complexity = meta_X_data[ids[i], 0]
 			accuracy = meta_X_data[ids[i], 1]
 			print("min acc: " + str(accuracy))
-			try:
-				runtime = my_search_strategy(X_train, y_train,
-												model=DecisionTreeClassifier(),
-												kfold=copy.deepcopy(kfold),
-												scoring=scoring,
-												max_complexity=int(complexity),
-												min_accuracy=accuracy,
-												fit_time_out=max_time)
-				success_check.append(True)
-			except:
-				runtime = max_time
-				success_check.append(False)
-				print("did not find a solution")
+			#try:
+			runtime = my_search_strategy(X_train, y_train,
+											model=DecisionTreeClassifier(),
+											kfold=copy.deepcopy(kfold),
+											scoring=scoring,
+											max_complexity=int(complexity),
+											min_accuracy=accuracy,
+											fit_time_out=max_time)
+			success_check.append(True)
+			#except:
+			#	runtime = max_time
+			#	success_check.append(False)
+			#	print("did not find a solution")
 			print(runtime)
 
 			if rounds==0:

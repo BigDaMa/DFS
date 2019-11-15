@@ -87,7 +87,7 @@ def run_sequential_search(X_train, y_train, model=None, kfold=None, scoring=make
 
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
-	my_pipeline = Pipeline([('selection', BackwardSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+	my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', BackwardSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							('cmodel', model)
 							])
 
@@ -153,7 +153,7 @@ def run_hyperopt_search_kbest_forest(X_train, y_train, model=None, kfold=None, s
 					 fit_time_out)
 
 def run_hyperopt_search_kbest_l1(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
-	estimator = LinearSVC(penalty="l1")
+	estimator = LinearSVC(penalty="l1", dual=False)
 	return run_kbest(bindFunction1(estimator), X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy,
 					 fit_time_out)
 
@@ -175,7 +175,7 @@ def run_forward_seq_search(X_train, y_train, model=None, kfold=None, scoring=mak
 
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
-	my_pipeline = Pipeline([('selection', ForwardSequentialSelection(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+	my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', ForwardSequentialSelection(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							('cmodel', model)
 							])
 
@@ -196,7 +196,7 @@ def run_al_k_search(X_train, y_train, model=None, kfold=None, scoring=make_score
 	start_time = time.time()
 
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
-	my_pipeline = Pipeline([('selection', ALSelectionK(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+	my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', ALSelectionK(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
 							('cmodel', model)
 							])
 
