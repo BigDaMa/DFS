@@ -76,13 +76,16 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from fastsklearnfeature.configuration.Config import Config
 
+from sklearn.preprocessing import OneHotEncoder
+
 
 def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy = run_hyperopt_search_kbest_info, max_time =20 * 60):
 
 	name = my_search_strategy.__name__
+	xshape = OneHotEncoder(handle_unknown='ignore', sparse=False).fit_transform(X_train).shape[1]
 
 	# generate grid
-	complexity_grid = np.arange(1, X_train.shape[1]+1)
+	complexity_grid = np.arange(1, xshape + 1)
 	max_acc = 1.0
 	#accuracy_grid = np.arange(0.0, max_acc, max_acc / len(complexity_grid))
 	accuracy_grid = np.arange(0.0, max_acc, max_acc / 100.0)
@@ -132,7 +135,6 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 												min_accuracy=accuracy,
 												fit_time_out=max_time)
 				success_check.append(True)
-
 			except:
 				runtime = max_time
 				success_check.append(False)

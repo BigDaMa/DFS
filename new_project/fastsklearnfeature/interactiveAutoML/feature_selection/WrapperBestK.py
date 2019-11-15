@@ -7,15 +7,16 @@ class WrapperBestK(SelectKBest):
 	def __init__(self, selection, k=10):
 		self.k = k
 		self.selection = selection
+		#map_fold2ranking[self.selection.score_func.__name__] = {}
 
 	def fit(self, X, y=None):
 		hash_for_fold_ids = np.sum(X.index.values)
 
-		if hash_for_fold_ids in map_fold2ranking:
-			self.scores_ = map_fold2ranking[hash_for_fold_ids]
+		if hash_for_fold_ids in map_fold2ranking[self.selection.score_func.__name__]:
+			self.scores_ = map_fold2ranking[self.selection.score_func.__name__][hash_for_fold_ids]
 			return self
 		self.selection.fit(X,y)
-		map_fold2ranking[hash_for_fold_ids] = self.selection.scores_
+		map_fold2ranking[self.selection.score_func.__name__][hash_for_fold_ids] = self.selection.scores_
 		self.scores_ = self.selection.scores_
 
 		return self

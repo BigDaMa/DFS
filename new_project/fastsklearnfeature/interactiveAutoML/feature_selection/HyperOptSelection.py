@@ -15,6 +15,7 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.pyll.base import scope
 import time
 import pandas as pd
+import inspect
 
 import fastsklearnfeature.interactiveAutoML.feature_selection.WrapperBestK as wrap
 
@@ -25,6 +26,9 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 		self.my_pipeline = Pipeline([('select', wrap.WrapperBestK(self.selection_strategy)),
 									 ('model', model)
 									 ])
+		wrap.map_fold2ranking[self.selection_strategy.score_func.__name__] = {}
+		print(self.selection_strategy.score_func.__name__)
+
 		self.parameters = parameters
 		self.cv = cv
 		self.max_complexity = max_complexity
@@ -70,11 +74,11 @@ class HyperOptSelection(BaseEstimator, SelectorMixin):
 			fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
 			if trials.best_trial['result']['loss'] * -1 >= self.min_accuracy:
 				self.mask_ = trials.best_trial['result']['mask']
-				wrap.map_fold2ranking = {}
+				wrap.map_fold2ranking[self.selection_strategy.score_func.__name__] = {}
 				return self
 
 			if type(self.fit_time_out) != type(None) and self.fit_time_out < time.time() - start_time:
-				wrap.map_fold2ranking = {}
+				wrap.map_fold2ranking[self.selection_strategy.score_func.__name__] = {}
 				return self
 
 			i += 1
