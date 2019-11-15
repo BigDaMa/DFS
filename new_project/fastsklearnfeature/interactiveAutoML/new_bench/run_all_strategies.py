@@ -48,19 +48,19 @@ my_global_utils1.X_train = data[data.columns.difference(['class', 'instance'])].
 my_global_utils1.data_name = 'promoters'
 '''
 
-'''
+
 data = pd.read_csv(Config.get('data_path') + '/leukemia/leukemia.csv', delimiter=',', header=0)
 my_global_utils1.y_train = data['CLASS'].values
 my_global_utils1.X_train = data[data.columns.difference(['CLASS'])].values
 my_global_utils1.data_name = 'leukemia'
+
+
 '''
-
-
 data = pd.read_csv(Config.get('data_path') + '/breastTumor/breastTumor.csv', delimiter=',', header=0)
 my_global_utils1.y_train = data['binaryClass'].values
 my_global_utils1.X_train = data[data.columns.difference(['binaryClass'])].values
 my_global_utils1.data_name = 'breastTumor'
-
+'''
 
 
 '''
