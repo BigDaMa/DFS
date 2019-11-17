@@ -99,14 +99,24 @@ data_name = 'breastTumor'
 my_path = "/home/felix/phd/feature_constraints/experiments_tumor/"
 '''
 
+'''
 data = pd.read_csv(Config.get('data_path') + '/promoters/dataset_106_molecular-biology_promoters.csv', delimiter=',', header=0)
 y_train = data['class'].values
 X_train = data[data.columns.difference(['class', 'instance'])].values
 data_name = 'promoters'
 my_path = "/home/felix/phd/feature_constraints/experiments_promoters/"
+'''
 
-xshape = OneHotEncoder(handle_unknown='ignore', sparse=False).fit_transform(X_train).shape[1]
+X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500]
+y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values
+data_name = 'madelon'
+my_path = "/home/felix/phd/feature_constraints/experiments_madelon/"
+onehot=False
 
+if onehot:
+	xshape = OneHotEncoder(handle_unknown='ignore', sparse=False).fit_transform(X_train).shape[1]
+else:
+	xshape = X_train.shape[1]
 
 # generate grid
 complexity_grid = np.arange(1, xshape+1)
@@ -197,9 +207,12 @@ for data in mapfiles.keys():
 	plt.title('data: ' + str(data))
 	plt.show()
 
+	max_runtime = np.max(np.array([runtime_model.values for runtime_model in runtime_models]))
+	print("max: " + str(max_runtime))
+
 	for i in range(len(runtime_models)):
 		plt.subplot(4,4,1 + i)
-		sns.heatmap(runtime_models[i], cmap='RdBu', vmin=0, vmax=1200)
+		sns.heatmap(runtime_models[i], cmap='RdBu', vmin=0, vmax=max_runtime)
 		plt.title(strategy_names[i])
 
 	plt.subplots_adjust(hspace=1.5)

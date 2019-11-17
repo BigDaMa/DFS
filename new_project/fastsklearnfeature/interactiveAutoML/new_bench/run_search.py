@@ -63,13 +63,30 @@ Recursive Feature Elimination
 #######################################################################################################
 '''
 
-def run_sequential_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_sequential_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
 
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
-	my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', BackwardSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
-							('cmodel', model)
-							])
+
+	if one_hot:
+		my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', BackwardSelection(SelectKBest(score_func=mutual_info_classif), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+								('cmodel', model)
+								])
+	else:
+		my_pipeline = Pipeline([('selection',
+																									BackwardSelection(
+																										SelectKBest(
+																											score_func=mutual_info_classif),
+																										max_complexity=max_complexity,
+																										min_accuracy=min_accuracy,
+																										model=inner_pipeline,
+																										parameters={},
+																										kfold=kfold,
+																										scoring=scoring,
+																										fit_time_out=fit_time_out)),
+								('cmodel', model)
+								])
+
 
 	parameter_grid = {}
 	my_pipeline.set_params(**parameter_grid)
@@ -83,13 +100,29 @@ KBest Strategies:
 #######################################################################################################
 '''
 
-def run_kbest(score_function, X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_kbest(score_function, X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
 
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
-	my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', HyperOptSelection(SelectKBest(score_func=score_function), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, cv=kfold, scoring=scoring, fit_time_out=fit_time_out)),
-							('cmodel', model)
-							])
+
+	if one_hot:
+		my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', HyperOptSelection(SelectKBest(score_func=score_function), max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, cv=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+								('cmodel', model)
+								])
+	else:
+		my_pipeline = Pipeline([('selection',
+																									HyperOptSelection(
+																										SelectKBest(
+																											score_func=score_function),
+																										max_complexity=max_complexity,
+																										min_accuracy=min_accuracy,
+																										model=inner_pipeline,
+																										parameters={},
+																										cv=kfold,
+																										scoring=scoring,
+																										fit_time_out=fit_time_out)),
+								('cmodel', model)
+								])
 
 	parameter_grid = {}
 	my_pipeline.set_params(**parameter_grid)
@@ -97,21 +130,21 @@ def run_kbest(score_function, X_train, y_train, model=None, kfold=None, scoring=
 	return time.time() - start_time
 
 
-def run_hyperopt_search_kbest_info(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
-	return run_kbest(mutual_info_classif, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy, fit_time_out)
+def run_hyperopt_search_kbest_info(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
+	return run_kbest(mutual_info_classif, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy, fit_time_out, one_hot)
 
-def run_hyperopt_search_kbest_f_classif(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
-	return run_kbest(f_classif, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy, fit_time_out)
+def run_hyperopt_search_kbest_f_classif(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
+	return run_kbest(f_classif, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy, fit_time_out, one_hot)
 
-def run_hyperopt_search_kbest_chi2(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
-	return run_kbest(chi2, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy, fit_time_out)
+def run_hyperopt_search_kbest_chi2(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
+	return run_kbest(chi2, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy, fit_time_out, one_hot)
 
-def run_hyperopt_search_kbest_variance(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
-	return run_kbest(variance, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy, fit_time_out)
+def run_hyperopt_search_kbest_variance(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
+	return run_kbest(variance, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy, fit_time_out, one_hot)
 
-def run_hyperopt_search_kbest_fcbf(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_hyperopt_search_kbest_fcbf(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
 	return run_kbest(fcbf, X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy,
-					 fit_time_out)
+					 fit_time_out, one_hot)
 
 
 
@@ -127,21 +160,21 @@ def bindFunction1(estimator):
     func1.__name__ = 'score_model_' + estimator.__class__.__name__
     return func1
 
-def run_hyperopt_search_kbest_forest(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_hyperopt_search_kbest_forest(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
 	estimator = ExtraTreesClassifier(n_estimators=1000, random_state=0)
 	return run_kbest(bindFunction1(estimator), X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy,
-					 fit_time_out)
+					 fit_time_out, one_hot)
 
-def run_hyperopt_search_kbest_l1(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_hyperopt_search_kbest_l1(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
 	estimator = LinearSVC(penalty="l1", dual=False)
 	return run_kbest(bindFunction1(estimator), X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy,
-					 fit_time_out)
+					 fit_time_out, one_hot)
 
 
-def run_hyperopt_search_kbest_relieff(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_hyperopt_search_kbest_relieff(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
 	estimator = ReliefF(n_neighbors=10)
 	return run_kbest(bindFunction1(estimator), X_train, y_train, model, kfold, scoring, max_complexity, min_accuracy,
-					 fit_time_out)
+					 fit_time_out, one_hot)
 
 
 
@@ -151,13 +184,27 @@ Forward selection
 #######################################################################################################
 '''
 
-def run_forward_seq_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_forward_seq_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
 
 	start_time = time.time()
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
-	my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', ForwardSequentialSelection(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
-							('cmodel', model)
-							])
+
+	if one_hot:
+		my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', ForwardSequentialSelection(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+								('cmodel', model)
+								])
+	else:
+		my_pipeline = Pipeline([('selection',
+																									ForwardSequentialSelection(
+																										max_complexity=max_complexity,
+																										min_accuracy=min_accuracy,
+																										model=inner_pipeline,
+																										parameters={},
+																										kfold=kfold,
+																										scoring=scoring,
+																										fit_time_out=fit_time_out)),
+								('cmodel', model)
+								])
 
 	parameter_grid = {}
 	my_pipeline.set_params(**parameter_grid)
@@ -171,14 +218,28 @@ Kth Active learning
 #######################################################################################################
 '''
 
-def run_al_k_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None):
+def run_al_k_search(X_train, y_train, model=None, kfold=None, scoring=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), max_complexity=None, min_accuracy=None, fit_time_out=None, one_hot=False):
 
 	start_time = time.time()
 
 	inner_pipeline = Pipeline([('scale', StandardScaler()), ('model', model)])
-	my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', ALSelectionK(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
-							('cmodel', model)
-							])
+
+	if one_hot:
+		my_pipeline = Pipeline([('one_hot', OneHotEncoder(handle_unknown='ignore', sparse=False)),('selection', ALSelectionK(max_complexity=max_complexity, min_accuracy=min_accuracy, model=inner_pipeline, parameters={}, kfold=kfold, scoring=scoring, fit_time_out=fit_time_out)),
+								('cmodel', model)
+								])
+	else:
+		my_pipeline = Pipeline([('selection',
+																									ALSelectionK(
+																										max_complexity=max_complexity,
+																										min_accuracy=min_accuracy,
+																										model=inner_pipeline,
+																										parameters={},
+																										kfold=kfold,
+																										scoring=scoring,
+																										fit_time_out=fit_time_out)),
+								('cmodel', model)
+								])
 
 	parameter_grid = {}
 	my_pipeline.set_params(**parameter_grid)

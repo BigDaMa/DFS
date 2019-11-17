@@ -15,10 +15,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
 
 
-def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy = None, max_time =20 * 60):
+def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy = None, max_time =20 * 60, one_hot=False):
 
 	name = my_search_strategy.__name__
-	xshape = OneHotEncoder(handle_unknown='ignore', sparse=False).fit_transform(X_train).shape[1]
+
+	xshape = X_train.shape[1]
+	if one_hot:
+		xshape = OneHotEncoder(handle_unknown='ignore', sparse=False).fit_transform(X_train).shape[1]
 
 	# generate grid
 	complexity_grid = np.arange(1, xshape + 1)
@@ -69,7 +72,9 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 												scoring=scoring,
 												max_complexity=int(complexity),
 												min_accuracy=accuracy,
-												fit_time_out=max_time)
+												fit_time_out=max_time,
+											    one_hot=one_hot
+											 )
 				success_check.append(True)
 			except:
 				runtime = max_time

@@ -77,6 +77,9 @@ my_global_utils1.data_name = 'coil2000'
 my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500]
 my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values
 my_global_utils1.data_name = 'madelon'
+my_global_utils1.one_hot = False
+
+print(my_global_utils1.X_train.shape[1])
 
 
 
@@ -92,9 +95,6 @@ my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_forest, run_hyp
 #my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_forest]
 #my_global_utils1.max_time = 20 * 60
 my_global_utils1.max_time = 30 * 60
-
-
-my_global_utils1.y_train = my_global_utils1.y_train
 
 
 n_jobs = len(my_global_utils1.my_search_strategy)
