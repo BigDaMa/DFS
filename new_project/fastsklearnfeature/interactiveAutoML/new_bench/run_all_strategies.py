@@ -76,7 +76,7 @@ my_global_utils1.data_name = 'coil2000'
 
 my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500]
 my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values
-my_global_utils1.data_name = 'madelon'
+my_global_utils1.data_name = 'madelonWOOnehot'
 my_global_utils1.one_hot = False
 
 print(my_global_utils1.X_train.shape[1])
