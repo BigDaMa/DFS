@@ -28,18 +28,21 @@ def my_function(id):
 	run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy, max_time)
 
 
-'''
-my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:1000,:]
-my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values[0:1000]
-my_global_utils1.data_name = 'ARCENE_sample1k'
-'''
+
+my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000]
+my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values
+my_global_utils1.data_name = 'ARCENE'
+my_global_utils1.one_hot = False
+
 
 '''
 data = pd.read_csv(Config.get('data_path') + '/musk/musk.csv', delimiter=',', header=0)
 my_global_utils1.y_train = data['class'].values
 my_global_utils1.X_train = data[data.columns.difference(['class', 'ID', 'molecule_name', 'conformation_name'])].values
 my_global_utils1.data_name = 'musk'
+my_global_utils1.one_hot = False
 '''
+
 
 '''
 data = pd.read_csv(Config.get('data_path') + '/promoters/dataset_106_molecular-biology_promoters.csv', delimiter=',', header=0)
@@ -73,11 +76,12 @@ my_global_utils1.data_name = 'coil2000'
 '''
 
 
-
+'''
 my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500]
 my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values
 my_global_utils1.data_name = 'madelonWOOnehot'
 my_global_utils1.one_hot = False
+'''
 
 print(my_global_utils1.X_train.shape[1])
 

@@ -91,13 +91,14 @@ X_train = data[data.columns.difference(['class', 'ID', 'molecule_name', 'conform
 data_name = 'musk'
 '''
 
-'''
+
 data = pd.read_csv(Config.get('data_path') + '/breastTumor/breastTumor.csv', delimiter=',', header=0)
 y_train = data['binaryClass'].values
 X_train = data[data.columns.difference(['binaryClass'])].values
 data_name = 'breastTumor'
 my_path = "/home/felix/phd/feature_constraints/experiments_tumor/"
-'''
+onehot=True
+
 
 '''
 data = pd.read_csv(Config.get('data_path') + '/promoters/dataset_106_molecular-biology_promoters.csv', delimiter=',', header=0)
@@ -105,13 +106,18 @@ y_train = data['class'].values
 X_train = data[data.columns.difference(['class', 'instance'])].values
 data_name = 'promoters'
 my_path = "/home/felix/phd/feature_constraints/experiments_promoters/"
+onehot = True
 '''
 
+
+'''
 X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500]
 y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values
 data_name = 'madelon'
-my_path = "/home/felix/phd/feature_constraints/experiments_madelon/"
-onehot=False
+my_path = "/home/felix/phd/feature_constraints/experiments_madelon_no_one/"
+onehot = False
+'''
+
 
 if onehot:
 	xshape = OneHotEncoder(handle_unknown='ignore', sparse=False).fit_transform(X_train).shape[1]
@@ -176,10 +182,11 @@ for data in mapfiles.keys():
 	runtime_models = []
 	strategy_names = []
 
-
-	for strategy in mapfiles[data].keys():
-		runtime_models.append(get_estimated_runtimes(my_path + 'model'+ str(mapfiles[data][strategy]) +'_run_'+ str(strategy) +'_data_'+ str(data) +'.p'))
-		success_models.append(get_estimated_runtimes(my_path + 'success_model'+ str(mapfiles[data][strategy]) +'_run_'+ str(strategy) +'_data_'+ str(data) +'.p'))
+	all_strategies = list(mapfiles[data].keys())
+	all_strategies.sort()
+	for strategy in all_strategies:
+		runtime_models.append(get_estimated_runtimes(my_path + 'model' + str(mapfiles[data][strategy]) +'_run_'+ str(strategy) +'_data_'+ str(data) +'.p'))
+		success_models.append(get_estimated_runtimes(my_path + 'success_model' + str(mapfiles[data][strategy]) +'_run_'+ str(strategy) +'_data_'+ str(data) +'.p'))
 		strategy_names.append(strategy)
 
 
