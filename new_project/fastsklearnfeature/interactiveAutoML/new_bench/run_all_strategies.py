@@ -26,7 +26,7 @@ def my_function(id):
 	data_name = my_global_utils1.data_name
 	my_search_strategy = my_global_utils1.my_search_strategy[id]
 	max_time = my_global_utils1.max_time
-	run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy, max_time)
+	run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy, max_time, one_hot=my_global_utils1.one_hot)
 
 
 '''
@@ -51,7 +51,9 @@ data = pd.read_csv(Config.get('data_path') + '/promoters/dataset_106_molecular-b
 my_global_utils1.y_train = data['class'].values
 my_global_utils1.X_train = data[data.columns.difference(['class', 'instance'])].values
 my_global_utils1.data_name = 'promoters'
+my_global_utils1.one_hot = True
 '''
+
 
 
 '''
@@ -67,6 +69,7 @@ my_global_utils1.y_train = data['binaryClass'].values
 my_global_utils1.X_train = data[data.columns.difference(['binaryClass'])].values
 my_global_utils1.data_name = 'breastTumor'
 my_global_utils1.one_hot = True
+
 
 
 
