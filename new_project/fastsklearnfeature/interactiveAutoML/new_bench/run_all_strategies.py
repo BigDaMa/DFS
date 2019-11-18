@@ -6,6 +6,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench import my_global_utils1
 
 
 from fastsklearnfeature.interactiveAutoML.new_bench.create_runtime_chart_per_search import run_experiments_for_strategy
+from fastsklearnfeature.interactiveAutoML.new_bench.create_runtime_chart_per_search_all import run_experiments_for_strategy
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_forest
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_l1
 from fastsklearnfeature.interactiveAutoML.new_bench.run_search import run_hyperopt_search_kbest_fcbf
@@ -28,11 +29,12 @@ def my_function(id):
 	run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy, max_time)
 
 
-
+'''
 my_global_utils1.X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000]
 my_global_utils1.y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values
 my_global_utils1.data_name = 'ARCENE'
 my_global_utils1.one_hot = False
+'''
 
 
 '''
@@ -59,12 +61,13 @@ my_global_utils1.X_train = data[data.columns.difference(['CLASS'])].values
 my_global_utils1.data_name = 'leukemia'
 '''
 
-'''
+
 data = pd.read_csv(Config.get('data_path') + '/breastTumor/breastTumor.csv', delimiter=',', header=0)
 my_global_utils1.y_train = data['binaryClass'].values
 my_global_utils1.X_train = data[data.columns.difference(['binaryClass'])].values
 my_global_utils1.data_name = 'breastTumor'
-'''
+my_global_utils1.one_hot = True
+
 
 
 '''
@@ -98,7 +101,7 @@ my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_forest, run_hyp
 
 #my_global_utils1.my_search_strategy = [run_hyperopt_search_kbest_forest]
 #my_global_utils1.max_time = 20 * 60
-my_global_utils1.max_time = 30 * 60
+my_global_utils1.max_time = 20 * 60
 
 
 n_jobs = len(my_global_utils1.my_search_strategy)

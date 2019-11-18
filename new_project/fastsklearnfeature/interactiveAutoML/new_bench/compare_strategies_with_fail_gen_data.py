@@ -78,11 +78,11 @@ from fastsklearnfeature.configuration.Config import Config
 #X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500] [0:100,:]
 #y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values [0:100]
 
-'''
-X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000][0:100,:]
-y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values[0:100]
-data_name = 'ARCENE_sample'
-'''
+X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000]
+y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values
+data_name = 'ARCENE'
+my_path = "/home/felix/phd/feature_constraints/experiments_arcene/"
+onehot = False
 
 '''
 data = pd.read_csv(Config.get('data_path') + '/musk/musk.csv', delimiter=',', header=0)
@@ -91,13 +91,14 @@ X_train = data[data.columns.difference(['class', 'ID', 'molecule_name', 'conform
 data_name = 'musk'
 '''
 
-
+'''
 data = pd.read_csv(Config.get('data_path') + '/breastTumor/breastTumor.csv', delimiter=',', header=0)
 y_train = data['binaryClass'].values
 X_train = data[data.columns.difference(['binaryClass'])].values
 data_name = 'breastTumor'
 my_path = "/home/felix/phd/feature_constraints/experiments_tumor/"
 onehot=True
+'''
 
 
 '''
