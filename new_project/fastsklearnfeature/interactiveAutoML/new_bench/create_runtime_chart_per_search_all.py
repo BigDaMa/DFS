@@ -78,9 +78,6 @@ def run_experiments_for_strategy(X_train, y_train, data_name, my_search_strategy
 				success_dict[(accuracy, complexity)] = False
 				runtime_dict[(accuracy, complexity)] = max_time
 				print("did not find a solution")
-			print(runtime)
-
-
 
 			pfile = open("/tmp/actual_results" + str(meta_X_train.shape[0]) + "_" + name + '_data_' + data_name +".p", "wb")
 			pickle.dump(runtime_dict, pfile)
