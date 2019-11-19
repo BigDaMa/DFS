@@ -98,7 +98,7 @@ data = pd.read_csv(Config.get('data_path') + '/breastTumor/breastTumor.csv', del
 y_train = data['binaryClass'].values
 X_train = data[data.columns.difference(['binaryClass'])].values
 data_name = 'breastTumor'
-my_path = "/home/felix/phd/feature_constraints/experiments_tumor/"
+my_path = "/home/felix/phd/feature_constraints/experiments_actual_tumor/"
 onehot=True
 
 
@@ -113,7 +113,6 @@ onehot = True
 '''
 
 
-
 '''
 X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500]
 y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values
@@ -123,12 +122,85 @@ onehot = False
 '''
 
 
-
 if onehot:
 	xshape = OneHotEncoder(handle_unknown='ignore', sparse=False).fit_transform(X_train).shape[1]
 else:
 	xshape = X_train.shape[1]
 
+
+
+
+import glob
+
+file_lists = glob.glob(my_path + "*.p")
+
+print(file_lists)
+
+
+mapfiles = {}
+
+#get max iteration per selection method
+
+from mpl_toolkits.mplot3d import Axes3D
+
+#fig = plt.figure()
+#ax = fig.add_subplot(111, projection='3d')
+
+
+for file in file_lists:
+	if not 'success_actual_results' in file:
+		my_dict = pickle.load(open(file, "rb"))
+		print(len(my_dict))
+		print(my_dict)
+
+		runtimes = []
+		accuracies = []
+		complexities = []
+		for key, value in my_dict.items():
+			if value < 1199:
+				accuracies.append(key[0])
+				complexities.append(key[1])
+				runtimes.append(value)
+
+		fig = plt.figure()
+		ax = fig.add_subplot(111, projection='3d')
+		ax.scatter(accuracies, complexities, runtimes)
+
+		ax.set_xlabel('Accuracy')
+		ax.set_ylabel('Complexity')
+		ax.set_zlabel('Runtime')
+		plt.title(file)
+
+		plt.show()
+
+
+
+
+
+
+'''
+for data in mapfiles.keys():
+
+	success_models = []
+	runtime_models = []
+	strategy_names = []
+
+	all_strategies = list(mapfiles[data].keys())
+	all_strategies.sort()
+	for strategy in all_strategies:
+		runtime_models.append(get_estimated_runtimes(my_path + 'model' + str(mapfiles[data][strategy]) +'_run_'+ str(strategy) +'_data_'+ str(data) +'.p'))
+		success_models.append(get_estimated_runtimes(my_path + 'success_model' + str(mapfiles[data][strategy]) +'_run_'+ str(strategy) +'_data_'+ str(data) +'.p'))
+		strategy_names.append(strategy)
+
+
+	min_matrix = np.array([runtime_model.values for runtime_model in runtime_models])
+	min_matrix = np.min(min_matrix, axis=0)
+
+'''
+
+
+
+'''
 # generate grid
 complexity_grid = np.arange(1, xshape+1)
 max_acc = 1.0
@@ -199,9 +271,9 @@ for data in mapfiles.keys():
 	min_matrix = np.min(min_matrix, axis=0)
 
 
-	for ii in range(len(runtime_models)):
-		sum_runtime = np.sum(runtime_models[ii].values)
-		print(strategy_names[ii] + ": difference to minimum in seconds: " + str(sum_runtime - np.sum(min_matrix)))
+	for runtime_model in runtime_models:
+		sum_runtime = np.sum(runtime_model.values)
+		print(strategy + ": difference to minimum in seconds: " + str(sum_runtime - np.sum(min_matrix)))
 
 	def get_best_scatter(times, successes):
 		best_x = []
@@ -243,4 +315,4 @@ for data in mapfiles.keys():
 	plt.subplots_adjust(hspace=1.5)
 	plt.show()
 
-
+'''
