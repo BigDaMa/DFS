@@ -17,8 +17,20 @@ import time
 import pandas as pd
 import inspect
 import pickle
+import multiprocessing as mp
 
 import fastsklearnfeature.interactiveAutoML.feature_selection.WrapperBestK as wrap
+from fastsklearnfeature.interactiveAutoML.feature_selection import my_global_utils_new
+
+def k_cross_val(k):
+	start_time = time.time()
+	parameters = copy.deepcopy(my_global_utils_new.parameters)
+	parameters['select__' + 'k'] = [int(k)]
+	print(k)
+
+	cv_eval = GridSearchCV(estimator=my_global_utils_new.my_pipeline, param_grid=parameters, cv=my_global_utils_new.cv, scoring=my_global_utils_new.scoring)
+	cv_eval.fit(pd.DataFrame(my_global_utils_new.X), my_global_utils_new.y)
+	return {k: (cv_eval.best_score_, time.time() - start_time)}
 
 
 class RunAllKBestSelection(BaseEstimator, SelectorMixin):
@@ -41,6 +53,7 @@ class RunAllKBestSelection(BaseEstimator, SelectorMixin):
 	def fit(self, X, y=None):
 		self.map_k_to_results = {}
 
+		'''
 		for k in range(1, self.max_complexity + 1):
 			start_time = time.time()
 			print(k)
@@ -51,8 +64,26 @@ class RunAllKBestSelection(BaseEstimator, SelectorMixin):
 			cv_eval.fit(pd.DataFrame(X), y)
 
 			self.map_k_to_results[k] = (cv_eval.best_score_, time.time() - start_time)
+		'''
 
-		pfile = open("/tmp/all"+ self.selection_strategy.score_func.__name__ + ".p", "wb")
+		my_global_utils_new.parameters = self.parameters
+		my_global_utils_new.my_pipeline = self.my_pipeline
+		my_global_utils_new.cv = self.cv
+		my_global_utils_new.scoring = self.scoring
+		my_global_utils_new.X = X
+		my_global_utils_new.y = y
+		n_jobs = mp.cpu_count()
+		results = []
+
+		results.append(k_cross_val(1))
+		with mp.Pool(processes=n_jobs) as pool:
+			results = pool.map(k_cross_val, range(2, self.max_complexity + 1))
+
+		for r in results:
+			self.map_k_to_results.update(r)
+
+
+		pfile = open("/tmp/all" + self.selection_strategy.score_func.__name__ + ".p", "wb")
 		pickle.dump(self.map_k_to_results, pfile)
 		pfile.flush()
 		pfile.close()

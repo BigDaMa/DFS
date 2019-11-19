@@ -5,7 +5,11 @@ import pickle
 
 import glob
 
-file_lists = glob.glob("/tmp/all*.p")
+
+#path = '/tmp/'
+path = '/home/felix/phd/feature_constraints/bestk_experiments_madelon/'
+
+file_lists = glob.glob(path + "all*.p")
 
 for f_name in file_lists:
 	map_k_to_results = pickle.load(open(f_name, "rb"))

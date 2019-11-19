@@ -152,9 +152,17 @@ data_name = 'promoters'
 one_hot = True
 '''
 
+
+'''
 X_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.data', delimiter=' ', header=None).values[:,0:500]
 y_train = pd.read_csv(Config.get('data_path') + '/madelon/madelon_train.labels', delimiter=' ', header=None).values
 data_name = 'madelon'
+one_hot = False
+'''
+
+X_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.data', delimiter=' ', header=None).values[:,0:10000]
+y_train = pd.read_csv(Config.get('data_path') + '/ARCENE/arcene_train.labels', delimiter=' ', header=None).values
+data_name = 'ARCENE'
 one_hot = False
 
 xshape = X_train.shape[1]
