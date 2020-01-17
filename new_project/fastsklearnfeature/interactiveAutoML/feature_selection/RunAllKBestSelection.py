@@ -29,12 +29,22 @@ def k_cross_val(k):
 	print(k)
 
 	cv_eval = GridSearchCV(estimator=my_global_utils_new.my_pipeline, param_grid=parameters, cv=my_global_utils_new.cv, scoring=my_global_utils_new.scoring)
-	cv_eval.fit(pd.DataFrame(my_global_utils_new.X), my_global_utils_new.y)
-	return {k: (cv_eval.best_score_, time.time() - start_time)}
+	cv_eval.fit(my_global_utils_new.X, pd.DataFrame(my_global_utils_new.y))
+
+	#print(my_global_utils_new.X.shape)
+	#print(my_global_utils_new.X_test.shape)
+
+	test_score = cv_eval.score(my_global_utils_new.X_test, my_global_utils_new.y_test)
+
+	#return test score too :)
+
+	print(str({k: (cv_eval.best_score_, time.time() - start_time, test_score)}))
+
+	return {k: (cv_eval.best_score_, time.time() - start_time, test_score)}
 
 
 class RunAllKBestSelection(BaseEstimator, SelectorMixin):
-	def __init__(self, selection_strategy, max_complexity=None, min_accuracy=None, model=None, parameters=None, cv=None, scoring=None, fit_time_out=None):
+	def __init__(self, selection_strategy, max_complexity=None, min_accuracy=None, model=None, parameters=None, cv=None, scoring=None, fit_time_out=None, X_test=None, y_test=None):
 		self.selection_strategy = selection_strategy
 		self.my_pipeline = Pipeline([('select', wrap.WrapperBestK(self.selection_strategy)),
 									 ('model', model)
@@ -48,6 +58,8 @@ class RunAllKBestSelection(BaseEstimator, SelectorMixin):
 		self.min_accuracy = min_accuracy
 		self.scoring = scoring
 		self.fit_time_out = fit_time_out
+		self.X_test = X_test
+		self.y_test = y_test
 
 
 	def fit(self, X, y=None):
@@ -72,12 +84,20 @@ class RunAllKBestSelection(BaseEstimator, SelectorMixin):
 		my_global_utils_new.scoring = self.scoring
 		my_global_utils_new.X = X
 		my_global_utils_new.y = y
+
+		my_global_utils_new.X_test = self.X_test
+		my_global_utils_new.y_test = self.y_test
+
 		n_jobs = mp.cpu_count()
 		results = []
 
 		results.append(k_cross_val(1))
+
+		ranking_time = results[0][1]
+		results.append({-1: ranking_time})
+
 		with mp.Pool(processes=n_jobs) as pool:
-			results = pool.map(k_cross_val, range(2, self.max_complexity + 1))
+			results.extend(pool.map(k_cross_val, range(1, self.max_complexity + 1)))
 
 		for r in results:
 			self.map_k_to_results.update(r)

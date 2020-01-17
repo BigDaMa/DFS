@@ -13,9 +13,10 @@ from sklearn.model_selection import GridSearchCV
 import copy
 import time
 from sklearn.model_selection import StratifiedKFold
+import pickle
 
 class BackwardSelection(BaseEstimator, SelectorMixin):
-	def __init__(self, selection_strategy, max_complexity=None, min_accuracy=None, model=None, parameters=None, kfold=None, scoring=None, step_size=1, fit_time_out=None):
+	def __init__(self, selection_strategy, max_complexity=None, min_accuracy=None, model=None, parameters=None, kfold=None, scoring=None, step_size=1, fit_time_out=None, X_test=None, y_test=None):
 		self.selection_strategy = selection_strategy
 		self.parameters = parameters
 		self.kfold = kfold
@@ -25,12 +26,14 @@ class BackwardSelection(BaseEstimator, SelectorMixin):
 		self.step_size = step_size
 		self.model = model
 		self.fit_time_out = fit_time_out
+		self.X_test = X_test
+		self.y_test = y_test
 
 	def fit(self, X, y=None):
 
 		start_time = time.time()
 
-		self.log_results_ = []
+		self.map_k_to_results = {}
 
 		def update_ids(selector, ids):
 			mask = selector._get_support_mask()
@@ -57,6 +60,7 @@ class BackwardSelection(BaseEstimator, SelectorMixin):
 		])
 
 		for number_features in range(X.shape[1] - 1, 0, -1 * self.step_size):
+			print(number_features)
 			pipeline_per_fold = []
 			score_per_fold = []
 
@@ -65,17 +69,25 @@ class BackwardSelection(BaseEstimator, SelectorMixin):
 
 			my_pipeline.set_params(**parameters)
 
+			#apply rfe per fold
 			for fold_i in range(len(fold_ids)):
 				my_pipeline.fit(X[fold_ids[fold_i][0]][:, feature_ids_per_fold[fold_i]], y.values[fold_ids[fold_i][0]])
 				score_per_fold.append(self.scoring(my_pipeline, X[fold_ids[fold_i][1]][:, feature_ids_per_fold[fold_i]], y.values[fold_ids[fold_i][1]]))
 				pipeline_per_fold.append(copy.deepcopy(my_pipeline))
 				feature_ids_per_fold[fold_i] = update_ids(my_pipeline.named_steps['select'], feature_ids_per_fold[fold_i])
 
-			print("cv: " + str(np.mean(score_per_fold)))
+			#apply rfe on all training data
 			my_pipeline.fit(X[:, feature_ids_all], y)
+
+			test_score = self.scoring(my_pipeline, self.X_test[:, feature_ids_all], self.y_test)
+			self.map_k_to_results[number_features] = (np.mean(score_per_fold), time.time() - start_time, test_score)
+
 			feature_ids_all = update_ids(my_pipeline.named_steps['select'], feature_ids_all)
 
-			self.log_results_.append([number_features, np.mean(score_per_fold), time.time() - start_time])
+			pfile = open("/tmp/allrfe.p", "wb")
+			pickle.dump(self.map_k_to_results, pfile)
+			pfile.flush()
+			pfile.close()
 
 			if number_features <= self.max_complexity and np.mean(score_per_fold) >= self.min_accuracy:
 				self.mask_ = np.zeros(X.shape[1], dtype=bool)

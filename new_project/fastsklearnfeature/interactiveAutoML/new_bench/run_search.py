@@ -199,14 +199,14 @@ def run_forward_seq_search(X_train, y_train, model=None, kfold=None, scoring=mak
 								])
 	else:
 		my_pipeline = Pipeline([('selection',
-																									ForwardSequentialSelection(
-																										max_complexity=max_complexity,
-																										min_accuracy=min_accuracy,
-																										model=inner_pipeline,
-																										parameters={},
-																										kfold=kfold,
-																										scoring=scoring,
-																										fit_time_out=fit_time_out)),
+										ForwardSequentialSelection(
+											max_complexity=max_complexity,
+											min_accuracy=min_accuracy,
+											model=inner_pipeline,
+											parameters={},
+											kfold=kfold,
+											scoring=scoring,
+											fit_time_out=fit_time_out)),
 								('cmodel', model)
 								])
 

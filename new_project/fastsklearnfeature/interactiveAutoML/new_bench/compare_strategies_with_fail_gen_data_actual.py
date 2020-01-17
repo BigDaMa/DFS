@@ -147,6 +147,9 @@ from mpl_toolkits.mplot3d import Axes3D
 #ax = fig.add_subplot(111, projection='3d')
 
 
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
 for file in file_lists:
 	if not 'success_actual_results' in file:
 		my_dict = pickle.load(open(file, "rb"))
@@ -162,16 +165,15 @@ for file in file_lists:
 				complexities.append(key[1])
 				runtimes.append(value)
 
-		fig = plt.figure()
-		ax = fig.add_subplot(111, projection='3d')
+
 		ax.scatter(accuracies, complexities, runtimes)
 
-		ax.set_xlabel('Accuracy')
-		ax.set_ylabel('Complexity')
-		ax.set_zlabel('Runtime')
-		plt.title(file)
+ax.set_xlabel('Accuracy')
+ax.set_ylabel('Complexity')
+ax.set_zlabel('Runtime')
+plt.title(file)
 
-		plt.show()
+plt.show()
 
 
 
