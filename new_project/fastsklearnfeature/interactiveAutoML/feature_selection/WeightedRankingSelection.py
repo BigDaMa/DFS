@@ -14,10 +14,11 @@ from sklearn.model_selection import GridSearchCV
 import copy
 
 class WeightedRankingSelection(BaseEstimator, SelectorMixin):
-    def __init__(self, scores, weights, k):
+    def __init__(self, scores, weights, k, names=None):
         self.scores = scores
         self.weights = weights
         self.k = k
+        self.names = names
 
 
     def fit(self, X, y=None):
@@ -32,6 +33,7 @@ class WeightedRankingSelection(BaseEstimator, SelectorMixin):
 
 
         #print('hallo: ' + str(ids[0:self.k]))
+        print('seledcted features: ' + str(self.names[ids[0:self.k]]))
 
         return self
 

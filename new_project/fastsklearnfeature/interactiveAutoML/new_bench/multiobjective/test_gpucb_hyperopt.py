@@ -34,6 +34,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import pandas as pd
 import time
+from sklearn.gaussian_process import GaussianProcessRegressor
 
 from art.metrics import RobustnessVerificationTreeModelsCliqueMethod
 from art.metrics import loss_sensitivity
@@ -55,6 +56,7 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import 
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import model_score
 from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import BackwardSelection
 from sklearn.model_selection import train_test_split
+from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 
 from fastsklearnfeature.interactiveAutoML.new_bench import my_global_utils1
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import unit_test_score
@@ -153,19 +155,6 @@ for fname_i in range(len(all_names)):
 
 print(sensitive_ids)
 
-new_y_train = copy.deepcopy(new_X_train[:, sensitive_ids[0]])
-new_X_train[:, sensitive_ids] = 0
-
-ranking_model = ExtraTreesClassifier(n_estimators=n_estimators, random_state=0)
-ranking_model.fit(new_X_train, new_y_train)
-fairness_ranking = ranking_model.feature_importances_
-
-fairness_ranking[sensitive_ids] = np.max(fairness_ranking)
-
-fairness_ranking *= -1
-pickle.dump(fairness_ranking, open("/home/felix/phd/ranking_exeriments/fairness_ranking.p", "wb"))
-
-
 #ranking by robustness
 
 
@@ -178,39 +167,7 @@ y_test = le.transform(y_test)
 print(type(y_train))
 print(y_train.shape)
 
-X_train_rob, X_test_rob, y_train_rob, y_test_rob = train_test_split(X_train, y_train, test_size=0.5, random_state=42)
 
-print(X_train_rob.shape)
-
-from art.attacks import ZooAttack
-from art.attacks import FastGradientMethod
-
-robustness_ranking = np.zeros(X_train_rob.shape[1])
-
-for feature_i in range(X_train_rob.shape[1]):
-	feature_ids = list(range(X_train_rob.shape[1]))
-	del feature_ids[feature_i]
-
-	from sklearn.svm import LinearSVC
-	model = LinearSVC()
-	#model = LogisticRegression()#ExtraTreesClassifier(n_estimators=1)
-	#model.fit(X_train_rob[:,feature_ids], y_train_rob)
-	
-	tuned_parameters = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
-	cv = GridSearchCV(LinearSVC(), tuned_parameters)
-	cv.fit(X_train_rob[:,feature_ids], y_train_rob)
-	model = cv.best_estimator_
-	
-	classifier = SklearnClassifier(model=model)
-	attack = FastGradientMethod(classifier, eps=0.1, batch_size=1)
-
-	X_test_adv = attack.generate(X_test_rob[:,feature_ids])
-
-	diff = model.score(X_test_rob[:, feature_ids], y_test_rob) - model.score(X_test_adv, y_test_rob)
-	print(diff)
-	robustness_ranking[feature_i] = diff
-robustness_ranking *= -1
-pickle.dump(robustness_ranking, open("/home/felix/phd/ranking_exeriments/robustness_ranking.p", "wb"))
 
 
 
@@ -257,98 +214,29 @@ max_number_features = X_train.shape[1]
 
 min_avg_model_accuracy = 0.0 #does not really make sense
 
-def f_clf1(hps):
-	# Assembing pipeline
-	weights = [hps['acc_w'], hps['fair_w'], hps['rob_w']]
-	#weights = [0.0, 1.0, 0.0]
-	rankings = [accuracy_ranking, fairness_ranking, robustness_ranking]
-
-	clf = LogisticRegression()
-	if type(privacy_epsilon) != type(None):
-		clf = models.LogisticRegression(epsilon=privacy_epsilon)
-
+def objective(features):
 	model = Pipeline([
-		('selection', WeightedRankingSelection(scores=rankings, weights=weights, k=hps['k'] + 1, names=np.array(names))),
-		('clf', clf)
+		('selection', MaskSelection(features)),
+		('clf', LogisticRegression())
 	])
 
-	return model
+	robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train,
+								feature_selector=model.named_steps['selection'])
+	robust_scorer_test = make_scorer(robust_score_test, greater_is_better=True, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test,
+								feature_selector=model.named_steps['selection'])
 
-def get_knn(hps):
-	# Assembing pipeline
-	weights = [hps['acc_w'], hps['fair_w'], hps['rob_w']]
-	#weights = [0.0, 1.0, 0.0]
-	rankings = [accuracy_ranking, fairness_ranking, robustness_ranking]
+	ncv = 5
 
-	clf = KNeighborsClassifier(n_neighbors=3)
-	#if type(privacy_epsilon) != type(None):
-	#	clf = models.LogisticRegression(epsilon=privacy_epsilon)
+	cv_acc = np.mean(
+		cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))
+	cv_fair = 1.0 - np.mean(cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=fair_train))
+	cv_robust = 1.0 - np.mean(cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=robust_scorer))
+	#cv_robust = 1.0
 
-	model = Pipeline([
-		('selection', WeightedRankingSelection(scores=rankings, weights=weights, k=hps['k'] + 1, names=np.array(names))),
-		('clf', clf)
-	])
+	print('cv acc: ' + str(cv_acc) + ' cv fair: ' + str(cv_fair) + ' cv robust: ' + str(cv_robust))
 
-	return model
-
-def f_to_min1(hps, X, y, ncv=5):
-	print(hps)
-	model = f_clf1(hps)
-
-	robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, feature_selector=model.named_steps['selection'])
-
-	unit_test_instance_id = 0
-	unit_test_scorer = make_scorer(unit_test_score, greater_is_better=True, unit_x=X_test[unit_test_instance_id,:], unit_y=y_test[unit_test_instance_id], X=X_train, y=y_train, pipeline=model)
-
-	#turn n cvs in one
-	cv_acc = np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))
-	cv_fair = 1.0 - np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=fair_train))
-	cv_robust = 1.0 - np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=robust_scorer))
-
-	cv_unit = np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=unit_test_scorer))
-
-	#cv_model_gen = (cv_acc + np.mean(cross_val_score(get_knn(hps), X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))) / 2
-	cv_model_gen = 1.0
-
-	loss = 0.0
-	if cv_acc >= min_accuracy and cv_fair >= min_fairness and cv_robust >= min_robustness and cv_model_gen >= min_avg_model_accuracy:
-		loss = (min_accuracy - cv_acc) + (min_fairness - cv_fair) + (min_robustness - cv_robust) + (min_avg_model_accuracy - cv_model_gen)
-	else:
-		if cv_fair < min_fairness:
-			loss += (min_fairness - cv_fair)
-		if cv_acc < min_accuracy:
-			loss += (min_accuracy - cv_acc)
-		if cv_robust < min_robustness:
-			loss += (min_robustness - cv_robust)
-		if cv_model_gen < min_avg_model_accuracy:
-			loss += (min_avg_model_accuracy - cv_model_gen)
-
-	print("robust: " + str(cv_robust) + " fair: " + str(cv_fair) + " acc: " + str(cv_acc) + 'avg model acc: '+ str(cv_model_gen) +  ' => loss: ' + str(loss))
-
-	return {'loss': loss, 'status': STATUS_OK, 'model': model}
-
-
-
-space = {'k': hp.randint('k', max_number_features),
-		 'acc_w': hp.lognormal('acc_w', 0, 1),
-         'fair_w': hp.lognormal('fair_w', 0, 1),
-		 'rob_w': hp.lognormal('rob_w', 0, 1),
-		 }
-
-
-start_time = time.time()
-
-trials = Trials()
-i = 1
-while True:
-	fmin(partial(f_to_min1, X=X_train, y=y_train), space=space, algo=tpe.suggest, max_evals=i, trials=trials)
-	if trials.trials[-1]['result']['loss'] < 0.0:
-		model = trials.trials[-1]['result']['model']
-
-		robust_scorer_test = make_scorer(robust_score_test, greater_is_better=True, X_train=X_train, y_train=y_train,
-										 X_test=X_test, y_test=y_test,
-										 feature_selector=model.named_steps['selection'])
-
+	'''
+	if cv_acc > min_accuracy and cv_fair > min_fairness and cv_robust > min_robustness:
 		model.fit(X_train, pd.DataFrame(y_train))
 		test_acc = auc_scorer(model, X_test, pd.DataFrame(y_test))
 		test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
@@ -357,9 +245,78 @@ while True:
 		print('acc: ' + str(test_acc) + ' fair: ' + str(test_fair) + ' robust: ' + str(test_robust))
 
 		if test_acc > min_accuracy and test_fair > min_fairness and test_robust > min_robustness:
-			break
+			my_global_variable.global_check = True
 
+			print("selected features: " + str(np.array(names)[features]))
+	'''
+	simplicity = -1 * np.sum(features)
+
+	#change objectives
+	#cv_acc = 1.0
+
+	#return [cv_acc, cv_fair, cv_robust, simplicity]
+	return cv_acc
+
+gp = GaussianProcessRegressor()
+
+def f_to_min1(hps, beta=1.0):
+	mask = np.zeros(len(hps), dtype=bool)
+	for k, v in hps.items():
+		mask[int(k.split('_')[1])] = v
+
+	try:
+		mu, sigma = gp.predict([mask], return_std=True)
+		print(mu)
+
+		loss = -1 * (mu[0] + sigma[0] * np.sqrt(beta))
+	except:
+		loss = 0
+
+	return {'loss': loss, 'status': STATUS_OK, 'mask': mask}
+
+
+
+space = {}
+for f_i in range(X_train.shape[1]):
+	space['f_' + str(f_i)] = hp.randint('f_' + str(f_i), 2)
+
+
+start_time = time.time()
+
+X_train_gp = []
+y_train_gp = []
+
+trials = Trials()
+i = 1
+while True:
+	fmin(partial(f_to_min1), space=space, algo=tpe.suggest, max_evals=i, trials=trials)
+	if i < 100:
+		# create random cold start training set
+		x_new = trials.trials[-1]['result']['mask']
+		y_new = objective(x_new)
+
+		X_train_gp.append(x_new)
+		y_train_gp.append(y_new)
+		gp.fit(np.array(X_train_gp), y_train_gp)
+	else:
+		break
 	i += 1
+
+for o in range(10):
+	trials = Trials()
+	i = 1
+	while True:
+		fmin(partial(f_to_min1), space=space, algo=tpe.suggest, max_evals=i, trials=trials)
+		if i > 100:
+			# create random cold start training set
+			x_new = trials.best_trial['result']['mask']
+			y_new = objective(x_new)
+
+			X_train_gp.append(x_new)
+			y_train_gp.append(y_new)
+			gp.fit(np.array(X_train_gp), y_train_gp)
+			break
+		i += 1
 
 
 print("time until constraint: " + str(time.time() - start_time))
