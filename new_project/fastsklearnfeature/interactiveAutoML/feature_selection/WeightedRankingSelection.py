@@ -14,11 +14,12 @@ from sklearn.model_selection import GridSearchCV
 import copy
 
 class WeightedRankingSelection(BaseEstimator, SelectorMixin):
-    def __init__(self, scores, weights, k, names=None):
+    def __init__(self, scores, weights, k, names=None, hyperparameter_mask=None):
         self.scores = scores
         self.weights = weights
         self.k = k
         self.names = names
+        self.hyperparameter_mask = hyperparameter_mask
 
 
     def fit(self, X, y=None):
@@ -31,9 +32,14 @@ class WeightedRankingSelection(BaseEstimator, SelectorMixin):
         self.feature_mask = np.zeros(len(self.scores[0]), dtype=bool)
         self.feature_mask[ids[0:self.k]] = True
 
+        if type(self.hyperparameter_mask) != type(None):
+            for feature_i in range(len(self.hyperparameter_mask)):
+                if self.hyperparameter_mask[feature_i] == False:
+                    self.feature_mask[feature_i] = False
+
 
         #print('hallo: ' + str(ids[0:self.k]))
-        print('seledcted features: ' + str(self.names[ids[0:self.k]]))
+        #print('seledcted features: ' + str(self.names[ids[0:self.k]]))
 
         return self
 

@@ -216,7 +216,7 @@ min_avg_model_accuracy = 0.0 #does not really make sense
 
 def objective(features):
 	model = Pipeline([
-		('selection', MaskSelection(np.array(features, dtype=bool))),
+		('selection', MaskSelection(features)),
 		('clf', LogisticRegression())
 	])
 
@@ -227,7 +227,8 @@ def objective(features):
 
 	ncv = 5
 
-	cv_acc = np.mean(cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))
+	cv_acc = np.mean(
+		cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))
 	cv_fair = 1.0 - np.mean(cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=fair_train))
 	cv_robust = 1.0 - np.mean(cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=robust_scorer))
 	#cv_robust = 1.0
@@ -257,28 +258,15 @@ def objective(features):
 	return cv_acc
 
 from sklearn.ensemble import RandomForestRegressor
-numberTrees = 100
+numberTrees = 10
 model = None
 
-def f_to_min1(hps, beta=100.0):
-	mask = np.zeros(len(hps), dtype=int)
+def f_to_min1(hps, beta=0.0):
+	mask = np.zeros(len(hps), dtype=bool)
 	for k, v in hps.items():
 		mask[int(k.split('_')[1])] = v
 
-	mask = np.append(mask, np.sum(mask))
-
-	predictions = []
-	for tree in range(numberTrees):
-		if hasattr(model, 'estimators_'):
-			predictions.append(model.estimators_[tree].predict([mask])[0])
-		else:
-			predictions.append(0.0)
-
-	mu = np.mean(predictions)
-	sigma = np.std(predictions)
-	print(mu)
-
-	loss = -1 * (mu + sigma * np.sqrt(beta))
+	loss = -1 * objective(mask)
 
 	return {'loss': loss, 'status': STATUS_OK}
 
@@ -289,18 +277,15 @@ def f_to_min1(hps, beta=100.0):
 
 
 def valsToMaskLast(trials):
-	mask = np.zeros(len(trials.vals), dtype=int)
-
-	print(trials.vals)
+	mask = np.zeros(len(trials.vals), dtype=bool)
 	for k, v in trials.vals.items():
 		mask[int(k.split('_')[1])] = v[-1]
 	return mask
 
 def valsToMask(trials):
-	mask = np.zeros(len(trials.argmin), dtype=int)
+	mask = np.zeros(len(trials.argmin), dtype=bool)
 	for k, v in trials.argmin.items():
 		mask[int(k.split('_')[1])] = v
-
 	return mask
 
 my_history = []
@@ -310,8 +295,6 @@ time_history = []
 for runs in range(10):
 	start_time = time.time()
 
-	model = RandomForestRegressor(n_estimators=numberTrees)
-	X_train_gp = []
 	y_train_gp = []
 	time_hist = []
 
@@ -322,43 +305,17 @@ for runs in range(10):
 	i = 1
 	while True:
 		fmin(f_to_min1, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
-		if i < 3:
-			# create random cold start training set
-			x_new = valsToMaskLast(trials)
-			y_new = objective(x_new)
-			x_new = np.append(x_new, np.sum(x_new))
+		if i < 53:
+			y_new = trials.trials[-1]['result']['loss'] *-1
 			time_hist.append(time.time() - start_time)
 
-			X_train_gp.append(x_new)
 			y_train_gp.append(y_new)
-
-			model.fit(np.array(X_train_gp), y_train_gp)
 		else:
 			break
 		i += 1
 
 
-	for o in range(10):
-		trials = Trials()
-		space = {}
-		for f_i in range(X_train.shape[1]):
-			space['f_' + str(f_i)] = hp.randint('f_' + str(f_i), 2)
 
-		i = 1
-		while True:
-			fmin(f_to_min1, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
-			if i >= 100:
-				# create random cold start training set
-				x_new = valsToMask(trials)
-				y_new = objective(x_new)
-				x_new = np.append(x_new, np.sum(x_new))
-				time_hist.append(time.time() - start_time)
-
-				X_train_gp.append(x_new)
-				y_train_gp.append(y_new)
-				model.fit(np.array(X_train_gp), y_train_gp)
-				break
-			i += 1
 
 
 	print("time until constraint: " + str(time.time() - start_time))
