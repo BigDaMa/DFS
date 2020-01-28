@@ -3,8 +3,9 @@ from art.classifiers import XGBoostClassifier, LightGBMClassifier, SklearnClassi
 
 from art.attacks import FastGradientMethod
 from sklearn.model_selection import GridSearchCV
+import copy
 
-def robust_score(y_true, y_pred, eps=0.1, X=None, y=None, feature_selector=None):
+def robust_score(y_true, y_pred, eps=0.1, X=None, y=None, model=None, feature_selector=None, scorer=None):
 	all_ids = range(X.shape[0])
 	test_ids = y_true.index.values
 	train_ids = list(set(all_ids)-set(test_ids))
@@ -14,25 +15,27 @@ def robust_score(y_true, y_pred, eps=0.1, X=None, y=None, feature_selector=None)
 	X_test = X[test_ids,:]
 	y_test = y[test_ids]
 
-	X_train = feature_selector.fit_transform(X_train)
-	X_test = feature_selector.transform(X_test)
+	if type(feature_selector) != type(None):
+		X_train = feature_selector.fit_transform(X_train)
+		X_test = feature_selector.transform(X_test)
 
 
-	from sklearn.svm import LinearSVC
-	model = LinearSVC()
-	tuned_parameters = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
-	cv = GridSearchCV(LinearSVC(), tuned_parameters)
-	cv.fit(X_train, y_train)
-	model = cv.best_estimator_
+	#tuned_parameters = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
+	#cv = GridSearchCV(model, tuned_parameters)
+	#cv.fit(X_train, y_train)
+	#best_model = cv.best_estimator_
+	best_model = copy.deepcopy(model)
+	best_model.fit(X_train, y_train)
 
-	classifier = SklearnClassifier(model=model)
+	classifier = SklearnClassifier(model=best_model)
 	attack = FastGradientMethod(classifier, eps=eps, batch_size=1)
 
 	X_test_adv = attack.generate(X_test)
 
-	diff = model.score(X_test, y_test) - model.score(X_test_adv, y_test)
+	diff = scorer(best_model, X_test, y_test) - scorer(best_model, X_test_adv, y_test)
 	return diff
 
+'''
 def robust_score_test(y_true, y_pred, eps=0.1, X_train=None, y_train=None, X_test=None, y_test=None, feature_selector=None):
 	X_train = feature_selector.fit_transform(X_train)
 	X_test = feature_selector.transform(X_test)
@@ -50,8 +53,9 @@ def robust_score_test(y_true, y_pred, eps=0.1, X_train=None, y_train=None, X_tes
 
 	X_test_adv = attack.generate(X_test)
 
-	diff = model.score(X_test, y_test) - model.score(X_test_adv, y_test)
+	diff = scorer(X_test, y_test) - model.score(X_test_adv, y_test)
 	return diff
+'''
 
 
 def unit_test_score(y_true, y_pred, unit_x=None, unit_y=None, X=None, y=None, pipeline=None):

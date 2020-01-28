@@ -265,7 +265,7 @@ def f_clf1(hps):
 
 	clf = LogisticRegression()
 	if type(privacy_epsilon) != type(None):
-		clf = models.LogisticRegression(epsilon=privacy_epsilon)
+		clf = models.LogisticRegression(epsilon=privacy_epsilon) #The smaller the value is, the better privacy protection
 
 	model = Pipeline([
 		('selection', WeightedRankingSelection(scores=rankings, weights=weights, k=hps['k'] + 1, names=np.array(names))),

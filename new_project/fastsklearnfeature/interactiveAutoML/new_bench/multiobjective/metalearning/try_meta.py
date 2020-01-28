@@ -94,31 +94,110 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measur
 from sklearn.ensemble import RandomForestRegressor
 
 import diffprivlib.models as models
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
 
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data
+
+X_train, X_test, y_train, y_test, names, sensitive_ids = get_data(data_path='/heart/dataset_53_heart-statlog.csv',
+																  continuous_columns = [0,3,4,7,9,10,11],
+																  sensitive_attribute = "sex",
+																  limit=250)
+
+
+ncv=5
+
+#run on tiny sample
+X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42)
+
+auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
+fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train_tiny[:, sensitive_ids[0]])
 
 time_limit = 60 * 10
+
+meta_classifier = RandomForestClassifier(n_estimators=100)
 
 
 def objective(hps):
 
-	print(hps)
-	#predict which strategy has the fastest runtime => loss = mean squared uncertainty
+	cv_k = 1.0
+	cv_privacy = hps['privacy']
+	model = LogisticRegression()
+	if type(cv_privacy) == type(None):
+		cv_privacy = X_train_tiny.shape[0]
+	else:
+		model = models.LogisticRegression(epsilon=cv_privacy)
+
+	robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train_tiny, y=y_train_tiny, model=model,
+								feature_selector=None, scorer=auc_scorer)
 
 
+	cv = GridSearchCV(model, param_grid={'C': 1.0}, scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer}, refit=False)
+	cv.fit(X_train_tiny, y_train_tiny)
+	cv_acc = cv.cv_results_['mean_test_AUC'][0]
+	cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+	cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
-	return {'loss': loss, 'status': STATUS_OK}
+	#construct feature vector
+	feature_list = []
+	#user-specified constraints
+	feature_list.append(hps['accuracy'])
+	feature_list.append(hps['fairness'])
+	feature_list.append(hps['k'])
+	feature_list.append(hps['robustness'])
+	feature_list.append(cv_privacy)
+	#differences to sample performance
+	feature_list.append(cv_acc - hps['accuracy'])
+	feature_list.append(cv_fair - hps['fairness'])
+	feature_list.append(cv_k - hps['k'])
+	feature_list.append(cv_robust - hps['robustness'])
+	#privacy constraint is always satisfied => difference always zero => constant => unnecessary
+	features = np.array(feature_list)
+
+	#predict the best model and calculate uncertainty
+
+	loss = 0
+	try:
+		proba_predictions = meta_classifier.predict_proba([features])[0]
+		proba_predictions = np.sort(proba_predictions)
+		uncertainty = 1 - (proba_predictions[-1] - proba_predictions[-2])
+		loss = -1 * uncertainty  # we want to maximize uncertainty
+	except:
+		pass
+
+	return {'loss': loss, 'status': STATUS_OK, 'features': features}
 
 
 
 space = {
-		 'k': hp.uniform('k', 0, 1),
-		 'accuracy': hp.uniform('accuracy', 0, 1),
-         'fairness': hp.uniform('fairness', 0, 1),
-		 'privacy': hp.uniform('privacy', 0, 1),
-		 'robustness': hp.uniform('robustness', 0, 1)
+		 'k': hp.choice('k_choice',
+						[
+							(1.0),
+							(hp.uniform('k_specified', 0, 1))
+						]),
+		 'accuracy': hp.choice('accuracy_choice',
+						[
+							(0.0),
+							(hp.uniform('accuracy_specified', 0, 1))
+						]),
+         'fairness': hp.choice('fairness_choice',
+						[
+							(0.0),
+							(hp.uniform('fairness_specified', 0, 1))
+						]),
+		 'privacy': hp.choice('privacy_choice',
+						[
+							(None),
+							(hp.lognormal('privacy_specified', 0, 1))
+						]),
+		 'robustness': hp.choice('robustness_choice',
+						[
+							(0.0),
+							(hp.uniform('robustness_specified', 0, 1))
+						]),
 		}
 
 trials = Trials()
@@ -140,3 +219,4 @@ while True:
 #will it satisfy the constraints
 # what is the runtime
 # how well does it with respect to all constraints
+# what is the expected k that the best selection has

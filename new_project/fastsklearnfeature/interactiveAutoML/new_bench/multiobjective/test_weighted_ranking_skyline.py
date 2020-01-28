@@ -288,15 +288,15 @@ def f_to_min1(hps, X, y, ncv=5):
 
 	robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, feature_selector=model.named_steps['selection'])
 
-	unit_test_instance_id = 0
-	unit_test_scorer = make_scorer(unit_test_score, greater_is_better=True, unit_x=X_test[unit_test_instance_id,:], unit_y=y_test[unit_test_instance_id], X=X_train, y=y_train, pipeline=model)
+	#unit_test_instance_id = 0
+	#unit_test_scorer = make_scorer(unit_test_score, greater_is_better=True, unit_x=X_test[unit_test_instance_id,:], unit_y=y_test[unit_test_instance_id], X=X_train, y=y_train, pipeline=model)
 
 	#turn n cvs in one
 	cv_acc = np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))
 	cv_fair = 1.0 - np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=fair_train))
 	cv_robust = 1.0 - np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=robust_scorer))
 
-	cv_unit = np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=unit_test_scorer))
+	#cv_unit = np.mean(cross_val_score(model, X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=unit_test_scorer))
 
 	#cv_model_gen = (cv_acc + np.mean(cross_val_score(get_knn(hps), X, pd.DataFrame(y), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))) / 2
 	cv_model_gen = 1.0
@@ -317,7 +317,6 @@ def f_to_min1(hps, X, y, ncv=5):
 	print("robust: " + str(cv_robust) + " fair: " + str(cv_fair) + " acc: " + str(cv_acc) + 'avg model acc: '+ str(cv_model_gen) +  ' => loss: ' + str(loss))
 
 	return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc }
-
 
 
 space = {'k': hp.randint('k', max_number_features),
