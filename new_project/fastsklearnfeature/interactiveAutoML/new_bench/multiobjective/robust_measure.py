@@ -35,27 +35,24 @@ def robust_score(y_true, y_pred, eps=0.1, X=None, y=None, model=None, feature_se
 	diff = scorer(best_model, X_test, y_test) - scorer(best_model, X_test_adv, y_test)
 	return diff
 
-'''
-def robust_score_test(y_true, y_pred, eps=0.1, X_train=None, y_train=None, X_test=None, y_test=None, feature_selector=None):
-	X_train = feature_selector.fit_transform(X_train)
-	X_test = feature_selector.transform(X_test)
+
+def robust_score_test(eps=0.1, X_test=None, y_test=None, model=None, feature_selector=None, scorer=None):
+	X_test_filtered = feature_selector.transform(X_test)
 
 
-	from sklearn.svm import LinearSVC
-	model = LinearSVC()
-	tuned_parameters = {'C': [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
-	cv = GridSearchCV(LinearSVC(), tuned_parameters)
-	cv.fit(X_train, y_train)
-	model = cv.best_estimator_
+	best_model = copy.deepcopy(model)
 
-	classifier = SklearnClassifier(model=model)
+	classifier = SklearnClassifier(model=best_model)
 	attack = FastGradientMethod(classifier, eps=eps, batch_size=1)
 
-	X_test_adv = attack.generate(X_test)
+	X_test_adv = attack.generate(X_test_filtered)
 
-	diff = scorer(X_test, y_test) - model.score(X_test_adv, y_test)
+	score_original_test = scorer(best_model, X_test_filtered, y_test)
+	score_corrupted_test = scorer(best_model, X_test_adv, y_test)
+
+	diff = score_original_test - score_corrupted_test
 	return diff
-'''
+
 
 
 def unit_test_score(y_true, y_pred, unit_x=None, unit_y=None, X=None, y=None, pipeline=None):

@@ -53,6 +53,9 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.RunAllKBestSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import variance
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import model_score
+from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fairness_score
+from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import robustness_score
+from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import chi2_score_wo
 from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import BackwardSelection
 from sklearn.model_selection import train_test_split
 
@@ -67,7 +70,7 @@ from sklearn.svm import LinearSVC
 
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import f_classif
-from sklearn.feature_selection import chi2
+
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.compose import ColumnTransformer
 
@@ -85,7 +88,7 @@ from hyperopt import fmin, hp, tpe, Trials, space_eval, STATUS_OK
 
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import f_classif
-from sklearn.feature_selection import chi2
+
 
 from sklearn.model_selection import cross_val_score
 from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
@@ -97,6 +100,7 @@ import diffprivlib.models as models
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
@@ -108,7 +112,7 @@ X_train, X_test, y_train, y_test, names, sensitive_ids = get_data(data_path='/he
 																  limit=250)
 
 
-ncv=5
+
 
 #run on tiny sample
 X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42)
@@ -120,9 +124,10 @@ time_limit = 60 * 10
 
 meta_classifier = RandomForestClassifier(n_estimators=100)
 
+cv_splitter = StratifiedKFold(5, random_state=42)
+
 
 def objective(hps):
-
 	cv_k = 1.0
 	cv_privacy = hps['privacy']
 	model = LogisticRegression()
@@ -135,8 +140,8 @@ def objective(hps):
 								feature_selector=None, scorer=auc_scorer)
 
 
-	cv = GridSearchCV(model, param_grid={'C': 1.0}, scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer}, refit=False)
-	cv.fit(X_train_tiny, y_train_tiny)
+	cv = GridSearchCV(model, param_grid={'C': [1.0]}, scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer}, refit=False, cv=cv_splitter)
+	cv.fit(X_train_tiny, pd.DataFrame(y_train_tiny))
 	cv_acc = cv.cv_results_['mean_test_AUC'][0]
 	cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
 	cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
@@ -155,6 +160,11 @@ def objective(hps):
 	feature_list.append(cv_k - hps['k'])
 	feature_list.append(cv_robust - hps['robustness'])
 	#privacy constraint is always satisfied => difference always zero => constant => unnecessary
+
+	#metadata features
+	#feature_list.append(X_train.shape[0])#number rows
+	#feature_list.append(X_train.shape[1])#number columns
+
 	features = np.array(feature_list)
 
 	#predict the best model and calculate uncertainty
@@ -204,14 +214,56 @@ trials = Trials()
 i = 1
 while True:
 	fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
-	most_uncertain_constraint_combination = trials.argmin
-
-	# Execute each search strategy with a given time limit (in parallel)
-
 	i += 1
 
 	#break, once convergence tolerance is reached and generate new dataset
-	if i >=100:
+	if trials.trials[-1]['result']['loss'] == 0 or i >=100:
+		most_uncertain_f = trials.trials[-1]['misc']['vals']
+		#print(most_uncertain_f)
+
+		min_accuracy = 0.0
+		if most_uncertain_f['accuracy_choice'][0]:
+			min_accuracy = most_uncertain_f['accuracy_specified'][0]
+		min_fairness = 0.0
+		if most_uncertain_f['fairness_choice'][0]:
+			min_fairness = most_uncertain_f['fairness_specified'][0]
+		min_robustness = 0.0
+		if most_uncertain_f['robustness_choice'][0]:
+			min_robustness = most_uncertain_f['robustness_specified'][0]
+		max_number_features = X_train.shape[1]
+		if most_uncertain_f['k_choice'][0]:
+			max_number_features = int(most_uncertain_f['k_specified'][0] * X_train.shape[1])
+
+
+		# Execute each search strategy with a given time limit (in parallel)
+		# maybe run multiple times to smooth stochasticity
+
+		model = LogisticRegression()
+		if most_uncertain_f['privacy_choice'][0]:
+			model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0])
+
+		#define rankings
+		rankings = [variance, chi2_score_wo] #simple rankings
+		rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
+		rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
+		rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
+
+		runtime, success = weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids,
+						 ranking_functions=rankings,
+						 clf=model,
+						 min_accuracy=min_accuracy,
+						 min_fairness=min_fairness,
+						 min_robustness=min_robustness,
+						 max_number_features=max_number_features,
+						 max_search_time=time_limit,
+						 cv_splitter=cv_splitter)
+
+		print("Runtime: " + str(runtime))
+		print("Success: " + str(success))
+
+
+
+		# then add runs to training data
 		break
 
 

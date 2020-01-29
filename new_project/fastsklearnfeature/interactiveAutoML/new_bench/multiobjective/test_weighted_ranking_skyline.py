@@ -286,7 +286,7 @@ def f_to_min1(hps, X, y, ncv=5):
 	print(hps)
 	model = f_clf1(hps)
 
-	robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, feature_selector=model.named_steps['selection'])
+	robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=LogisticRegression(), feature_selector=model.named_steps['selection'], scorer=auc_scorer)
 
 	#unit_test_instance_id = 0
 	#unit_test_scorer = make_scorer(unit_test_score, greater_is_better=True, unit_x=X_test[unit_test_instance_id,:], unit_y=y_test[unit_test_instance_id], X=X_train, y=y_train, pipeline=model)
@@ -338,14 +338,14 @@ while True:
 
 	model = trials.trials[-1]['result']['model']
 
-	robust_scorer_test = make_scorer(robust_score_test, greater_is_better=True, X_train=X_train, y_train=y_train,
-									 X_test=X_test, y_test=y_test,
-									 feature_selector=model.named_steps['selection'])
+	robust_scorer_test = make_scorer(robust_score_test, greater_is_better=True, needs_threshold=True, X_test=X_test, model=model, feature_selector=model.named_steps['selection'], scorer=auc_scorer)
 
 	model.fit(X_train, pd.DataFrame(y_train))
 	test_acc = auc_scorer(model, X_test, pd.DataFrame(y_test))
 	test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
-	test_robust = 1.0 - robust_scorer_test(model, X_test, pd.DataFrame(y_test))
+	test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test, model=model.named_steps['clf'], feature_selector=model.named_steps['selection'], scorer=auc_scorer)
+
+
 
 	#print('acc: ' + str(test_acc) + ' fair: ' + str(test_fair) + ' robust: ' + str(test_robust))
 

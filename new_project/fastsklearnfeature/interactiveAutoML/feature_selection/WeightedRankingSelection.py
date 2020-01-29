@@ -21,13 +21,14 @@ class WeightedRankingSelection(BaseEstimator, SelectorMixin):
         self.names = names
         self.hyperparameter_mask = hyperparameter_mask
 
-
     def fit(self, X, y=None):
-        for score_i in range(len(self.scores)):
-            self.scores[score_i] /= np.sum(self.scores[score_i])
-            self.scores[score_i] *= self.weights[score_i]
+        agg_scores = copy.deepcopy(self.scores)
+        for score_i in range(len(agg_scores)):
+            agg_scores[score_i] = MinMaxScaler().fit_transform(np.array(agg_scores[score_i]).reshape(-1,1)).flatten() #values between 0 and 1
+            agg_scores[score_i] /= np.sum(agg_scores[score_i]) #get unit norm
+            agg_scores[score_i] *= self.weights[score_i]
 
-        final_scores = np.sum(np.matrix(self.scores), axis=0).A1
+        final_scores = np.sum(np.matrix(agg_scores), axis=0).A1
         ids = np.argsort(final_scores *-1)
         self.feature_mask = np.zeros(len(self.scores[0]), dtype=bool)
         self.feature_mask[ids[0:self.k]] = True
@@ -36,10 +37,6 @@ class WeightedRankingSelection(BaseEstimator, SelectorMixin):
             for feature_i in range(len(self.hyperparameter_mask)):
                 if self.hyperparameter_mask[feature_i] == False:
                     self.feature_mask[feature_i] = False
-
-
-        #print('hallo: ' + str(ids[0:self.k]))
-        #print('seledcted features: ' + str(self.names[ids[0:self.k]]))
 
         return self
 
