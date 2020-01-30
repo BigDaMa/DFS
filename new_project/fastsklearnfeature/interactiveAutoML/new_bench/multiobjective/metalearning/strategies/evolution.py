@@ -23,7 +23,34 @@ import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearnin
 import random
 
 
+
+
 def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
+
+	def calculate_loss(cv_acc, cv_fair, cv_robust, cv_number_features):
+		loss = 0.0
+		if cv_acc >= min_accuracy and \
+				cv_fair >= min_fairness and \
+				cv_robust >= min_robustness and \
+				cv_number_features <= max_number_features:
+			if min_fairness > 0.0:
+				loss += (min_fairness - cv_fair)
+			if min_accuracy > 0.0:
+				loss += (min_accuracy - cv_acc)
+			if min_robustness > 0.0:
+				loss += (min_robustness - cv_robust)
+			if max_number_features < 1.0:
+				loss += (cv_number_features - max_number_features)
+		else:
+			if min_fairness > 0.0 and cv_fair < min_fairness:
+				loss += (min_fairness - cv_fair) ** 2
+			if min_accuracy > 0.0 and cv_acc < min_accuracy:
+				loss += (min_accuracy - cv_acc) ** 2
+			if min_robustness > 0.0 and cv_robust < min_robustness:
+				loss += (min_robustness - cv_robust) ** 2
+			if max_number_features < 1.0 and cv_number_features > max_number_features:
+				loss += (cv_number_features - max_number_features) ** 2
+		return loss
 
 	hash = str(random.getrandbits(128)) + str(time.time())
 	cheating_global.successfull_result[hash] = {}
@@ -65,6 +92,17 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 
 		cv_simplicity = 1.0 - cv_number_features
 
+		if not 'cv_acc' in cheating_global.successfull_result[hash] or\
+				calculate_loss(cheating_global.successfull_result[hash]['cv_acc'],
+					  cheating_global.successfull_result[hash]['cv_fair'],
+					  cheating_global.successfull_result[hash]['cv_robust'],
+					  cheating_global.successfull_result[hash]['cv_number_features']
+					  ) > calculate_loss(cv_acc, cv_fair, cv_robust, cv_number_features):
+			cheating_global.successfull_result[hash]['cv_acc'] = cv_acc
+			cheating_global.successfull_result[hash]['cv_robust'] = cv_robust
+			cheating_global.successfull_result[hash]['cv_fair'] = cv_fair
+			cheating_global.successfull_result[hash]['cv_number_features'] = cv_number_features
+
 
 		#check constraints for test set
 		if cv_fair >= min_fairness and cv_acc >= min_accuracy and cv_robust >= min_robustness and cv_number_features <= max_number_features:
@@ -83,6 +121,11 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 			if test_fair >= min_fairness and test_acc >= min_accuracy and test_robust >= min_robustness:
 				print('fair: ' + str(min(cv_fair, test_fair)) + ' acc: ' + str(min(cv_acc, test_acc)) + ' robust: ' + str(min(test_robust, cv_robust)) + ' k: ' + str(cv_number_features))
 				cheating_global.successfull_result[hash]['time'] = time.time() - start_time
+				cheating_global.successfull_result[hash]['cv_acc'] = cv_acc
+				cheating_global.successfull_result[hash]['cv_robust'] = cv_robust
+				cheating_global.successfull_result[hash]['cv_fair'] = cv_fair
+				cheating_global.successfull_result[hash]['cv_number_features'] = cv_number_features
+
 
 		return [cv_acc, cv_fair, cv_robust, cv_simplicity]
 	
@@ -98,6 +141,8 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 				number_objectives +=1
 			if max_number_features < 1.0:
 				number_objectives +=1
+			if number_objectives == 0:
+				number_objectives = 4
 
 			super().__init__(n_var=X_train.shape[1],
 								 n_obj=number_objectives,
@@ -119,13 +164,13 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 
 			##objectives
 			objectives = []
-			if min_accuracy > 0.0:
+			if min_accuracy > 0.0 or self.n_obj==4:
 				objectives.append(accuracy_batch)
-			if min_fairness > 0.0:
+			if min_fairness > 0.0 or self.n_obj==4:
 				objectives.append(fairness_batch)
-			if min_robustness > 0.0:
+			if min_robustness > 0.0 or self.n_obj==4:
 				objectives.append(robustness_batch)
-			if max_number_features < 1.0:
+			if max_number_features < 1.0 or self.n_obj==4:
 				objectives.append(simplicity_batch)
 	
 			out["F"] = anp.column_stack(objectives)
@@ -158,9 +203,13 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 	
 			return True
 
-	minimize(problem=problem, algorithm=algorithm, termination=MyTermination(max_search_time), disp=False)
+	minimize(problem=problem, algorithm=algorithm, termination=MyTermination(start_time, max_search_time), disp=False)
 
 	runtime = time.time() - start_time
 	success = 'time' in cheating_global.successfull_result[hash]
+	cv_acc = cheating_global.successfull_result[hash]['cv_acc']
+	cv_robust = cheating_global.successfull_result[hash]['cv_robust']
+	cv_fair = cheating_global.successfull_result[hash]['cv_fair']
+	cv_number_features = cheating_global.successfull_result[hash]['cv_number_features']
 	del cheating_global.successfull_result[hash]
-	return {'time': runtime, 'success': success}
+	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features}

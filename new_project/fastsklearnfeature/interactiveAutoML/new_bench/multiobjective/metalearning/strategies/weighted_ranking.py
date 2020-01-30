@@ -98,10 +98,6 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils i
 
 from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelection import WeightedRankingSelection
 
-
-
-
-
 def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features: float = 1.0, max_search_time=np.inf, cv_splitter = None):
 
 	start_time = time.time()
@@ -172,10 +168,19 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc,
 				'cv_robust': cv_robust, 'cv_number_features': cv_number_features}
 
-	space = {'k': hp.randint('k', int(max_number_features*X_train.shape[1]))}
+	max_k = max(int(max_number_features * X_train.shape[1]), 1)
+	space = {'k': hp.randint('k', max_k)}
 
-	for i in range(len(rankings)):
-		space['weight' + str(i)] = hp.lognormal('weight' + str(i), 0, 1)
+	if len(rankings) > 1:
+		for i in range(len(rankings)):
+			space['weight' + str(i)] = hp.lognormal('weight' + str(i), 0, 1)
+	else:
+		space['weight' + str(0)] = 1.0
+
+	cv_fair = -1
+	cv_acc = -1
+	cv_robust = -1
+	cv_number_features = -1
 
 	trials = Trials()
 	i = 1
@@ -215,8 +220,14 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 
 		i += 1
 
+	if not success:
+		cv_fair = trials.best_trial['result']['cv_fair']
+		cv_acc = trials.best_trial['result']['cv_acc']
+		cv_robust = trials.best_trial['result']['cv_robust']
+		cv_number_features = trials.best_trial['result']['cv_number_features']
+
 	runtime = time.time() - start_time
-	return {'time': runtime, 'success': success}
+	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features}
 
 
 

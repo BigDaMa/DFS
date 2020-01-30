@@ -97,6 +97,8 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measur
 from sklearn.ensemble import RandomForestRegressor
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.multiprocessing_global as mp_global
 
+import sklearn
+
 import diffprivlib.models as models
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
@@ -125,10 +127,21 @@ X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size
 auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train_tiny[:, sensitive_ids[0]])
 
-time_limit = 60 * 10
+time_limit = 60 * 1#10
 n_jobs = 4
+number_of_runs = 2
 
-meta_classifier = RandomForestClassifier(n_estimators=100)
+meta_classifier = RandomForestRegressor(n_estimators=1000)
+X_train_meta_classifier = []
+y_train_meta_classifier = []
+
+y_train_meta_classifier_avg_times = []
+y_train_meta_classifier_avg_acc = []
+y_train_meta_classifier_avg_fair = []
+y_train_meta_classifier_avg_robust = []
+y_train_meta_classifier_avg_k = []
+y_train_meta_classifier_avg_success = []
+
 
 cv_splitter = StratifiedKFold(5, random_state=42)
 
@@ -189,13 +202,16 @@ def objective(hps):
 	#predict the best model and calculate uncertainty
 
 	loss = 0
-	try:
-		proba_predictions = meta_classifier.predict_proba([features])[0]
-		proba_predictions = np.sort(proba_predictions)
-		uncertainty = 1 - (proba_predictions[-1] - proba_predictions[-2])
-		loss = -1 * uncertainty  # we want to maximize uncertainty
-	except:
-		pass
+	if hasattr(meta_classifier, 'estimators_'):
+		predictions = []
+		for tree in range(len(meta_classifier.estimators_)):
+			predictions.append(meta_classifier.estimators_[tree].predict([features])[0])
+
+		stddev = np.std(np.array(predictions), axis=0)
+		print("hello2")
+		print(stddev.shape)
+
+		loss = np.sum(stddev ** 2) * -1
 
 	return {'loss': loss, 'status': STATUS_OK, 'features': features}
 
@@ -236,8 +252,11 @@ while True:
 	i += 1
 
 	#break, once convergence tolerance is reached and generate new dataset
-	if trials.trials[-1]['result']['loss'] == 0 or i >=100:
-		most_uncertain_f = trials.trials[-1]['misc']['vals']
+	if trials.trials[-1]['result']['loss'] == 0 or i %100 == 0:
+		best_trial = trials.trials[-1]
+		if i % 100 == 0:
+			best_trial = trials.best_trial
+		most_uncertain_f = best_trial['misc']['vals']
 		#print(most_uncertain_f)
 
 		min_accuracy = 0.0
@@ -269,21 +288,23 @@ while True:
 		rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
 
 
-		number_of_runs = 2
-
 		mp_global.min_accuracy = min_accuracy
 		mp_global.min_fairness = min_fairness
 		mp_global.min_robustness = min_robustness
 		mp_global.max_number_features = max_number_features
 
+		mp_global.configurations = []
 		#add single rankings
-		for run in range(number_of_runs):
-			for r in range(len(rankings)):
+		strategy_id = 1
+		for r in range(len(rankings)):
+			for run in range(number_of_runs):
 				configuration = {}
 				configuration['ranking_functions'] = [rankings[r]]
 				configuration['run_id'] = run
 				configuration['main_strategy'] = weighted_ranking
+				configuration['strategy_id'] = copy.deepcopy(strategy_id)
 				mp_global.configurations.append(configuration)
+			strategy_id +=1
 
 		main_strategies = [weighted_ranking, hyperparameter_optimization, evolution]
 
@@ -294,7 +315,9 @@ while True:
 					configuration['ranking_functions'] = rankings
 					configuration['run_id'] = run
 					configuration['main_strategy'] = strategy
+					configuration['strategy_id'] = copy.deepcopy(strategy_id)
 					mp_global.configurations.append(configuration)
+			strategy_id += 1
 
 		def my_function(config_id):
 			conf = mp_global.configurations[config_id]
@@ -307,61 +330,88 @@ while True:
 						 max_number_features=mp_global.max_number_features,
 						 max_search_time=mp_global.max_search_time,
 						 cv_splitter=mp_global.cv_splitter)
-			print(result)
+			result['strategy_id'] = conf['strategy_id']
 			return result
 
+
+		results = []
 		with mp.Pool(processes=n_jobs) as pool:
-			results = []
 			for x in tqdm.tqdm(pool.imap_unordered(my_function, list(range(len(mp_global.configurations)))), total=len(mp_global.configurations)):
 				results.append(x)
+		results.append({'strategy_id': 0, 'time': np.inf, 'success': True}) #none of the strategies reached the constraint
+
+		print('here')
+		print(results)
+
+		#average runtime for each method
+		runtimes = np.zeros(strategy_id)
+		acc_strategies = np.zeros(strategy_id)
+		fair_strategies = np.zeros(strategy_id)
+		robust_strategies = np.zeros(strategy_id)
+		k_strategies = np.zeros(strategy_id)
+		success_strategies = np.zeros(strategy_id)
+		success = np.zeros(strategy_id, dtype=bool)
+		for r in range(len(results)):
+			runtimes[results[r]['strategy_id']] += results[r]['time']
+			if results[r]['strategy_id'] > 0:
+				acc_strategies[results[r]['strategy_id']] += results[r]['cv_acc']
+				fair_strategies[results[r]['strategy_id']] += results[r]['cv_fair']
+				robust_strategies[results[r]['strategy_id']] += results[r]['cv_robust']
+				k_strategies[results[r]['strategy_id']] += results[r]['cv_number_features']
+				success_strategies[results[r]['strategy_id']] += results[r]['success']
+			if results[r]['success']:
+				success[results[r]['strategy_id']] = True
+		avg_times = runtimes / float(number_of_runs)
+		avg_acc = acc_strategies / float(number_of_runs)
+		avg_fair = fair_strategies / float(number_of_runs)
+		avg_robust = robust_strategies / float(number_of_runs)
+		avg_k = k_strategies / float(number_of_runs)
+		avg_success = success_strategies / float(number_of_runs)
+
+		##store averages
+		y_train_meta_classifier_avg_times.append(avg_times)
+		y_train_meta_classifier_avg_acc.append(avg_acc)
+		y_train_meta_classifier_avg_fair.append(avg_fair)
+		y_train_meta_classifier_avg_robust.append(avg_robust)
+		y_train_meta_classifier_avg_k.append(avg_k)
+		y_train_meta_classifier_avg_success.append(avg_success)
+
+		#get lowest runtime
+		ids = np.argsort(runtimes)
+		best_strategy = -1
+		for id_i in range(len(ids)):
+			if success[ids[id_i]]:
+				best_strategy = ids[id_i]
+				break
+		print(best_strategy)
+
+		# append ml data
+		X_train_meta_classifier.append(best_trial['result']['features'])
+		y_train_meta_classifier.append(best_strategy)
+
+		try:
+			X_meta = np.array(X_train_meta_classifier)
+			y_meta = np.array(y_train_meta_classifier_avg_times)[:,1:]
+
+			print('hello')
+			print(X_meta.shape)
+			print(y_meta.shape)
+			print(y_meta)
+
+			meta_classifier.fit(X_meta, y_meta)
+		except:
+			pass
+
+		#pickle everything and store it
+		one_big_object = {}
+		one_big_object['features'] = X_train_meta_classifier
+		one_big_object['best_strategy'] = y_train_meta_classifier
+		one_big_object['avg_times'] = y_train_meta_classifier_avg_times
+		one_big_object['avg_acc'] = y_train_meta_classifier_avg_acc
+		one_big_object['avg_fair'] = y_train_meta_classifier_avg_fair
+		one_big_object['avg_robust'] = y_train_meta_classifier_avg_robust
+		one_big_object['avg_success'] = y_train_meta_classifier_avg_success
+
+		pickle.dump(one_big_object, open('/tmp/metalearning_data.pickle', 'wb'))
 
 
-		'''
-		runtime, success = weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids,
-						 ranking_functions=rankings,
-						 clf=model,
-						 min_accuracy=min_accuracy,
-						 min_fairness=min_fairness,
-						 min_robustness=min_robustness,
-						 max_number_features=max_number_features,
-						 max_search_time=time_limit,
-						 cv_splitter=cv_splitter)
-		'''
-
-		'''
-		runtime, success = hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids,
-											ranking_functions=[],
-											clf=model,
-											min_accuracy=min_accuracy,
-											min_fairness=min_fairness,
-											min_robustness=min_robustness,
-											max_number_features=max_number_features,
-											max_search_time=time_limit,
-											cv_splitter=cv_splitter)
-		'''
-		'''
-		runtime, success = evolution(X_train, X_test, y_train, y_test, names, sensitive_ids,
-													   ranking_functions=[],
-													   clf=model,
-													   min_accuracy=min_accuracy,
-													   min_fairness=min_fairness,
-													   min_robustness=min_robustness,
-													   max_number_features=max_number_features,
-													   max_search_time=time_limit,
-													   cv_splitter=cv_splitter)
-		'''
-
-		#print("Runtime: " + str(runtime))
-		#print("Success: " + str(success))
-
-
-
-		# then add runs to training data
-		break
-
-
-#train other prediction tasks:
-#will it satisfy the constraints
-# what is the runtime
-# how well does it with respect to all constraints
-# what is the expected k that the best selection has
