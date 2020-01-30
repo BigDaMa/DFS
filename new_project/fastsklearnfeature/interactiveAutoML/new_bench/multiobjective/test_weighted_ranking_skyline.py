@@ -95,7 +95,7 @@ import diffprivlib.models as models
 from sklearn import preprocessing
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data
 
-n_estimators = 5
+n_estimators = 1000
 
 
 
@@ -326,6 +326,29 @@ space = {'k': hp.randint('k', max_number_features),
 		 'var_w': hp.lognormal('var_w', 0, 1)
 		 }
 
+space = {
+		 'k': hp.randint('k', max_number_features),
+		 'acc_w': hp.choice('accuracy_choice',
+						[
+							(0.0),
+							(hp.lognormal('accuracy_specified', 0, 1))
+						]),
+         'fair_w': hp.choice('fairness_choice',
+						[
+							(0.0),
+							(hp.lognormal('fairness_specified', 0, 1))
+						]),
+		 'var_w': hp.choice('var_choice',
+						[
+							(0.0),
+							(hp.lognormal('var_specified', 0, 1))
+						]),
+		 'rob_w': hp.choice('robustness_choice',
+						[
+							(0.0),
+							(hp.lognormal('robustness_specified', 0, 1))
+						]),
+		}
 
 satisfied_constraints = []
 times = []

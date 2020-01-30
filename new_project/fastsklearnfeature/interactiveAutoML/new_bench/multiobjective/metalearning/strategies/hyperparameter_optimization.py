@@ -90,19 +90,19 @@ from sklearn.feature_selection import chi2
 from sklearn.model_selection import cross_val_score
 from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import robust_score
-from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 
 import diffprivlib.models as models
 from sklearn import preprocessing
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data
 
 from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelection import WeightedRankingSelection
+from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 
 
 
 
 
-def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features: float = 1.0, max_search_time=np.inf, cv_splitter = None):
+def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
 
 	start_time = time.time()
 
@@ -110,20 +110,14 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 	fair_train = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train[:, sensitive_ids[0]])
 	fair_test = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_test[:, sensitive_ids[0]])
 
-	#calculate rankings
-	rankings = []
-	for ranking_function_i in range(len(ranking_functions)):
-		rankings.append(ranking_functions[ranking_function_i](X_train, y_train))
-
-
 	def f_clf1(hps):
-		weights = []
-		for i in range(len(rankings)):
-			weights.append(hps['weight' + str(i)])
+		mask = np.zeros(len(hps), dtype=bool)
+		for k, v in hps.items():
+			mask[int(k.split('_')[1])] = v
 
 		model = Pipeline([
-			('selection', WeightedRankingSelection(scores=rankings, weights=weights, k=hps['k'] + 1, names=np.array(names))),
-			('clf', clf)
+			('selection', MaskSelection(mask)),
+			('clf', LogisticRegression())
 		])
 
 		return model
@@ -132,8 +126,7 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 		print(hps)
 		model = f_clf1(hps)
 
-		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf,
-									feature_selector=model.named_steps['selection'], scorer=auc_scorer)
+		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf, feature_selector=model.named_steps['selection'], scorer=auc_scorer)
 
 		cv = GridSearchCV(model, param_grid={'clf__C': [1.0]}, cv=cv_splitter,
 						  scoring={'AUC': auc_scorer, 'Fairness': fair_train, 'Robustness': robust_scorer},
@@ -143,8 +136,7 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 		cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
 		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
-		cv_number_features = float(np.sum(model.named_steps['selection']._get_support_mask())) / float(
-			len(model.named_steps['selection']._get_support_mask()))
+		cv_number_features = float(np.sum(model.named_steps['selection']._get_support_mask())) / float(len(model.named_steps['selection']._get_support_mask()))
 
 		loss = 0.0
 		if cv_acc >= min_accuracy and \
@@ -169,13 +161,12 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 			if max_number_features < 1.0 and cv_number_features > max_number_features:
 				loss += (cv_number_features - max_number_features) ** 2
 
-		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc,
-				'cv_robust': cv_robust, 'cv_number_features': cv_number_features}
 
-	space = {'k': hp.randint('k', int(max_number_features*X_train.shape[1]))}
+		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_number_features': cv_number_features}
 
-	for i in range(len(rankings)):
-		space['weight' + str(i)] = hp.lognormal('weight' + str(i), 0, 1)
+	space = {}
+	for f_i in range(X_train.shape[1]):
+		space['f_' + str(f_i)] = hp.randint('f_' + str(f_i), 2)
 
 	trials = Trials()
 	i = 1
@@ -203,10 +194,7 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 				test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
 			test_robust = 0.0
 			if min_robustness > 0.0:
-				test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
-													  model=model.named_steps['clf'],
-													  feature_selector=model.named_steps['selection'],
-													  scorer=auc_scorer)
+				test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test, model=model.named_steps['clf'], feature_selector=model.named_steps['selection'], scorer=auc_scorer)
 
 			if test_fair >= min_fairness and test_acc >= min_accuracy and test_robust >= min_robustness:
 				print('fair: ' + str(min(cv_fair, test_fair)) + ' acc: ' + str(min(cv_acc, test_acc)) + ' robust: ' + str(min(test_robust, cv_robust)) + ' k: ' + str(cv_number_features))

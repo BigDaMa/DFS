@@ -160,8 +160,7 @@ def objective(features):
 
 	ncv = 5
 
-	cv_acc = np.mean(
-		cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))
+	cv_acc = np.mean(cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=auc_scorer))
 	cv_fair = 1.0 - np.mean(cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=fair_train))
 	cv_robust = 1.0 - np.mean(cross_val_score(model, X_train, pd.DataFrame(y_train), cv=StratifiedKFold(ncv, random_state=42), scoring=robust_scorer))
 	#cv_robust = 1.0

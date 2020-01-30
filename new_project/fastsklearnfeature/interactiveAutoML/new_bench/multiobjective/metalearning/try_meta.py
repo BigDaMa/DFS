@@ -101,6 +101,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import hyperparameter_optimization
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.evolution import evolution
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
@@ -128,6 +130,9 @@ cv_splitter = StratifiedKFold(5, random_state=42)
 
 
 def objective(hps):
+	print(hps)
+
+
 	cv_k = 1.0
 	cv_privacy = hps['privacy']
 	model = LogisticRegression()
@@ -232,7 +237,7 @@ while True:
 			min_robustness = most_uncertain_f['robustness_specified'][0]
 		max_number_features = X_train.shape[1]
 		if most_uncertain_f['k_choice'][0]:
-			max_number_features = int(most_uncertain_f['k_specified'][0] * X_train.shape[1])
+			max_number_features = most_uncertain_f['k_specified'][0]
 
 
 		# Execute each search strategy with a given time limit (in parallel)
@@ -248,6 +253,7 @@ while True:
 		rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
 		rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
 
+		'''
 		runtime, success = weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids,
 						 ranking_functions=rankings,
 						 clf=model,
@@ -257,6 +263,28 @@ while True:
 						 max_number_features=max_number_features,
 						 max_search_time=time_limit,
 						 cv_splitter=cv_splitter)
+		'''
+
+		'''
+		runtime, success = hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids,
+											ranking_functions=[],
+											clf=model,
+											min_accuracy=min_accuracy,
+											min_fairness=min_fairness,
+											min_robustness=min_robustness,
+											max_number_features=max_number_features,
+											max_search_time=time_limit,
+											cv_splitter=cv_splitter)
+		'''
+		runtime, success = evolution(X_train, X_test, y_train, y_test, names, sensitive_ids,
+													   ranking_functions=[],
+													   clf=model,
+													   min_accuracy=min_accuracy,
+													   min_fairness=min_fairness,
+													   min_robustness=min_robustness,
+													   max_number_features=max_number_features,
+													   max_search_time=time_limit,
+													   cv_splitter=cv_splitter)
 
 		print("Runtime: " + str(runtime))
 		print("Success: " + str(success))
