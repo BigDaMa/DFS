@@ -216,7 +216,7 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 		i += 1
 
 	runtime = time.time() - start_time
-	return runtime, success
+	return {'time': runtime, 'success': success}
 
 
 

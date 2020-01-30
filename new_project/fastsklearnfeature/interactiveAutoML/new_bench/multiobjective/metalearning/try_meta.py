@@ -95,6 +95,7 @@ from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import robust_score
 
 from sklearn.ensemble import RandomForestRegressor
+import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.multiprocessing_global as mp_global
 
 import diffprivlib.models as models
 from sklearn.model_selection import GridSearchCV
@@ -107,6 +108,8 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data
+import multiprocessing as mp
+import tqdm
 
 X_train, X_test, y_train, y_test, names, sensitive_ids = get_data(data_path='/heart/dataset_53_heart-statlog.csv',
 																  continuous_columns = [0,3,4,7,9,10,11],
@@ -123,10 +126,21 @@ auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=
 fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train_tiny[:, sensitive_ids[0]])
 
 time_limit = 60 * 10
+n_jobs = 4
 
 meta_classifier = RandomForestClassifier(n_estimators=100)
 
 cv_splitter = StratifiedKFold(5, random_state=42)
+
+
+mp_global.X_train = X_train
+mp_global.X_test = X_test
+mp_global.y_train = y_train
+mp_global.y_test = y_test
+mp_global.names = names
+mp_global.sensitive_ids = sensitive_ids
+mp_global.max_search_time = time_limit
+mp_global.cv_splitter = cv_splitter
 
 
 def objective(hps):
@@ -246,12 +260,61 @@ while True:
 		model = LogisticRegression()
 		if most_uncertain_f['privacy_choice'][0]:
 			model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0])
+		mp_global.clf = model
 
 		#define rankings
 		rankings = [variance, chi2_score_wo] #simple rankings
 		rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
 		rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
 		rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
+
+
+		number_of_runs = 2
+
+		mp_global.min_accuracy = min_accuracy
+		mp_global.min_fairness = min_fairness
+		mp_global.min_robustness = min_robustness
+		mp_global.max_number_features = max_number_features
+
+		#add single rankings
+		for run in range(number_of_runs):
+			for r in range(len(rankings)):
+				configuration = {}
+				configuration['ranking_functions'] = [rankings[r]]
+				configuration['run_id'] = run
+				configuration['main_strategy'] = weighted_ranking
+				mp_global.configurations.append(configuration)
+
+		main_strategies = [weighted_ranking, hyperparameter_optimization, evolution]
+
+		#run main strategies
+		for strategy in main_strategies:
+			for run in range(number_of_runs):
+					configuration = {}
+					configuration['ranking_functions'] = rankings
+					configuration['run_id'] = run
+					configuration['main_strategy'] = strategy
+					mp_global.configurations.append(configuration)
+
+		def my_function(config_id):
+			conf = mp_global.configurations[config_id]
+			result = conf['main_strategy'](mp_global.X_train, mp_global.X_test, mp_global.y_train, mp_global.y_test, mp_global.names, mp_global.sensitive_ids,
+						 ranking_functions=conf['ranking_functions'],
+						 clf=mp_global.clf,
+						 min_accuracy=mp_global.min_accuracy,
+						 min_fairness=mp_global.min_fairness,
+						 min_robustness=mp_global.min_robustness,
+						 max_number_features=mp_global.max_number_features,
+						 max_search_time=mp_global.max_search_time,
+						 cv_splitter=mp_global.cv_splitter)
+			print(result)
+			return result
+
+		with mp.Pool(processes=n_jobs) as pool:
+			results = []
+			for x in tqdm.tqdm(pool.imap_unordered(my_function, list(range(len(mp_global.configurations)))), total=len(mp_global.configurations)):
+				results.append(x)
+
 
 		'''
 		runtime, success = weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids,
@@ -276,6 +339,7 @@ while True:
 											max_search_time=time_limit,
 											cv_splitter=cv_splitter)
 		'''
+		'''
 		runtime, success = evolution(X_train, X_test, y_train, y_test, names, sensitive_ids,
 													   ranking_functions=[],
 													   clf=model,
@@ -285,9 +349,10 @@ while True:
 													   max_number_features=max_number_features,
 													   max_search_time=time_limit,
 													   cv_splitter=cv_splitter)
+		'''
 
-		print("Runtime: " + str(runtime))
-		print("Success: " + str(success))
+		#print("Runtime: " + str(runtime))
+		#print("Success: " + str(success))
 
 
 

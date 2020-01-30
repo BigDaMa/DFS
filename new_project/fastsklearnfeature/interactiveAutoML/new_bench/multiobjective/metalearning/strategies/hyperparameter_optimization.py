@@ -204,7 +204,7 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 		i += 1
 
 	runtime = time.time() - start_time
-	return runtime, success
+	return {'time': runtime, 'success': success}
 
 
 
