@@ -415,5 +415,6 @@ while True:
 		pickle.dump(one_big_object, open('/tmp/metalearning_data.pickle', 'wb'))
 
 		trials = Trials()
+		i = 1
 
 
