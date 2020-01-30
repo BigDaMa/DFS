@@ -205,6 +205,9 @@ def objective(hps):
 	try:
 		proba_predictions = meta_classifier.predict_proba([features])[0]
 		proba_predictions = np.sort(proba_predictions)
+
+		print("predictions: " + str(proba_predictions))
+
 		uncertainty = 1 - (proba_predictions[-1] - proba_predictions[-2])
 		loss = -1 * uncertainty  # we want to maximize uncertainty
 	except:
@@ -249,9 +252,9 @@ while True:
 	i += 1
 
 	#break, once convergence tolerance is reached and generate new dataset
-	if trials.trials[-1]['result']['loss'] == 0 or i % 100 == 0:
+	if trials.trials[-1]['result']['loss'] == 0 or i % 10 == 0:
 		best_trial = trials.trials[-1]
-		if i % 100 == 0:
+		if i % 10 == 0:
 			best_trial = trials.best_trial
 		most_uncertain_f = best_trial['misc']['vals']
 		#print(most_uncertain_f)
@@ -337,9 +340,6 @@ while True:
 				results.append(x)
 		results.append({'strategy_id': 0, 'time': np.inf, 'success': True}) #none of the strategies reached the constraint
 
-		print('here')
-		print(results)
-
 		#average runtime for each method
 		runtimes = np.zeros(strategy_id)
 		acc_strategies = np.zeros(strategy_id)
@@ -380,7 +380,7 @@ while True:
 			if success[ids[id_i]]:
 				best_strategy = ids[id_i]
 				break
-		print(best_strategy)
+		print('best strategy: ' + str(best_strategy))
 
 		# append ml data
 		X_train_meta_classifier.append(best_trial['result']['features'])
@@ -402,5 +402,7 @@ while True:
 		one_big_object['avg_success'] = y_train_meta_classifier_avg_success
 
 		pickle.dump(one_big_object, open('/tmp/metalearning_data.pickle', 'wb'))
+
+		trials = Trials()
 
 
