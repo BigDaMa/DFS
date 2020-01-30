@@ -131,7 +131,7 @@ time_limit = 60 * 1#10
 n_jobs = 4
 number_of_runs = 2
 
-meta_classifier = RandomForestRegressor(n_estimators=1000)
+meta_classifier = RandomForestClassifier(n_estimators=1000)
 X_train_meta_classifier = []
 y_train_meta_classifier = []
 
@@ -202,16 +202,13 @@ def objective(hps):
 	#predict the best model and calculate uncertainty
 
 	loss = 0
-	if hasattr(meta_classifier, 'estimators_'):
-		predictions = []
-		for tree in range(len(meta_classifier.estimators_)):
-			predictions.append(meta_classifier.estimators_[tree].predict([features])[0])
-
-		stddev = np.std(np.array(predictions), axis=0)
-		print("hello2")
-		print(stddev.shape)
-
-		loss = np.sum(stddev ** 2) * -1
+	try:
+		proba_predictions = meta_classifier.predict_proba([features])[0]
+		proba_predictions = np.sort(proba_predictions)
+		uncertainty = 1 - (proba_predictions[-1] - proba_predictions[-2])
+		loss = -1 * uncertainty  # we want to maximize uncertainty
+	except:
+		pass
 
 	return {'loss': loss, 'status': STATUS_OK, 'features': features}
 
@@ -252,7 +249,7 @@ while True:
 	i += 1
 
 	#break, once convergence tolerance is reached and generate new dataset
-	if trials.trials[-1]['result']['loss'] == 0 or i %100 == 0:
+	if trials.trials[-1]['result']['loss'] == 0 or i % 100 == 0:
 		best_trial = trials.trials[-1]
 		if i % 100 == 0:
 			best_trial = trials.best_trial
@@ -390,15 +387,7 @@ while True:
 		y_train_meta_classifier.append(best_strategy)
 
 		try:
-			X_meta = np.array(X_train_meta_classifier)
-			y_meta = np.array(y_train_meta_classifier_avg_times)[:,1:]
-
-			print('hello')
-			print(X_meta.shape)
-			print(y_meta.shape)
-			print(y_meta)
-
-			meta_classifier.fit(X_meta, y_meta)
+			meta_classifier.fit(np.array(X_train_meta_classifier), y_train_meta_classifier)
 		except:
 			pass
 
