@@ -74,6 +74,9 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 		if 'time' in cheating_global.successfull_result[hash]:
 			return [0.0, 0.0, 0.0, 0.0]
 
+		if np.sum(features) == 0:
+			return [0.0, 0.0, 0.0, 0.0]
+
 		model = f_clf1(features)
 
 		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf,

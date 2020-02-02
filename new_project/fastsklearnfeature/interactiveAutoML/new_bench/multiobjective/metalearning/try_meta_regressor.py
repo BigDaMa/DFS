@@ -127,7 +127,7 @@ X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size
 auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train_tiny[:, sensitive_ids[0]])
 
-time_limit = 60 * 1#10
+time_limit = 60 * 20
 n_jobs = 4
 number_of_runs = 2
 
@@ -393,16 +393,12 @@ while True:
 			X_meta = np.array(X_train_meta_classifier)
 			y_meta = np.array(y_train_meta_classifier_avg_times)[:,1:]
 
-			print('hello')
-			print(X_meta.shape)
-			print(y_meta.shape)
-			print(y_meta)
-
 			meta_classifier.fit(X_meta, y_meta)
 		except:
 			pass
 
 		#pickle everything and store it
+		#
 		one_big_object = {}
 		one_big_object['features'] = X_train_meta_classifier
 		one_big_object['best_strategy'] = y_train_meta_classifier

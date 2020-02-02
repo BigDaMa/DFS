@@ -126,6 +126,11 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 		print(hps)
 		model = f_clf1(hps)
 
+		if np.sum(model.named_steps['selection'].mask) == 0:
+			return {'loss': 4, 'status': STATUS_OK, 'model': model, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
+
+
+
 		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf, feature_selector=model.named_steps['selection'], scorer=auc_scorer)
 
 		cv = GridSearchCV(model, param_grid={'clf__C': [1.0]}, cv=cv_splitter,
