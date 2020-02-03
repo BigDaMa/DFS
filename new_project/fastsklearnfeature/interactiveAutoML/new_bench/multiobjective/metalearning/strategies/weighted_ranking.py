@@ -173,7 +173,12 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 
 	if len(rankings) > 1:
 		for i in range(len(rankings)):
-			space['weight' + str(i)] = hp.lognormal('weight' + str(i), 0, 1)
+			#space['weight' + str(i)] = hp.lognormal('weight' + str(i), 0, 1)
+			space['weight' + str(i)] = hp.choice('weight' + str(i) + 'choice',
+								  [
+									  (0.0),
+									  hp.lognormal('weight' + str(i) + 'specified', 0, 1)
+								  ])
 	else:
 		space['weight' + str(0)] = 1.0
 

@@ -110,20 +110,18 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data_openml
 import multiprocessing as mp
 import tqdm
+import openml
+import random
 
-'''
-X_train, X_test, y_train, y_test, names, sensitive_ids = get_data(data_path='/heart/dataset_53_heart-statlog.csv',
-																  continuous_columns = [0,3,4,7,9,10,11],
-																  sensitive_attribute = "sex",
-																  limit=250)
-'''
+#load list of viable datasets
+data_infos = pickle.load(open('/home/felix/phd/meta_learn/openml_data/fitting_datasets.pickle', 'rb'))
 
-X_train, X_test, y_train, y_test, names, sensitive_ids = get_data()
+print(len(data_infos))
 
-
-
+X_train, X_test, y_train, y_test, names, sensitive_ids = get_data_openml(data_infos)
 
 #run on tiny sample
 X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42)
@@ -132,7 +130,7 @@ auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=
 fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train_tiny[:, sensitive_ids[0]])
 
 time_limit = 60 * 20
-n_jobs = 4
+n_jobs = 20
 number_of_runs = 2
 
 meta_classifier = RandomForestClassifier(n_estimators=1000)

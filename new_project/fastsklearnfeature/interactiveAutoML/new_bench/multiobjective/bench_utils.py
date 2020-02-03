@@ -66,6 +66,8 @@ from sklearn.compose import ColumnTransformer
 
 from fastsklearnfeature.configuration.Config import Config
 from sklearn import preprocessing
+import openml
+import random
 
 def get_data(data_path='/adult/dataset_183_adult.csv', continuous_columns = [0, 2, 4, 10, 11, 12], sensitive_attribute = "sex", limit = 1000):
 
@@ -119,6 +121,70 @@ def get_data(data_path='/adult/dataset_183_adult.csv', continuous_columns = [0, 
 
 	#pickle.dump(names, open("/home/felix/phd/ranking_exeriments/names.p", "wb"))
 
+
+	le = preprocessing.LabelEncoder()
+	le.fit(y_train)
+	y_train = le.fit_transform(y_train)
+	y_test = le.transform(y_test)
+
+	return X_train, X_test, y_train, y_test, names, sensitive_ids
+
+
+def get_data_openml(data_infos, limit=None):
+	found=False
+	while not found:
+		try:
+			# pick random dataset
+			data_id = random.randint(0, len(data_infos) - 1)
+			dataset = openml.datasets.get_dataset(data_infos[data_id]['did'])
+			X, y, categorical_indicator, attribute_names = dataset.get_data(
+				dataset_format='dataframe',
+				target=dataset.default_target_attribute
+			)
+			class_id = -1
+			for f_i in range(len(dataset.features)):
+				if dataset.features[f_i].name == dataset.default_target_attribute:
+					class_id = f_i
+					break
+
+			continuous_columns = dataset.get_features_by_type('numeric')
+			categorical_features = list(set(dataset.get_features_by_type('nominal')) - set([class_id]))
+
+			# randomly draw one attribute as sensitive attribute from continuous attributes
+			sensitive_attribute_id = categorical_features[random.randint(0, len(categorical_features) - 1)]
+
+			found = True
+		except:
+			pass
+
+
+	if type(limit) != type(None):
+		X_train, X_test, y_train, y_test = train_test_split(X.values[0:limit,:], y.values[0:limit], test_size=0.5, random_state=42)
+	else:
+		X_train, X_test, y_train, y_test = train_test_split(X.values, y.values, test_size=0.5, random_state=42)
+
+	cat_sensitive_attribute_id = -1
+	for c_i in range(len(categorical_features)):
+		if categorical_features[c_i] == sensitive_attribute_id:
+			cat_sensitive_attribute_id = c_i
+			break
+
+	ct = ColumnTransformer([("onehot", OneHotEncoder(handle_unknown='ignore', sparse=False), categorical_features)])
+	scale = ColumnTransformer([("scale", MinMaxScaler(), continuous_columns)])
+
+	pipeline = FeatureUnion([("o", ct), ("s", scale)])
+	X_train = pipeline.fit_transform(X_train)
+	X_test = pipeline.transform(X_test)
+
+	names = ct.get_feature_names()
+	for c in continuous_columns:
+		names.append(str(attribute_names[c]))
+
+	sensitive_ids = []
+	all_names = ct.get_feature_names()
+	for fname_i in range(len(all_names)):
+		if all_names[fname_i].startswith('onehot__x' + str(cat_sensitive_attribute_id) + '_'):
+			sensitive_ids.append(fname_i)
 
 	le = preprocessing.LabelEncoder()
 	le.fit(y_train)
