@@ -116,7 +116,7 @@ import tqdm
 #load list of viable datasets
 data_infos = pickle.load(open(Config.get('data_path') + '/openml_data/fitting_datasets.pickle', 'rb'))
 
-time_limit = 60 * 1
+time_limit = 60 * 20
 n_jobs = 20
 number_of_runs = 2
 
