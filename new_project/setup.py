@@ -31,7 +31,9 @@ setup(
                       "joblib",
                       "sympy",
                       "tqdm",
-                      "openml==0.9.0"],
+                      "openml",
+                      "adversarial-robustness-toolbox"
+                      ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
 
