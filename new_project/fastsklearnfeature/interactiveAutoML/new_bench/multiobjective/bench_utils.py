@@ -33,33 +33,8 @@ import argparse
 import warnings
 warnings.filterwarnings("ignore")
 import pandas as pd
-import time
-
-from art.metrics import RobustnessVerificationTreeModelsCliqueMethod
-from art.metrics import loss_sensitivity
-from art.metrics import empirical_robustness
 from sklearn.pipeline import FeatureUnion
-
-
-from xgboost import XGBClassifier
-import numpy as np
-from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, GradientBoostingClassifier
-
-from art.classifiers import XGBoostClassifier, LightGBMClassifier, SklearnClassifier
-from art.attacks import HopSkipJump
-
-
-from fastsklearnfeature.interactiveAutoML.feature_selection.RunAllKBestSelection import RunAllKBestSelection
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import variance
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import model_score
-from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import BackwardSelection
 from sklearn.model_selection import train_test_split
-
-from fastsklearnfeature.interactiveAutoML.new_bench import my_global_utils1
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import unit_test_score
-
-from sklearn.feature_selection import SelectKBest
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer

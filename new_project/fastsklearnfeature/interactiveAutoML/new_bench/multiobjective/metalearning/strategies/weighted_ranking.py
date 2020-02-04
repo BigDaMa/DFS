@@ -182,10 +182,10 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 	else:
 		space['weight' + str(0)] = 1.0
 
-	cv_fair = -1
-	cv_acc = -1
-	cv_robust = -1
-	cv_number_features = -1
+	cv_fair = 0
+	cv_acc = 0
+	cv_robust = 0
+	cv_number_features = 1.0
 
 	trials = Trials()
 	i = 1
@@ -226,10 +226,14 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 		i += 1
 
 	if not success:
-		cv_fair = trials.best_trial['result']['cv_fair']
-		cv_acc = trials.best_trial['result']['cv_acc']
-		cv_robust = trials.best_trial['result']['cv_robust']
-		cv_number_features = trials.best_trial['result']['cv_number_features']
+		try:
+			cv_fair = trials.best_trial['result']['cv_fair']
+			cv_acc = trials.best_trial['result']['cv_acc']
+			cv_robust = trials.best_trial['result']['cv_robust']
+			cv_number_features = trials.best_trial['result']['cv_number_features']
+		except:
+			pass
+
 
 	runtime = time.time() - start_time
 	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features}

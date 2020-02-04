@@ -173,10 +173,10 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 	for f_i in range(X_train.shape[1]):
 		space['f_' + str(f_i)] = hp.randint('f_' + str(f_i), 2)
 
-	cv_fair = -1
-	cv_acc = -1
-	cv_robust = -1
-	cv_number_features = -1
+	cv_fair = 0
+	cv_acc = 0
+	cv_robust = 0
+	cv_number_features = 1.0
 
 	trials = Trials()
 	i = 1
@@ -214,10 +214,13 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 		i += 1
 
 	if not success:
-		cv_fair = trials.best_trial['result']['cv_fair']
-		cv_acc = trials.best_trial['result']['cv_acc']
-		cv_robust = trials.best_trial['result']['cv_robust']
-		cv_number_features = trials.best_trial['result']['cv_number_features']
+		try:
+			cv_fair = trials.best_trial['result']['cv_fair']
+			cv_acc = trials.best_trial['result']['cv_acc']
+			cv_robust = trials.best_trial['result']['cv_robust']
+			cv_number_features = trials.best_trial['result']['cv_number_features']
+		except:
+			pass
 
 	runtime = time.time() - start_time
 	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features}
