@@ -32,7 +32,8 @@ setup(
                       "sympy",
                       "tqdm",
                       "openml",
-                      "adversarial-robustness-toolbox"
+                      "adversarial-robustness-toolbox",
+                      "diffprivlib"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
