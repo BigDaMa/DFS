@@ -246,6 +246,7 @@ while True:
 			}
 
 	trials = Trials()
+	runs_per_dataset = 0
 	i = 1
 	while True:
 		fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
@@ -405,6 +406,8 @@ while True:
 
 			trials = Trials()
 			i = 1
-			break
+			runs_per_dataset += 1
+			if runs_per_dataset > 5:
+				break
 
 
