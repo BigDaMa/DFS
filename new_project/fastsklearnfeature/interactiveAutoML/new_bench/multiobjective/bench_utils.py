@@ -131,8 +131,11 @@ def get_data(data_path='/adult/dataset_183_adult.csv', continuous_columns = [0, 
 
 
 def get_data_openml(data_infos, limit=None):
-	found=False
+	found = False
 	while not found:
+		continuous_columns = []
+		categorical_features = []
+		sensitive_attribute_id = -1
 		try:
 			# pick random dataset
 			data_id = random.randint(0, len(data_infos) - 1)
@@ -141,14 +144,21 @@ def get_data_openml(data_infos, limit=None):
 				dataset_format='dataframe',
 				target=dataset.default_target_attribute
 			)
+
 			class_id = -1
 			for f_i in range(len(dataset.features)):
 				if dataset.features[f_i].name == dataset.default_target_attribute:
 					class_id = f_i
 					break
 
-			continuous_columns = dataset.get_features_by_type('numeric')
-			categorical_features = list(set(dataset.get_features_by_type('nominal')) - set([class_id]))
+			for f_i in range(len(attribute_names)):
+				for data_feature_o in range(len(dataset.features)):
+					if attribute_names[f_i] == dataset.features[data_feature_o].name:
+						if dataset.features[data_feature_o].data_type == 'nominal':
+							categorical_features.append(f_i)
+						if dataset.features[data_feature_o].data_type == 'numeric':
+							continuous_columns.append(f_i)
+						break
 
 			# randomly draw one attribute as sensitive attribute from continuous attributes
 			sensitive_attribute_id = categorical_features[random.randint(0, len(categorical_features) - 1)]
@@ -156,12 +166,12 @@ def get_data_openml(data_infos, limit=None):
 			found = True
 		except:
 			pass
-
+	print(data_infos[data_id]['name'])
 
 	if type(limit) != type(None):
-		X_train, X_test, y_train, y_test = train_test_split(X.values[0:limit,:], y.values[0:limit], test_size=0.5, random_state=42)
+		X_train, X_test, y_train, y_test = train_test_split(X.values[0:limit,:], y.values[0:limit], test_size=0.5, random_state=42, stratify=y)
 	else:
-		X_train, X_test, y_train, y_test = train_test_split(X.values, y.values, test_size=0.5, random_state=42)
+		X_train, X_test, y_train, y_test = train_test_split(X.values, y.values.astype('str'), test_size=0.5, random_state=42, stratify=y.values.astype('str'))
 
 	cat_sensitive_attribute_id = -1
 	for c_i in range(len(categorical_features)):
@@ -169,11 +179,17 @@ def get_data_openml(data_infos, limit=None):
 			cat_sensitive_attribute_id = c_i
 			break
 
-	ct = ColumnTransformer([("onehot", OneHotEncoder(handle_unknown='ignore', sparse=False), categorical_features)])
-	scale = ColumnTransformer([("scale", MinMaxScaler(), continuous_columns)])
+	my_transformers = []
+	if len(categorical_features) > 0:
+		ct = ColumnTransformer([("onehot", OneHotEncoder(handle_unknown='ignore', sparse=False), categorical_features)])
+		my_transformers.append(("o", ct))
+	if len(continuous_columns) > 0:
+		scale = ColumnTransformer([("scale", MinMaxScaler(), continuous_columns)])
+		my_transformers.append(("s", scale))
 
-	pipeline = FeatureUnion([("o", ct), ("s", scale)])
-	X_train = pipeline.fit_transform(X_train)
+	pipeline = FeatureUnion(my_transformers)
+	pipeline.fit(X_train)
+	X_train = pipeline.transform(X_train)
 	X_test = pipeline.transform(X_test)
 
 	names = ct.get_feature_names()
