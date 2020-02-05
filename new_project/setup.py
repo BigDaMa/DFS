@@ -32,7 +32,8 @@ setup(
                       "sympy",
                       "tqdm",
                       "openml",
-                      "diffprivlib"
+                      "diffprivlib",
+                      "pebble"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
