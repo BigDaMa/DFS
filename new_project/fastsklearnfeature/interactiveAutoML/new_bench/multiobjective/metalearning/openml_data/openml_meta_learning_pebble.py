@@ -390,7 +390,10 @@ while True:
 
 
 			for strategy_i in range(1, strategy_id):
-				runtimes[strategy_i] += (number_of_runs - np.sum(success_values[strategy_i])) * time_limit
+				number_successes = 0
+				if strategy_i in success_values:
+					number_successes += np.sum(success_values[strategy_i])
+				runtimes[strategy_i] += (number_of_runs - number_successes) * time_limit
 
 			#get lowest runtime
 			ids = np.argsort(runtimes)
