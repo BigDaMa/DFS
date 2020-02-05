@@ -46,6 +46,8 @@ print(meta_classifier.score(X_test, y_test))
 print(logs_adult['best_strategy'])
 '''
 
+print(logs_regression['best_strategy'])
+
 
 #get runbtime distributions
 

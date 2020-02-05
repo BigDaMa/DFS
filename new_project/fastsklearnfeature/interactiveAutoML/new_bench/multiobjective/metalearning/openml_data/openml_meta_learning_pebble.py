@@ -156,63 +156,65 @@ while True:
 	def objective(hps):
 		print(hps)
 
-
-		cv_k = 1.0
-		cv_privacy = hps['privacy']
-		model = LogisticRegression()
-		if type(cv_privacy) == type(None):
-			cv_privacy = X_train_tiny.shape[0]
-		else:
-			model = models.LogisticRegression(epsilon=cv_privacy)
-
-		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train_tiny, y=y_train_tiny, model=model,
-									feature_selector=None, scorer=auc_scorer)
-
-
-		cv = GridSearchCV(model, param_grid={'C': [1.0]}, scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer}, refit=False, cv=cv_splitter)
-		cv.fit(X_train_tiny, pd.DataFrame(y_train_tiny))
-		cv_acc = cv.cv_results_['mean_test_AUC'][0]
-		cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
-		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
-
-		#construct feature vector
-		feature_list = []
-		#user-specified constraints
-		feature_list.append(hps['accuracy'])
-		feature_list.append(hps['fairness'])
-		feature_list.append(hps['k'])
-		feature_list.append(hps['k'] * X_train.shape[1])
-		feature_list.append(hps['robustness'])
-		feature_list.append(cv_privacy)
-		#differences to sample performance
-		feature_list.append(cv_acc - hps['accuracy'])
-		feature_list.append(cv_fair - hps['fairness'])
-		feature_list.append(cv_k - hps['k'])
-		feature_list.append((cv_k - hps['k']) * X_train.shape[1])
-		feature_list.append(cv_robust - hps['robustness'])
-		#privacy constraint is always satisfied => difference always zero => constant => unnecessary
-
-		#metadata features
-		feature_list.append(X_train.shape[0])#number rows
-		feature_list.append(X_train.shape[1])#number columns
-
-		features = np.array(feature_list)
-
-		#predict the best model and calculate uncertainty
-
-		loss = 0
 		try:
-			proba_predictions = meta_classifier.predict_proba([features])[0]
-			proba_predictions = np.sort(proba_predictions)
+			cv_k = 1.0
+			cv_privacy = hps['privacy']
+			model = LogisticRegression()
+			if type(cv_privacy) == type(None):
+				cv_privacy = X_train_tiny.shape[0]
+			else:
+				model = models.LogisticRegression(epsilon=cv_privacy)
 
-			print("predictions: " + str(proba_predictions))
+			robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train_tiny, y=y_train_tiny, model=model,
+										feature_selector=None, scorer=auc_scorer)
 
-			uncertainty = 1 - (proba_predictions[-1] - proba_predictions[-2])
-			loss = -1 * uncertainty  # we want to maximize uncertainty
+
+			cv = GridSearchCV(model, param_grid={'C': [1.0]}, scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer}, refit=False, cv=cv_splitter)
+			cv.fit(X_train_tiny, pd.DataFrame(y_train_tiny))
+			cv_acc = cv.cv_results_['mean_test_AUC'][0]
+			cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+			cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
+
+			#construct feature vector
+			feature_list = []
+			#user-specified constraints
+			feature_list.append(hps['accuracy'])
+			feature_list.append(hps['fairness'])
+			feature_list.append(hps['k'])
+			feature_list.append(hps['k'] * X_train.shape[1])
+			feature_list.append(hps['robustness'])
+			feature_list.append(cv_privacy)
+			#differences to sample performance
+			feature_list.append(cv_acc - hps['accuracy'])
+			feature_list.append(cv_fair - hps['fairness'])
+			feature_list.append(cv_k - hps['k'])
+			feature_list.append((cv_k - hps['k']) * X_train.shape[1])
+			feature_list.append(cv_robust - hps['robustness'])
+			#privacy constraint is always satisfied => difference always zero => constant => unnecessary
+
+			#metadata features
+			feature_list.append(X_train.shape[0])#number rows
+			feature_list.append(X_train.shape[1])#number columns
+
+			features = np.array(feature_list)
+
+			#predict the best model and calculate uncertainty
+
+			loss = 0
+			try:
+				proba_predictions = meta_classifier.predict_proba([features])[0]
+				proba_predictions = np.sort(proba_predictions)
+
+				print("predictions: " + str(proba_predictions))
+
+				uncertainty = 1 - (proba_predictions[-1] - proba_predictions[-2])
+				loss = -1 * uncertainty  # we want to maximize uncertainty
+			except:
+				pass
+
+			return {'loss': loss, 'status': STATUS_OK, 'features': features}
 		except:
-			pass
-
-		return {'loss': loss, 'status': STATUS_OK, 'features': features}
+			return {'loss': np.inf, 'status': STATUS_OK}
 
 
 
@@ -250,6 +252,9 @@ while True:
 	while True:
 		fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
 		i += 1
+
+		if trials.trials[-1]['result']['loss'] == np.inf:
+			break
 
 		#break, once convergence tolerance is reached and generate new dataset
 		if trials.trials[-1]['result']['loss'] == 0 or i % 10 == 0:
