@@ -21,7 +21,6 @@ unique_data = {}
 
 for _, data_info in openml.datasets.list_datasets().items():
 	if 'status' in data_info and data_info['status'] == 'active' \
-			and 'NumberOfMissingValues' in data_info and data_info['NumberOfMissingValues'] == 0 \
 			and 'NumberOfClasses' in data_info and data_info['NumberOfClasses'] == 2 \
 			and 'NumberOfInstances' in data_info and data_info['NumberOfInstances'] > 250:
 
