@@ -250,7 +250,7 @@ while True:
 	runs_per_dataset = 0
 	i = 1
 	while True:
-		fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
+		fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials, show_progressbar=False)
 		i += 1
 
 		if trials.trials[-1]['result']['loss'] == np.inf:
