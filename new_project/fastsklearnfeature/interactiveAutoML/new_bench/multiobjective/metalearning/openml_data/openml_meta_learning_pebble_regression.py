@@ -36,6 +36,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data_openml
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
+import time
 
 #load list of viable datasets
 
@@ -51,9 +52,17 @@ def run_strategy(strategy_method, ranking_id, strategy_id):
 	cv_splitter = StratifiedKFold(5, random_state=42)
 	auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
+	acc_value_list = []
+	fair_value_list = []
+	robust_value_list = []
+	success_value_list = []
+	runtime_value_list = []
+	dataset_did_list = []
+	dataset_sensitive_attribute_list = []
 
 	while True:
-		X_train, X_test, y_train, y_test, names, sensitive_ids = get_data_openml(data_infos)
+		X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_data_openml(
+			data_infos)
 
 		#run on tiny sample
 		X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42, stratify=y_train)
@@ -63,92 +72,104 @@ def run_strategy(strategy_method, ranking_id, strategy_id):
 		def objective(hps):
 			print(hps)
 
-			cv_k = 1.0
-			cv_privacy = hps['privacy']
-			model = LogisticRegression()
-			if type(cv_privacy) == type(None):
-				cv_privacy = X_train_tiny.shape[0]
-			else:
-				model = models.LogisticRegression(epsilon=cv_privacy)
+			try:
 
-			robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train_tiny, y=y_train_tiny, model=model,
-										feature_selector=None, scorer=auc_scorer)
+				cv_k = 1.0
+				cv_privacy = hps['privacy']
+				model = LogisticRegression()
+				if type(cv_privacy) == type(None):
+					cv_privacy = X_train_tiny.shape[0]
+				else:
+					model = models.LogisticRegression(epsilon=cv_privacy)
+
+				robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train_tiny, y=y_train_tiny, model=model,
+											feature_selector=None, scorer=auc_scorer)
 
 
-			cv = GridSearchCV(model, param_grid={'C': [1.0]}, scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer}, refit=False, cv=cv_splitter)
-			cv.fit(X_train_tiny, pd.DataFrame(y_train_tiny))
-			cv_acc = cv.cv_results_['mean_test_AUC'][0]
-			cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
-			cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
+				cv = GridSearchCV(model, param_grid={'C': [1.0]}, scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer}, refit=False, cv=cv_splitter)
+				cv.fit(X_train_tiny, pd.DataFrame(y_train_tiny))
+				cv_acc = cv.cv_results_['mean_test_AUC'][0]
+				cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+				cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
-			#construct feature vector
-			feature_list = []
-			#user-specified constraints
-			feature_list.append(hps['accuracy'])
-			feature_list.append(hps['fairness'])
-			feature_list.append(hps['k'])
-			feature_list.append(hps['k'] * X_train.shape[1])
-			feature_list.append(hps['robustness'])
-			feature_list.append(cv_privacy)
-			#differences to sample performance
-			feature_list.append(cv_acc - hps['accuracy'])
-			feature_list.append(cv_fair - hps['fairness'])
-			feature_list.append(cv_k - hps['k'])
-			feature_list.append((cv_k - hps['k']) * X_train.shape[1])
-			feature_list.append(cv_robust - hps['robustness'])
-			#privacy constraint is always satisfied => difference always zero => constant => unnecessary
+				small_start_time = time.time()
 
-			#metadata features
-			feature_list.append(X_train.shape[0])#number rows
-			feature_list.append(X_train.shape[1])#number columns
+				cv = GridSearchCV(model, param_grid={'C': [1.0]},
+								  scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer},
+								  refit=False, cv=cv_splitter)
+				cv.fit(X_train_tiny, pd.DataFrame(y_train_tiny))
+				cv_acc = cv.cv_results_['mean_test_AUC'][0]
+				cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+				cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
-			features = np.array(feature_list)
+				# construct feature vector
+				feature_list = []
+				# user-specified constraints
+				feature_list.append(hps['accuracy'])
+				feature_list.append(hps['fairness'])
+				feature_list.append(hps['k'])
+				feature_list.append(hps['k'] * X_train.shape[1])
+				feature_list.append(hps['robustness'])
+				feature_list.append(cv_privacy)
+				feature_list.append(hps['search_time'])
+				# differences to sample performance
+				feature_list.append(cv_acc - hps['accuracy'])
+				feature_list.append(cv_fair - hps['fairness'])
+				feature_list.append(cv_k - hps['k'])
+				feature_list.append((cv_k - hps['k']) * X_train.shape[1])
+				feature_list.append(cv_robust - hps['robustness'])
+				feature_list.append(time.time() - small_start_time)
+				# privacy constraint is always satisfied => difference always zero => constant => unnecessary
 
-			#predict the best model and calculate uncertainty
+				# metadata features
+				feature_list.append(X_train.shape[0])  # number rows
+				feature_list.append(X_train.shape[1])  # number columns
 
-			loss = 0
-			if hasattr(meta_classifier, 'estimators_'):
-				predictions = []
-				for tree in range(len(meta_classifier.estimators_)):
-					predictions.append(meta_classifier.estimators_[tree].predict([features])[0])
+				features = np.array(feature_list)
 
-				stddev = np.std(np.array(predictions), axis=0)
-				print("hello2")
-				print(stddev.shape)
+				#predict the best model and calculate uncertainty
 
-				loss = np.sum(stddev ** 2) * -1
+				loss = 0
+				if hasattr(meta_classifier, 'estimators_'):
+					predictions = []
+					for tree in range(len(meta_classifier.estimators_)):
+						predictions.append(meta_classifier.estimators_[tree].predict([features])[0])
 
-			return {'loss': loss, 'status': STATUS_OK, 'features': features}
+					stddev = np.std(np.array(predictions), axis=0)
+					print('stddev: '+ str(stddev))
 
+					loss = (stddev ** 2) * -1
+
+				return {'loss': loss, 'status': STATUS_OK, 'features': features}
+			except:
+				return {'loss': np.inf, 'status': STATUS_OK}
 
 
 		space = {
-				 'k': hp.choice('k_choice',
-								[
-									(1.0),
-									(hp.uniform('k_specified', 0, 1))
-								]),
-				 'accuracy': hp.choice('accuracy_choice',
-								[
-									(0.0),
-									(hp.uniform('accuracy_specified', 0.5, 1))
-								]),
-				 'fairness': hp.choice('fairness_choice',
-								[
-									(0.0),
-									(hp.uniform('fairness_specified', 0, 1))
-								]),
-				 'privacy': hp.choice('privacy_choice',
-								[
-									(None),
-									(hp.lognormal('privacy_specified', 0, 1))
-								]),
-				 'robustness': hp.choice('robustness_choice',
-								[
-									(0.0),
-									(hp.uniform('robustness_specified', 0, 1))
-								]),
-				}
+			'k': hp.choice('k_choice',
+						   [
+							   (1.0),
+							   (hp.uniform('k_specified', 0, 1))
+						   ]),
+			'accuracy': hp.uniform('accuracy_specified', 0.5, 1),
+			'fairness': hp.choice('fairness_choice',
+								  [
+									  (0.0),
+									  (hp.uniform('fairness_specified', 0, 1))
+								  ]),
+			'privacy': hp.choice('privacy_choice',
+								 [
+									 (None),
+									 (hp.lognormal('privacy_specified', 0, 1))
+								 ]),
+			'robustness': hp.choice('robustness_choice',
+									[
+										(0.0),
+										(hp.uniform('robustness_specified', 0, 1))
+									]),
+			'search_time': hp.uniform('search_time_specified', 10, time_limit
+									  ),  # in seconds
+		}
 
 		trials = Trials()
 		runs_per_dataset = 0
@@ -157,17 +178,18 @@ def run_strategy(strategy_method, ranking_id, strategy_id):
 			fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
 			i += 1
 
+			if trials.trials[-1]['result']['loss'] == np.inf:
+				break
+
 			#break, once convergence tolerance is reached and generate new dataset
-			if trials.trials[-1]['result']['loss'] == 0 or i % 10 == 0:
+			if trials.trials[-1]['result']['loss'] == 0 or i % 20 == 0:
 				best_trial = trials.trials[-1]
-				if i % 10 == 0:
+				if i % 20 == 0:
 					best_trial = trials.best_trial
 				most_uncertain_f = best_trial['misc']['vals']
 				#print(most_uncertain_f)
 
-				min_accuracy = 0.0
-				if most_uncertain_f['accuracy_choice'][0]:
-					min_accuracy = most_uncertain_f['accuracy_specified'][0]
+				min_accuracy = most_uncertain_f['accuracy_specified'][0]
 				min_fairness = 0.0
 				if most_uncertain_f['fairness_choice'][0]:
 					min_fairness = most_uncertain_f['fairness_specified'][0]
@@ -177,6 +199,8 @@ def run_strategy(strategy_method, ranking_id, strategy_id):
 				max_number_features = X_train.shape[1]
 				if most_uncertain_f['k_choice'][0]:
 					max_number_features = most_uncertain_f['k_specified'][0]
+
+				max_search_time = most_uncertain_f['search_time_specified'][0]
 
 
 				# Execute each search strategy with a given time limit (in parallel)
@@ -203,7 +227,7 @@ def run_strategy(strategy_method, ranking_id, strategy_id):
 							 min_fairness=min_fairness,
 							 min_robustness=min_robustness,
 							 max_number_features=max_number_features,
-							 max_search_time=time_limit,
+							 max_search_time=max_search_time,
 							 cv_splitter=cv_splitter)
 
 				# append ml data
@@ -218,9 +242,26 @@ def run_strategy(strategy_method, ranking_id, strategy_id):
 				#pickle everything and store it
 				one_big_object = {}
 				one_big_object['features'] = X_train_meta_classifier
-				one_big_object['best_strategy'] = y_train_meta_classifier
+				#one_big_object['best_strategy'] = y_train_meta_classifier
 
-				pickle.dump(one_big_object, open('/tmp/regression_data_startegy_' + str(strategy_id) + '.pickle', 'wb'))
+				runtime_value_list.append(result['time'])
+				acc_value_list.append(result['cv_acc'])
+				fair_value_list.append(result['cv_fair'])
+				robust_value_list.append(result['cv_robust'])
+				success_value_list.append(result['success'])
+
+				dataset_did_list.append(data_did)
+				dataset_sensitive_attribute_list.append(sensitive_attribute_id)
+
+				one_big_object['times_value'] = runtime_value_list
+				one_big_object['acc_value'] = acc_value_list
+				one_big_object['fair_value'] = fair_value_list
+				one_big_object['robust_value'] = robust_value_list
+				one_big_object['success_value'] = success_value_list
+				one_big_object['dataset_id'] = dataset_did_list
+				one_big_object['sensitive_attribute_id'] = dataset_sensitive_attribute_list
+
+				pickle.dump(one_big_object, open('/tmp/metalearning_data' + str(strategy_id) + '.pickle', 'wb'))
 
 				trials = Trials()
 				i = 1

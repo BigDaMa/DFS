@@ -14,14 +14,6 @@ from sklearn import tree
 from sklearn.tree import export_graphviz
 from subprocess import call
 
-def print_constraints(features):
-	print('acc: ' + str(features[0]) +
-		  ' fair: ' + str(features[1]) +
-		  ' k rel: ' + str(features[2]) +
-		  ' k abs: ' + str(features[3]) +
-		  ' robust: ' + str(features[4]) +
-		  ' privacy: ' + str(features[5]))
-
 def print_constraints_2(features):
 	names = ['accuracy',
 	 'fairness',
@@ -29,11 +21,13 @@ def print_constraints_2(features):
 	 'k',
 	 'robustness',
 	 'privacy',
+	 'search_time',
 	 'cv_acc - acc',
 	 'cv_fair - fair',
 	 'cv_k - k rel',
 	 'cv_k - k',
 	 'cv_robust - robust',
+     'cv time',
 	 'rows',
 	 'columns']
 
@@ -42,26 +36,6 @@ def print_constraints_2(features):
 		my_str += names[i] + ': ' + str(features[i]) + ' '
 	print(my_str)
 
-
-'''
-feature_list.append(hps['accuracy'])
-			feature_list.append(hps['fairness'])
-			feature_list.append(hps['k'])
-			feature_list.append(hps['k'] * X_train.shape[1])
-			feature_list.append(hps['robustness'])
-			feature_list.append(cv_privacy)
-			#differences to sample performance
-			feature_list.append(cv_acc - hps['accuracy'])
-			feature_list.append(cv_fair - hps['fairness'])
-			feature_list.append(cv_k - hps['k'])
-			feature_list.append((cv_k - hps['k']) * X_train.shape[1])
-			feature_list.append(cv_robust - hps['robustness'])
-			#privacy constraint is always satisfied => difference always zero => constant => unnecessary
-
-			#metadata features
-			feature_list.append(X_train.shape[0])#number rows
-			feature_list.append(X_train.shape[1])#number columns
-	'''
 
 def print_strategies(results):
 	print("all strategies failed: " + str(results[0]) +
@@ -78,7 +52,7 @@ def print_strategies(results):
 
 #logs_adult = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_adult.pickle', 'rb'))
 #logs_heart = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_heart.pickle', 'rb'))
-logs_regression = pickle.load(open('/home/felix/phd/meta_learn/cluster_openml/metalearning_data_after_update.pickle', 'rb'))
+logs_regression = pickle.load(open('/home/felix/phd/meta_learn/random_configs/metalearning_data.pickle', 'rb'))
 dataset = logs_regression
 
 print(logs_regression['best_strategy'])
@@ -138,7 +112,7 @@ print("scores: " + str(np.mean(scores)))
 
 
 
-print_constraints_2(dataset['features'][156])
+#print_constraints_2(dataset['features'][156])
 
 
 
@@ -223,7 +197,6 @@ for run in range(len(dataset['times_value'])):
 print(max(runtime_dist))
 best_variance_against_evo = all_ids[np.argmax(runtime_dist)]
 
-print_constraints(dataset['features'][best_variance_against_evo])
 
 success_check = np.zeros(9)
 for run in range(len(dataset['success_value'])):
@@ -246,10 +219,10 @@ print_strategies(best_strategy_count / len(dataset['best_strategy']))
 
 
 for s in range(1, 9):
-	my_str = mappnames[s] + ':'
-	for run in range(len(dataset['times_value'])):
-		if s in dataset['success_value'][run] and len(dataset['success_value'][run][s]) >= 1:
-			my_str += str(run) + ','
-	print(my_str)
+	with open('/tmp/' + mappnames[s] + '_success.txt', 'a') as the_file:
+		for run in range(len(dataset['times_value'])):
+			if s in dataset['success_value'][run] and len(dataset['success_value'][run][s]) >= 1:
+				the_file.write(str(run) + '\n')
+
 
 

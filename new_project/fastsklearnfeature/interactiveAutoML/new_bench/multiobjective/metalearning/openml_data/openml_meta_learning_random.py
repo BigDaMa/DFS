@@ -116,11 +116,10 @@ from pebble import ProcessPool, ProcessExpired
 #load list of viable datasets
 data_infos = pickle.load(open(Config.get('data_path') + '/openml_data/fitting_datasets.pickle', 'rb'))
 
-time_limit = 60 * 20
+time_limit = 60 * 1
 n_jobs = 20
 number_of_runs = 2
 
-meta_classifier = RandomForestClassifier(n_estimators=1000)
 X_train_meta_classifier = []
 y_train_meta_classifier = []
 
@@ -402,11 +401,6 @@ while True:
 		# append ml data
 		X_train_meta_classifier.append(best_trial['result']['features'])
 		y_train_meta_classifier.append(best_strategy)
-
-		try:
-			meta_classifier.fit(np.array(X_train_meta_classifier), y_train_meta_classifier)
-		except:
-			pass
 
 		#pickle everything and store it
 		one_big_object = {}
