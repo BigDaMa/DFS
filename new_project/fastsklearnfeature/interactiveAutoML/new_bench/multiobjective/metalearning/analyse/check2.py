@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from sklearn.model_selection import cross_val_score
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import time_score
+from sklearn.metrics import make_scorer
+from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import tree
+from sklearn.tree import export_graphviz
+from subprocess import call
 
 def print_constraints(features):
 	print('acc: ' + str(features[0]) +
@@ -13,6 +21,26 @@ def print_constraints(features):
 		  ' k abs: ' + str(features[3]) +
 		  ' robust: ' + str(features[4]) +
 		  ' privacy: ' + str(features[5]))
+
+def print_constraints_2(features):
+	names = ['accuracy',
+	 'fairness',
+	 'k_rel',
+	 'k',
+	 'robustness',
+	 'privacy',
+	 'cv_acc - acc',
+	 'cv_fair - fair',
+	 'cv_k - k rel',
+	 'cv_k - k',
+	 'cv_robust - robust',
+	 'rows',
+	 'columns']
+
+	my_str = ''
+	for i in range(len(names)):
+		my_str += names[i] + ': ' + str(features[i]) + ' '
+	print(my_str)
 
 
 '''
@@ -51,24 +79,66 @@ def print_strategies(results):
 #logs_adult = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_adult.pickle', 'rb'))
 #logs_heart = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_heart.pickle', 'rb'))
 logs_regression = pickle.load(open('/home/felix/phd/meta_learn/cluster_openml/metalearning_data.pickle', 'rb'))
+dataset = logs_regression
 
+print(logs_regression['best_strategy'])
+print(len(logs_regression['best_strategy']))
 
 #print(logs_regression['features'])
 
-
+my_score = make_scorer(time_score, logs=dataset)
 
 X_train = logs_regression['features']
 y_train = logs_regression['best_strategy']
 
 meta_classifier = RandomForestClassifier(n_estimators=1000)
-meta_classifier.fit(X_train, y_train)
+#meta_classifier = DecisionTreeClassifier(random_state=0, max_depth=3)
+meta_classifier = meta_classifier.fit(X_train, np.array(y_train) == 0)
+#meta_classifier = meta_classifier.fit(X_train, y_train)
 
-scores = cross_val_score(meta_classifier, X_train, y_train, cv=5)
+'''
+# Export as dot file
+export_graphviz(meta_classifier, out_file='/tmp/tree.dot',
+                feature_names = ['accuracy',
+											  'fairness',
+											  'k_rel',
+											  'k',
+											  'robustness',
+											  'privacy',
+											  'cv_acc - acc',
+											  'cv_fair - fair',
+											  'cv_k - k rel',
+											  'cv_k - k',
+											  'cv_robust - robust',
+											  'rows',
+											  'columns'],
+                class_names = np.array(meta_classifier.classes_, dtype=str),#['nothing','var','chi2','acc rank','robust rank','fair rank','weighted ranking','hyperopt','evo'],#['success', 'failure'],
+                rounded = True, proportion = False,
+                precision = 2, filled = True)
 
-print(meta_classifier.feature_importances_)
+call(['dot', '-Tpng', '/tmp/tree.dot', '-o', '/tmp/tree.png', '-Gdpi=600'])
+
+plt.show()
+'''
+
+
+
+#meta_classifier = DummyClassifier(strategy="uniform")
+#meta_classifier = DummyClassifier(strategy="most_frequent")
+
+scores = cross_val_score(meta_classifier, X_train, np.array(y_train) == 0, cv=10, scoring='f1')
+print('did it fail: ' + str(np.mean(scores)))
+
+scores = cross_val_score(meta_classifier, X_train, pd.DataFrame(y_train), cv=10, scoring=my_score)
+#scores = cross_val_score(meta_classifier, X_train, pd.DataFrame(y_train), cv=10)
+print(scores)
+print("scores: " + str(np.mean(scores)))
+#print(meta_classifier.feature_importances_)
 #print(meta_classifier.score(X_test, y_test))
 
 
+
+print_constraints_2(dataset['features'][156])
 
 
 
@@ -158,6 +228,7 @@ print_constraints(dataset['features'][best_variance_against_evo])
 success_check = np.zeros(9)
 for run in range(len(dataset['success_value'])):
 	for s in range(1, 9):
+
 		if s in dataset['success_value'][run]:
 			success_check[s] += np.sum(dataset['success_value'][run][s])
 
@@ -167,6 +238,7 @@ print_strategies(success_check / (len(dataset['success_value']*2)))
 
 best_strategy_count = np.zeros(9)
 for run in range(len(dataset['best_strategy'])):
+
 	best_strategy_count[dataset['best_strategy'][run]] += 1
 
 print("Best count: ")

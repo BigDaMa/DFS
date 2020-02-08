@@ -107,10 +107,11 @@ def get_data(data_path='/adult/dataset_183_adult.csv', continuous_columns = [0, 
 
 def get_data_openml(data_infos, limit=None):
 	found = False
+	data_id = -1
+	sensitive_attribute_id = -1
 	while not found:
 		continuous_columns = []
 		categorical_features = []
-		sensitive_attribute_id = -1
 		try:
 			# pick random dataset
 			data_id = random.randint(0, len(data_infos) - 1)
@@ -182,4 +183,4 @@ def get_data_openml(data_infos, limit=None):
 	y_train = le.fit_transform(y_train)
 	y_test = le.transform(y_test)
 
-	return X_train, X_test, y_train, y_test, names, sensitive_ids
+	return X_train, X_test, y_train, y_test, names, sensitive_ids, data_infos[data_id]['did'], sensitive_attribute_id

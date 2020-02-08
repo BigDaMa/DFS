@@ -75,6 +75,7 @@ for _, data_info in openml.datasets.list_datasets().items():
 
 			pipeline = FeatureUnion(my_transformers)
 			pipeline.fit(X_train[0:100,:])
+			#X_test = pipeline.transform(X_test)
 
 			unique_data[data_info['name']] = data_info
 			print(len(unique_data))
