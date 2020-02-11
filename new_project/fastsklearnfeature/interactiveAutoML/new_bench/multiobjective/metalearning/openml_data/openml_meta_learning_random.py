@@ -116,6 +116,8 @@ from pebble import ProcessPool, ProcessExpired
 #load list of viable datasets
 data_infos = pickle.load(open(Config.get('data_path') + '/openml_data/fitting_datasets.pickle', 'rb'))
 
+current_run_time_id = time.time()
+
 time_limit = 60 * 60
 n_jobs = 20
 number_of_runs = 1
@@ -129,6 +131,7 @@ fair_value_list = []
 robust_value_list = []
 success_value_list = []
 runtime_value_list = []
+evaluation_value_list = []
 
 dataset_did_list = []
 dataset_sensitive_attribute_list = []
@@ -415,6 +418,7 @@ while True:
 		fair_value_list.append(fairness_values)
 		robust_value_list.append(robustness_values)
 		success_value_list.append(success_values)
+		evaluation_value_list.append(evaluation_values)
 
 		dataset_did_list.append(data_did)
 		dataset_sensitive_attribute_list.append(sensitive_attribute_id)
@@ -424,10 +428,11 @@ while True:
 		one_big_object['fair_value'] = fair_value_list
 		one_big_object['robust_value'] = robust_value_list
 		one_big_object['success_value'] = success_value_list
+		one_big_object['evaluation_value'] = evaluation_value_list
 		one_big_object['dataset_id'] = dataset_did_list
 		one_big_object['sensitive_attribute_id'] = dataset_sensitive_attribute_list
 
-		pickle.dump(one_big_object, open('/tmp/metalearning_data.pickle', 'wb'))
+		pickle.dump(one_big_object, open('/tmp/metalearning_data' + str(current_run_time_id) + '.pickle', 'wb'))
 
 		trials = Trials()
 		i = 1
