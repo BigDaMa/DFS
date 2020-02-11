@@ -7,6 +7,9 @@ import seaborn as sns
 from sklearn.model_selection import cross_val_score
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import get_recall
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import time_score2
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import get_avg_runtime
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import get_optimum_avg_runtime
+
 from sklearn.metrics import make_scorer
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
@@ -73,6 +76,8 @@ print(len(logs_regression['best_strategy']))
 
 my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset)
 my_recall_score = make_scorer(get_recall, logs=dataset)
+my_runtime_score = make_scorer(get_avg_runtime, logs=dataset)
+my_optimal_runtime_score = make_scorer(get_optimum_avg_runtime, logs=dataset)
 
 X_train = logs_regression['features']
 y_train = logs_regression['best_strategy']
@@ -115,8 +120,8 @@ plt.show()
 #meta_classifier = DummyClassifier(strategy="most_frequent")
 #meta_classifier = DummyClassifier(strategy="constant", constant=8)
 
-scores = cross_val_score(meta_classifier, X_train, np.array(y_train) == 0, cv=10, scoring='f1')
-print('did it fail: ' + str(np.mean(scores)))
+#scores = cross_val_score(meta_classifier, X_train, np.array(y_train) == 0, cv=10, scoring='f1')
+#print('did it fail: ' + str(np.mean(scores)))
 
 
 success_ids = np.where(np.array(y_train) > 0)[0]
@@ -136,7 +141,7 @@ print('number datasets: ' + str(len(np.unique(groups))))
 
 classifiers = []
 classifier_names = []
-for i in range(1,9):
+for i in range(1, 9):
 	classifiers.append(DummyClassifier(strategy="constant", constant=i))
 	classifier_names.append(mappnames[i])
 
@@ -180,6 +185,30 @@ plt.show()
 for i in range(len(classifiers)):
 	cv_recall = cross_val_score(classifiers[i], X_data, y_data, cv=outer_cv, scoring=my_recall_score)
 	print(classifier_names[i] + " recall scores: " + str(np.nanmean(cv_recall)))
+
+
+for i in range(len(classifiers)):
+	cv_runtime = cross_val_score(classifiers[i], X_data, y_data, cv=outer_cv, scoring=my_runtime_score)
+	print(classifier_names[i] + " avg runtime: " + str(np.nanmean(cv_runtime)))
+
+cv_runtime = cross_val_score(classifiers[0], X_data, y_data, cv=outer_cv, scoring=my_optimal_runtime_score)
+print('optimal(min)' + " avg runtime: " + str(np.nanmean(cv_runtime)))
+
+
+X_data_all = np.array(X_train)
+y_data_all = pd.DataFrame(y_train)
+groups_all = np.array(dataset['dataset_id'])
+
+outer_cv_all = list(GroupKFold(n_splits=4).split(X_data_all, y_data_all, groups=groups_all))
+
+print("\n\nNow: all runtime: \n\n")
+for i in range(len(classifiers)):
+	cv_runtime = cross_val_score(classifiers[i], X_data_all, y_data_all, cv=outer_cv_all, scoring=my_runtime_score)
+	print(classifier_names[i] + " avg runtime: " + str(np.nanmean(cv_runtime)))
+
+cv_runtime = cross_val_score(classifiers[0], X_data_all, y_data_all, cv=outer_cv_all, scoring=my_optimal_runtime_score)
+print('optimal(min)' + " avg runtime: " + str(np.nanmean(cv_runtime)))
+
 
 best_param = {'n_estimators': 400, 'min_samples_split': 10, 'min_samples_leaf': 2, 'max_features': 'auto', 'max_depth': 40, 'bootstrap': False}
 clf = RandomForestClassifier(**best_param)
@@ -236,11 +265,13 @@ print(rf_random.best_score_)
 
 nested_cv_squared_scores = []
 nested_cv_scores = []
+recall_cv_scores = []
+avg_runtime_cv_scores = []
 for train_ids, test_ids in outer_cv:
 	inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], y_data.iloc[train_ids], groups=groups[train_ids])
 
 	rf = RandomForestClassifier()
-	rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=200,
+	rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=100,
 								   cv=inner_cv, verbose=2, random_state=42,
 								   n_jobs=-1, scoring=my_squared_score)
 	# Fit the random search model
@@ -249,12 +280,19 @@ for train_ids, test_ids in outer_cv:
 
 	nested_cv_scores.append(my_score(rf_random, X_data[test_ids,:], y_data.iloc[test_ids]))
 	nested_cv_squared_scores.append(rf_random.score(X_data[test_ids,:], y_data.iloc[test_ids]))
+	recall_cv_scores.append(my_recall_score(rf_random, X_data[test_ids, :], y_data.iloc[test_ids]))
+	avg_runtime_cv_scores.append(my_runtime_score(rf_random, X_data[test_ids, :], y_data.iloc[test_ids]))
 
 	print('my score: ' + str(my_score(rf_random, X_data[test_ids,:], y_data.iloc[test_ids])))
 	print('my squared score: ' + str(my_squared_score(rf_random, X_data[test_ids, :], y_data.iloc[test_ids])))
 
+	cv_runtime = cross_val_score(rf_random.best_estimator_, X_data_all, y_data_all, cv=outer_cv_all, scoring=my_runtime_score)
+	print("all runtime: " + str(np.mean(cv_runtime)))
+
 print("Nested cv score - meta learning: " + str(np.mean(nested_cv_scores)))
 print("Nested squared cv score - meta learning: " + str(np.mean(nested_cv_squared_scores)))
+print("Nested Recall cv score - meta learning: " + str(np.mean(recall_cv_scores)))
+print("Nested avg runtime cv score - meta learning: " + str(np.mean(avg_runtime_cv_scores)))
 
 
 print_constraints_2(dataset['features'][111])
@@ -348,7 +386,7 @@ for run in range(len(dataset['success_value'])):
 		if s in dataset['success_value'][run]:
 			success_check[s] += np.sum(dataset['success_value'][run][s])
 
-success_v = success_check[1:] /(len(dataset['success_value']*2))
+success_v = success_check[1:] / (len(dataset['success_value']*2))
 
 print(success_v)
 

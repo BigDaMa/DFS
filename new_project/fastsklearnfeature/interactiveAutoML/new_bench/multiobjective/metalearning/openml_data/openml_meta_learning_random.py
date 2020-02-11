@@ -116,9 +116,9 @@ from pebble import ProcessPool, ProcessExpired
 #load list of viable datasets
 data_infos = pickle.load(open(Config.get('data_path') + '/openml_data/fitting_datasets.pickle', 'rb'))
 
-time_limit = 60 * 1
+time_limit = 60 * 60
 n_jobs = 20
-number_of_runs = 2
+number_of_runs = 1
 
 X_train_meta_classifier = []
 y_train_meta_classifier = []
@@ -360,6 +360,7 @@ while True:
 		k_values = {}
 		success_values = {}
 		runtime_values = {}
+		evaluation_values = {}
 
 		for r in range(len(results)):
 			runtimes[results[r]['strategy_id']] += results[r]['time']
@@ -371,6 +372,7 @@ while True:
 					k_values[results[r]['strategy_id']] = []
 					success_values[results[r]['strategy_id']] = []
 					runtime_values[results[r]['strategy_id']] = []
+					evaluation_values[results[r]['strategy_id']] = []
 
 				#add stuff
 				accuracy_values[results[r]['strategy_id']].append(results[r]['cv_acc'])
@@ -379,6 +381,7 @@ while True:
 				k_values[results[r]['strategy_id']].append(results[r]['cv_number_features'])
 				success_values[results[r]['strategy_id']].append(results[r]['success'])
 				runtime_values[results[r]['strategy_id']].append(results[r]['time'])
+				evaluation_values[results[r]['strategy_id']].append(results[r]['cv_number_evaluations'])
 			if results[r]['success']:
 				success[results[r]['strategy_id']] = True
 

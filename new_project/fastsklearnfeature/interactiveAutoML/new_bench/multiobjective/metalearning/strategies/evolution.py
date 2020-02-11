@@ -54,6 +54,7 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 
 	hash = str(random.getrandbits(128)) + str(time.time())
 	cheating_global.successfull_result[hash] = {}
+	cheating_global.successfull_result[hash]['cv_number_evaluations'] = 0
 
 	start_time = time.time()
 
@@ -89,6 +90,8 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 		cv_acc = cv.cv_results_['mean_test_AUC'][0]
 		cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
 		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
+
+		cheating_global.successfull_result[hash]['cv_number_evaluations'] += 1
 
 		cv_number_features = float(np.sum(model.named_steps['selection']._get_support_mask())) / float(
 			len(model.named_steps['selection']._get_support_mask()))
@@ -214,5 +217,6 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 	cv_robust = cheating_global.successfull_result[hash]['cv_robust']
 	cv_fair = cheating_global.successfull_result[hash]['cv_fair']
 	cv_number_features = cheating_global.successfull_result[hash]['cv_number_features']
+	number_of_evaluations = cheating_global.successfull_result[hash]['cv_number_evaluations']
 	del cheating_global.successfull_result[hash]
-	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features}
+	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features, 'cv_number_evaluations': number_of_evaluations}

@@ -187,6 +187,8 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 	cv_robust = 0
 	cv_number_features = 1.0
 
+	number_of_evaluations = 0
+
 	trials = Trials()
 	i = 1
 	success = False
@@ -194,6 +196,8 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 		if time.time() - start_time > max_search_time:
 			break
 		fmin(f_to_min1, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
+
+		number_of_evaluations += 1
 
 		cv_fair = trials.trials[-1]['result']['cv_fair']
 		cv_acc = trials.trials[-1]['result']['cv_acc']
@@ -236,7 +240,7 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 
 
 	runtime = time.time() - start_time
-	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features}
+	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features, 'cv_number_evaluations': number_of_evaluations}
 
 
 
