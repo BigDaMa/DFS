@@ -118,7 +118,7 @@ data_infos = pickle.load(open(Config.get('data_path') + '/openml_data/fitting_da
 
 current_run_time_id = time.time()
 
-time_limit = 60 * 60
+time_limit = 60 * 1#60
 n_jobs = 20
 number_of_runs = 1
 

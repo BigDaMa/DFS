@@ -98,8 +98,11 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils i
 from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelection import WeightedRankingSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 
-
-
+def map_hyper2vals(hyper):
+	new_vals = {}
+	for k, v in hyper.items():
+		new_vals[k] = [v]
+	return new_vals
 
 
 def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
@@ -115,16 +118,30 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 		for k, v in hps.items():
 			mask[int(k.split('_')[1])] = v
 
+
+		#repair number of features if neccessary
+		max_k = max(int(max_number_features * X_train.shape[1]), 1)
+		if np.sum(mask) > max_k:
+			id_features_used = np.nonzero(mask)[0]  # indices where features are used
+			np.random.shuffle(id_features_used)  # shuffle ids
+			ids_tb_deactived = id_features_used[max_k:]  # deactivate features
+			for item_to_remove in ids_tb_deactived:
+				mask[item_to_remove] = False
+
+		for mask_i in range(len(mask)):
+			hps['f_' + str(mask_i)] = mask[mask_i]
+
 		model = Pipeline([
 			('selection', MaskSelection(mask)),
 			('clf', LogisticRegression())
 		])
 
-		return model
+		return model, hps
 
 	def f_to_min1(hps):
-		print(hps)
-		model = f_clf1(hps)
+		model, hps = f_clf1(hps)
+
+		print("hyperopt: " + str(hps))
 
 		if np.sum(model.named_steps['selection'].mask) == 0:
 			return {'loss': 4, 'status': STATUS_OK, 'model': model, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
@@ -146,16 +163,13 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 		loss = 0.0
 		if cv_acc >= min_accuracy and \
 				cv_fair >= min_fairness and \
-				cv_robust >= min_robustness and \
-				cv_number_features <= max_number_features:
+				cv_robust >= min_robustness:
 			if min_fairness > 0.0:
 				loss += (min_fairness - cv_fair)
 			if min_accuracy > 0.0:
 				loss += (min_accuracy - cv_acc)
 			if min_robustness > 0.0:
 				loss += (min_robustness - cv_robust)
-			if max_number_features < 1.0:
-				loss += (cv_number_features - max_number_features)
 		else:
 			if min_fairness > 0.0 and cv_fair < min_fairness:
 				loss += (min_fairness - cv_fair) ** 2
@@ -163,11 +177,9 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 				loss += (min_accuracy - cv_acc) ** 2
 			if min_robustness > 0.0 and cv_robust < min_robustness:
 				loss += (min_robustness - cv_robust) ** 2
-			if max_number_features < 1.0 and cv_number_features > max_number_features:
-				loss += (cv_number_features - max_number_features) ** 2
 
 
-		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_number_features': cv_number_features}
+		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_number_features': cv_number_features, 'updated_parameters': hps}
 
 	space = {}
 	for f_i in range(X_train.shape[1]):
@@ -187,6 +199,16 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 		if time.time() - start_time > max_search_time:
 			break
 		fmin(f_to_min1, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
+
+		#update repair in database
+		try:
+			current_trial = trials.trials[-1]
+			if type(current_trial['result']['updated_parameters']) != type(None):
+				trials._dynamic_trials[-1]['misc']['vals'] = map_hyper2vals(current_trial['result']['updated_parameters'])
+		except:
+			print("found an error in repair")
+
+
 
 		number_of_evaluations += 1
 

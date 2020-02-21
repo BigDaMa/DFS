@@ -21,26 +21,22 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measur
 from pymoo.model.termination import Termination
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.cheating_global as cheating_global
 import random
+from pymoo.model.repair import Repair
 
 
-
-
-def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
+def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy=0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None):
 
 	def calculate_loss(cv_acc, cv_fair, cv_robust, cv_number_features):
 		loss = 0.0
 		if cv_acc >= min_accuracy and \
 				cv_fair >= min_fairness and \
-				cv_robust >= min_robustness and \
-				cv_number_features <= max_number_features:
+				cv_robust >= min_robustness:
 			if min_fairness > 0.0:
 				loss += (min_fairness - cv_fair)
 			if min_accuracy > 0.0:
 				loss += (min_accuracy - cv_acc)
 			if min_robustness > 0.0:
 				loss += (min_robustness - cv_robust)
-			if max_number_features < 1.0:
-				loss += (cv_number_features - max_number_features)
 		else:
 			if min_fairness > 0.0 and cv_fair < min_fairness:
 				loss += (min_fairness - cv_fair) ** 2
@@ -48,8 +44,6 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 				loss += (min_accuracy - cv_acc) ** 2
 			if min_robustness > 0.0 and cv_robust < min_robustness:
 				loss += (min_robustness - cv_robust) ** 2
-			if max_number_features < 1.0 and cv_number_features > max_number_features:
-				loss += (cv_number_features - max_number_features) ** 2
 		return loss
 
 	hash = str(random.getrandbits(128)) + str(time.time())
@@ -132,7 +126,6 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 				cheating_global.successfull_result[hash]['cv_fair'] = cv_fair
 				cheating_global.successfull_result[hash]['cv_number_features'] = cv_number_features
 
-
 		return [cv_acc, cv_fair, cv_robust, cv_simplicity]
 	
 	class MyProblem(Problem):
@@ -140,15 +133,13 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 		def __init__(self):
 			number_objectives = 0
 			if min_accuracy > 0.0:
-				number_objectives +=1
+				number_objectives += 1
 			if min_fairness > 0.0:
-				number_objectives +=1
+				number_objectives += 1
 			if min_robustness > 0.0:
-				number_objectives +=1
-			if max_number_features < 1.0:
-				number_objectives +=1
+				number_objectives += 1
 			if number_objectives == 0:
-				number_objectives = 4
+				number_objectives = 3
 
 			super().__init__(n_var=X_train.shape[1],
 								 n_obj=number_objectives,
@@ -170,20 +161,43 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 
 			##objectives
 			objectives = []
-			if min_accuracy > 0.0 or self.n_obj==4:
+			if min_accuracy > 0.0 or self.n_obj == 3:
 				objectives.append(accuracy_batch)
-			if min_fairness > 0.0 or self.n_obj==4:
+			if min_fairness > 0.0 or self.n_obj == 3:
 				objectives.append(fairness_batch)
-			if min_robustness > 0.0 or self.n_obj==4:
+			if min_robustness > 0.0 or self.n_obj == 3:
 				objectives.append(robustness_batch)
-			if max_number_features < 1.0 or self.n_obj==4:
-				objectives.append(simplicity_batch)
 	
 			out["F"] = anp.column_stack(objectives)
 	
 
 	problem = MyProblem()
-	
+
+	class NumberFeaturesRepair(Repair):
+
+		def __init__(self, max_number_features=None):
+			self.max_number_features = max_number_features
+
+		def _do(self, problem, pop, **kwargs):
+			# the packing plan for the whole population (each row one individual)
+			Z = pop.get("X")
+			# now repair each indvidiual i
+			for i in range(len(Z)):
+				if np.sum(Z[i]) > self.max_number_features:
+					id_features_used = np.nonzero(Z[i])[0] #indices where features are used
+					np.random.shuffle(id_features_used) #shuffle ids
+					ids_tb_deactived = id_features_used[self.max_number_features:]# deactivate features
+					for item_to_remove in ids_tb_deactived:
+						Z[i][item_to_remove] = False
+
+			# set the design variables for the population
+			pop.set("X", Z)
+			return pop
+
+	repair_strategy = None
+	if max_number_features < 1.0:
+		max_k = max(int(max_number_features * X_train.shape[1]), 1)
+		repair_strategy = NumberFeaturesRepair(max_k)
 	
 	population_size = 100
 	cross_over_rate = 0.9
@@ -192,6 +206,7 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 					  crossover=get_crossover('bin_one_point'),#get_crossover("bin_hux"),#get_crossover("bin_two_point"),
 					  mutation=BinaryBitflipMutation(1.0 / X_train.shape[1]),
 					  elimate_duplicates=True,
+					  repair=repair_strategy,
 					  #n_offsprings= cross_over_rate * population_size
 					  )
 		
