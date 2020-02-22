@@ -73,7 +73,8 @@ def print_strategies(results):
 #get all files from folder
 
 # list files "/home/felix/phd/meta_learn/random_configs_eval"
-all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval/*.pickle")
+#all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval_long/*.pickle")
+all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_with_repair_optimization/*.pickle")
 dataset = {}
 for afile in all_files:
 	data = pickle.load(open(afile, 'rb'))
@@ -230,7 +231,8 @@ classifiers.append(DummyClassifier(strategy="uniform"))
 classifier_names.append('random')
 
 #best_param = {'n_estimators': 400, 'min_samples_split': 10, 'min_samples_leaf': 2, 'max_features': 'auto', 'max_depth': 40, 'bootstrap': False}
-best_param  = {'n_estimators': 600, 'min_samples_split': 2, 'min_samples_leaf': 2, 'max_features': 'sqrt', 'max_depth': 110, 'bootstrap': False}
+#best_param  = {'n_estimators': 600, 'min_samples_split': 2, 'min_samples_leaf': 2, 'max_features': 'sqrt', 'max_depth': 110, 'bootstrap': False}
+best_param = {'n_estimators': 1000, 'min_samples_split': 5, 'min_samples_leaf': 4, 'max_features': 'auto', 'max_depth': 100, 'bootstrap': True}
 classifiers.append(RandomForestClassifier(**best_param))
 classifier_names.append('meta learned')
 
@@ -270,10 +272,43 @@ for i in range(len(classifiers)):
 
 for i in range(len(classifiers)):
 	cv_runtime = cross_val_score(classifiers[i], X_data, y_data, cv=outer_cv, scoring=my_runtime_score)
-	print(classifier_names[i] + " avg runtime: " + str(np.nanmean(cv_runtime)))
+	print(classifier_names[i] + " avg runtime: " + str(np.nanmean(cv_runtime)) + ' median runtime: ' + str(np.nanmedian(cv_runtime)) + ' std runtime: ' + str(np.nanstd(cv_runtime)))
 
 cv_runtime = cross_val_score(classifiers[0], X_data, y_data, cv=outer_cv, scoring=my_optimal_runtime_score)
-print('optimal(min)' + " avg runtime: " + str(np.nanmean(cv_runtime)))
+print('optimal(min)' + " avg runtime: " + str(np.nanmean(cv_runtime)) + " median runtime: " + str(np.nanmedian(cv_runtime)) + ' std runtime: ' + str(np.nanstd(cv_runtime)))
+
+print('\n\n\nnow better:\n')
+
+
+#calculate real runtime std
+for current_strategy in range(1,9):
+	all_runtimes = []
+	for current_id in success_ids:
+		if current_strategy in dataset['times_value'][current_id] and len(
+				dataset['times_value'][current_id][current_strategy]) >= 1:
+			all_runtimes.append(min(dataset['times_value'][current_id][current_strategy]))
+		else:
+			all_runtimes.append(dataset['features'][current_id][6])
+	print(mappnames[current_strategy] + " avg runtime: " + str(np.nanmean(all_runtimes)) + ' median runtime: ' + str(
+		np.nanmedian(all_runtimes)) + ' std runtime: ' + str(np.nanstd(all_runtimes)))
+
+##calculate optimum
+all_runtimes = []
+for current_id in success_ids:
+	best_runtime = dataset['features'][current_id][6]
+	for s in range(1, 9):
+		if s in dataset['times_value'][current_id] and len(dataset['times_value'][current_id][s]) >= 1:
+			runtime = min(dataset['times_value'][current_id][s])
+			if runtime < best_runtime:
+				best_runtime = runtime
+	all_runtimes.append(best_runtime)
+print('optimal '+ " avg runtime: " + str(np.nanmean(all_runtimes)) + ' median runtime: ' + str(
+		np.nanmedian(all_runtimes)) + ' std runtime: ' + str(np.nanstd(all_runtimes)))
+
+
+
+
+
 
 
 X_data_all = np.array(X_train)
@@ -289,6 +324,7 @@ for i in range(len(classifiers)):
 
 cv_runtime = cross_val_score(classifiers[0], X_data_all, y_data_all, cv=outer_cv_all, scoring=my_optimal_runtime_score)
 print('optimal(min)' + " avg runtime: " + str(np.nanmean(cv_runtime)))
+print('optimal(min)' + " median runtime: " + str(np.nanmedian(cv_runtime)))
 
 
 best_param = {'n_estimators': 400, 'min_samples_split': 10, 'min_samples_leaf': 2, 'max_features': 'auto', 'max_depth': 40, 'bootstrap': False}
@@ -343,8 +379,6 @@ print(rf_random.best_params_)
 print(rf_random.best_score_)
 '''
 
-
-
 nested_cv_squared_scores = []
 nested_cv_scores = []
 recall_cv_scores = []
@@ -377,23 +411,9 @@ print("Nested Recall cv score - meta learning: " + str(np.mean(recall_cv_scores)
 print("Nested avg runtime cv score - meta learning: " + str(np.mean(avg_runtime_cv_scores)))
 
 
-print('557: ')
-print_constraints_2(dataset['features'][557])
 
-print('398: ')
-print_constraints_2(dataset['features'][398])
 
-print('28: ')
-print_constraints_2(dataset['features'][28])
 
-print('130: ')
-print_constraints_2(dataset['features'][130])
-
-print('208: ')   #evo is worst
-print_constraints_2(dataset['features'][208])
-
-print('267: ')   #hyperopt better than evo
-print_constraints_2(dataset['features'][267])
 #get runbtime distributions
 
 evo_id = 8

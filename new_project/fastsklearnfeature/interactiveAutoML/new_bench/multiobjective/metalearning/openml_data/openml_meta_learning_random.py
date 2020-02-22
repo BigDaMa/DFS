@@ -132,6 +132,7 @@ robust_value_list = []
 success_value_list = []
 runtime_value_list = []
 evaluation_value_list = []
+k_value_list = []
 
 dataset_did_list = []
 dataset_sensitive_attribute_list = []
@@ -419,11 +420,13 @@ while True:
 		robust_value_list.append(robustness_values)
 		success_value_list.append(success_values)
 		evaluation_value_list.append(evaluation_values)
+		k_value_list.append(k_values)
 
 		dataset_did_list.append(data_did)
 		dataset_sensitive_attribute_list.append(sensitive_attribute_id)
 
 		one_big_object['times_value'] = runtime_value_list
+		one_big_object['k_value'] = k_value_list
 		one_big_object['acc_value'] = acc_value_list
 		one_big_object['fair_value'] = fair_value_list
 		one_big_object['robust_value'] = robust_value_list
