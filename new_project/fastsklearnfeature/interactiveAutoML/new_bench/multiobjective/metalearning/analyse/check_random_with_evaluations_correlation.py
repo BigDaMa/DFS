@@ -74,7 +74,9 @@ def print_strategies(results):
 
 # list files "/home/felix/phd/meta_learn/random_configs_eval"
 #all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval/*.pickle")
-all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval_long/*.pickle")
+#all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval_long/*.pickle")
+all_files = glob.glob("/home/felix/phd/meta_learn/random_confifg/*.pickle")
+
 dataset = {}
 for afile in all_files:
 	data = pickle.load(open(afile, 'rb'))
@@ -90,6 +92,7 @@ print(dataset.keys())
 all_fairness = []
 all_privacy = []
 all_number_features = []
+all_number_features_abs = []
 all_accuracy = []
 all_safety = []
 
@@ -101,9 +104,16 @@ for i in range(len(dataset['acc_value'])):
 		all_fairness.append(dataset['fair_value'][i][8][0])
 		all_safety.append(dataset['robust_value'][i][8][0])
 		all_privacy.append(dataset['features'][i][5])
+		all_number_features.append(dataset['k_value'][i][8][0])
+		all_number_features_abs.append(dataset['k_value'][i][8][0] * dataset['features'][i][14])
+
+
+all_privacy = np.array(all_privacy)*-1 #make greater = better
 
 print(len(all_accuracy))
 
+#print(all_number_features_abs)
+print(all_privacy)
 
 print('accuracy - safety: ' + str(pearsonr(all_accuracy, all_safety)))
 print('accuracy - fairness: ' + str(pearsonr(all_accuracy, all_fairness)))
@@ -111,6 +121,12 @@ print('safety - fairness: ' + str(pearsonr(all_safety, all_fairness)))
 
 print('accuracy - privacy: ' + str(pearsonr(all_accuracy, all_privacy)))
 print('safety - privacy: ' + str(pearsonr(all_safety, all_privacy)))
+
+print('relation to feature number_rel: ')
+print('privacy - number features: ' + str(pearsonr(all_privacy, all_number_features)))
+print('safety - number features: ' + str(pearsonr(all_safety, all_number_features)))
+print('fairness - number features: ' + str(pearsonr(all_fairness, all_number_features)))
+print('accuracy - number features: ' + str(pearsonr(all_accuracy, all_number_features)))
 
 
 

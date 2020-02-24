@@ -74,7 +74,8 @@ def print_strategies(results):
 
 # list files "/home/felix/phd/meta_learn/random_configs_eval"
 #all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval_long/*.pickle")
-all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_with_repair_optimization/*.pickle")
+#all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_with_repair_optimization/*.pickle")
+all_files = glob.glob("/home/felix/phd/meta_learn/combine_random_configs/*.pickle")
 dataset = {}
 for afile in all_files:
 	data = pickle.load(open(afile, 'rb'))
@@ -280,6 +281,12 @@ print('optimal(min)' + " avg runtime: " + str(np.nanmean(cv_runtime)) + " median
 print('\n\n\nnow better:\n')
 
 
+
+mins_runs = []
+maxs_runs = []
+means_runs = []
+stds_runs = []
+
 #calculate real runtime std
 for current_strategy in range(1,9):
 	all_runtimes = []
@@ -291,6 +298,11 @@ for current_strategy in range(1,9):
 			all_runtimes.append(dataset['features'][current_id][6])
 	print(mappnames[current_strategy] + " avg runtime: " + str(np.nanmean(all_runtimes)) + ' median runtime: ' + str(
 		np.nanmedian(all_runtimes)) + ' std runtime: ' + str(np.nanstd(all_runtimes)))
+
+	mins_runs.append(np.min(all_runtimes))
+	maxs_runs.append(np.max(all_runtimes))
+	means_runs.append(np.mean(all_runtimes))
+	stds_runs.append(np.std(all_runtimes))
 
 ##calculate optimum
 all_runtimes = []
@@ -305,6 +317,15 @@ for current_id in success_ids:
 print('optimal '+ " avg runtime: " + str(np.nanmean(all_runtimes)) + ' median runtime: ' + str(
 		np.nanmedian(all_runtimes)) + ' std runtime: ' + str(np.nanstd(all_runtimes)))
 
+mins_runs.append(np.min(all_runtimes))
+maxs_runs.append(np.max(all_runtimes))
+means_runs.append(np.mean(all_runtimes))
+stds_runs.append(np.std(all_runtimes))
+
+plt.errorbar(np.arange(len(mins_runs)), means_runs, stds_runs, fmt='ok', lw=3)
+plt.errorbar(np.arange(len(mins_runs)), means_runs, [np.array(means_runs) - np.array(mins_runs), np.array(maxs_runs) - np.array(means_runs)], fmt='.k', ecolor='gray', lw=1)
+plt.ylim(bottom=0)
+plt.show()
 
 
 
@@ -379,6 +400,7 @@ print(rf_random.best_params_)
 print(rf_random.best_score_)
 '''
 
+'''
 nested_cv_squared_scores = []
 nested_cv_scores = []
 recall_cv_scores = []
@@ -409,7 +431,7 @@ print("Nested cv score - meta learning: " + str(np.mean(nested_cv_scores)))
 print("Nested squared cv score - meta learning: " + str(np.mean(nested_cv_squared_scores)))
 print("Nested Recall cv score - meta learning: " + str(np.mean(recall_cv_scores)))
 print("Nested avg runtime cv score - meta learning: " + str(np.mean(avg_runtime_cv_scores)))
-
+'''
 
 
 
