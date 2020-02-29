@@ -75,7 +75,10 @@ def print_strategies(results):
 # list files "/home/felix/phd/meta_learn/random_configs_eval"
 #all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval_long/*.pickle")
 #all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_with_repair_optimization/*.pickle")
-all_files = glob.glob("/home/felix/phd/meta_learn/combine_random_configs/*.pickle")
+all_files = glob.glob("/home/felix/phd/meta_learn/combine_random_configs/*.pickle") #1hour
+#all_files = glob.glob("/home/felix/phd/meta_learn/3h_configs/*.pickle") #1hour
+
+
 dataset = {}
 for afile in all_files:
 	data = pickle.load(open(afile, 'rb'))
@@ -87,6 +90,8 @@ for afile in all_files:
 
 print(dataset['best_strategy'])
 print(len(dataset['best_strategy']))
+
+print(dataset.keys())
 
 
 #get maximum number of evaluations if a strategy is fastest
@@ -172,7 +177,22 @@ plt.show()
 success_ids = np.where(np.array(y_train) > 0)[0]
 print(success_ids)
 
-print(dataset.keys())
+
+new_success_ids = []
+for s_i in success_ids:
+	delete_b = False
+	for strategy_i in dataset['evaluation_value'][s_i].keys():
+		if dataset['evaluation_value'][s_i][strategy_i][0] == 1:
+			delete_b = True
+			break
+	if not delete_b:
+		new_success_ids.append(s_i)
+
+#success_ids = new_success_ids
+
+print("training size: " + str(len(success_ids)))
+
+
 
 my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset)
 
@@ -211,6 +231,12 @@ groups = np.array(dataset['dataset_id'])[balanced_success_ids]
 X_data = np.array(X_train)[success_ids]
 y_data = pd.DataFrame(y_train).iloc[success_ids]
 groups = np.array(dataset['dataset_id'])[success_ids]
+
+outer_cv_all = list(GroupKFold(n_splits=4).split(X_data, y_data, groups=groups))
+
+#X_data_all = np.array(X_train)
+#y_data_all = pd.DataFrame(y_train)
+#groups_all = np.array(dataset['dataset_id'])
 
 
 
@@ -304,6 +330,8 @@ for current_strategy in range(1,9):
 	means_runs.append(np.mean(all_runtimes))
 	stds_runs.append(np.std(all_runtimes))
 
+#calculate
+
 ##calculate optimum
 all_runtimes = []
 for current_id in success_ids:
@@ -328,24 +356,6 @@ plt.ylim(bottom=0)
 plt.show()
 
 
-
-
-
-
-X_data_all = np.array(X_train)
-y_data_all = pd.DataFrame(y_train)
-groups_all = np.array(dataset['dataset_id'])
-
-outer_cv_all = list(GroupKFold(n_splits=4).split(X_data_all, y_data_all, groups=groups_all))
-
-print("\n\nNow: all runtime: \n\n")
-for i in range(len(classifiers)):
-	cv_runtime = cross_val_score(classifiers[i], X_data_all, y_data_all, cv=outer_cv_all, scoring=my_runtime_score)
-	print(classifier_names[i] + " avg runtime: " + str(np.nanmean(cv_runtime)))
-
-cv_runtime = cross_val_score(classifiers[0], X_data_all, y_data_all, cv=outer_cv_all, scoring=my_optimal_runtime_score)
-print('optimal(min)' + " avg runtime: " + str(np.nanmean(cv_runtime)))
-print('optimal(min)' + " median runtime: " + str(np.nanmedian(cv_runtime)))
 
 
 best_param = {'n_estimators': 400, 'min_samples_split': 10, 'min_samples_leaf': 2, 'max_features': 'auto', 'max_depth': 40, 'bootstrap': False}
@@ -400,12 +410,50 @@ print(rf_random.best_params_)
 print(rf_random.best_score_)
 '''
 
-'''
+
 nested_cv_squared_scores = []
 nested_cv_scores = []
 recall_cv_scores = []
+
+
+def get_runtime_for_fold_predictions(predictions, test_ids):
+	all_runtimes = []
+	for p_i in range(len(predictions)):
+		current_strategy = predictions[p_i]
+		current_id = success_ids[test_ids[p_i]]
+		if current_strategy in dataset['times_value'][current_id] and len(
+				dataset['times_value'][current_id][current_strategy]) >= 1:
+			all_runtimes.append(min(dataset['times_value'][current_id][current_strategy]))
+		else:
+			all_runtimes.append(dataset['features'][current_id][6])
+	return all_runtimes
+
+def get_optimal_runtime_for_fold_predictions(test_ids):
+	all_runtimes = []
+	for p_i in range(len(test_ids)):
+		current_id = success_ids[test_ids[p_i]]
+		best_runtime = dataset['features'][current_id][6]
+		for s in range(1, 9):
+			if s in dataset['times_value'][current_id] and len(dataset['times_value'][current_id][s]) >= 1:
+				runtime = min(dataset['times_value'][current_id][s])
+				if runtime < best_runtime:
+					best_runtime = runtime
+		all_runtimes.append(best_runtime)
+	return all_runtimes
+
 avg_runtime_cv_scores = []
+
+
+all_runtimes_in_cv_folds = []
+strategies_in_cv_folds = []
+optimal_in_cv_folds = []
+
+for s_i in range(8):
+	strategies_in_cv_folds.append([])
+
 for train_ids, test_ids in outer_cv:
+	print("train_ids: " + str(train_ids))
+	print("test_ids: " + str(test_ids))
 	inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], y_data.iloc[train_ids], groups=groups[train_ids])
 
 	rf = RandomForestClassifier()
@@ -419,6 +467,17 @@ for train_ids, test_ids in outer_cv:
 	nested_cv_scores.append(my_score(rf_random, X_data[test_ids,:], y_data.iloc[test_ids]))
 	nested_cv_squared_scores.append(rf_random.score(X_data[test_ids,:], y_data.iloc[test_ids]))
 	recall_cv_scores.append(my_recall_score(rf_random, X_data[test_ids, :], y_data.iloc[test_ids]))
+
+	predicted_strategies_fold = rf_random.predict(X_data[test_ids, :])
+	all_runtimes_in_cv_folds.extend(get_runtime_for_fold_predictions(predicted_strategies_fold, test_ids))
+
+	for s_i in range(8):
+		one_strategy = np.ones(len(predicted_strategies_fold)) * (s_i+1)
+		strategies_in_cv_folds[s_i].extend(get_runtime_for_fold_predictions(one_strategy, test_ids))
+
+	optimal_in_cv_folds.extend(get_optimal_runtime_for_fold_predictions(test_ids))
+
+	'''
 	avg_runtime_cv_scores.append(my_runtime_score(rf_random, X_data[test_ids, :], y_data.iloc[test_ids]))
 
 	print('my score: ' + str(my_score(rf_random, X_data[test_ids,:], y_data.iloc[test_ids])))
@@ -426,12 +485,20 @@ for train_ids, test_ids in outer_cv:
 
 	cv_runtime = cross_val_score(rf_random.best_estimator_, X_data_all, y_data_all, cv=outer_cv_all, scoring=my_runtime_score)
 	print("all runtime: " + str(np.mean(cv_runtime)))
+	'''
 
-print("Nested cv score - meta learning: " + str(np.mean(nested_cv_scores)))
-print("Nested squared cv score - meta learning: " + str(np.mean(nested_cv_squared_scores)))
-print("Nested Recall cv score - meta learning: " + str(np.mean(recall_cv_scores)))
-print("Nested avg runtime cv score - meta learning: " + str(np.mean(avg_runtime_cv_scores)))
-'''
+for s_i in range(8):
+	print(mappnames[s_i+1] + ' cv' + " avg runtime: " + str(np.nanmean(strategies_in_cv_folds[s_i])) + " median runtime: " + str(np.nanmedian(strategies_in_cv_folds[s_i])) + ' std runtime: ' + str(np.nanstd(strategies_in_cv_folds[s_i])))
+
+print('metalearning cv' + " avg runtime: " + str(np.nanmean(all_runtimes_in_cv_folds)) + " median runtime: " + str(np.nanmedian(all_runtimes_in_cv_folds)) + ' std runtime: ' + str(np.nanstd(all_runtimes_in_cv_folds)))
+print('optimal cv' + " avg runtime: " + str(np.nanmean(optimal_in_cv_folds)) + " median runtime: " + str(np.nanmedian(optimal_in_cv_folds)) + ' std runtime: ' + str(np.nanstd(optimal_in_cv_folds)))
+
+
+#print("Nested cv score - meta learning: " + str(np.mean(nested_cv_scores)))
+#print("Nested squared cv score - meta learning: " + str(np.mean(nested_cv_squared_scores)))
+#print("Nested Recall cv score - meta learning: " + str(np.mean(recall_cv_scores)))
+#print("Nested avg runtime cv score - meta learning: " + str(np.mean(avg_runtime_cv_scores)))
+
 
 
 
@@ -455,15 +522,16 @@ run_v = []
 strategy_v = []
 runtime_v = []
 for run in range(len(dataset['times_value'])):
-	if dataset['features'][run][0] > 0.6:
-		if dataset['best_strategy'][run] != 0:
-			for s in range(1, 9):
-				run_v.append(run)
-				strategy_v.append(mappnames[s])
-				if s in dataset['times_value'][run] and len(dataset['times_value'][run][s]) >= 1:
-					runtime_v.append(min(dataset['times_value'][run][s]))
-				else:
-					runtime_v.append(0.0)
+	if run in new_success_ids:
+		if dataset['features'][run][0] > 0.6:
+			if dataset['best_strategy'][run] != 0:
+				for s in range(1, 9):
+					run_v.append(run)
+					strategy_v.append(mappnames[s])
+					if s in dataset['times_value'][run] and len(dataset['times_value'][run][s]) >= 1:
+						runtime_v.append(min(dataset['times_value'][run][s]))
+					else:
+						runtime_v.append(0.0)
 
 df = pd.DataFrame(
     {'run': run_v,

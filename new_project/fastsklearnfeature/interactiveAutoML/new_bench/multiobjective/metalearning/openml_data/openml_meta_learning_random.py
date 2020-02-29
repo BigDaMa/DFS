@@ -118,12 +118,14 @@ data_infos = pickle.load(open(Config.get('data_path') + '/openml_data/fitting_da
 
 current_run_time_id = time.time()
 
-time_limit = 60 * 60 * 3
+time_limit = 60#60 * 60 * 3
 n_jobs = 20
 number_of_runs = 1
 
 X_train_meta_classifier = []
 y_train_meta_classifier = []
+
+ranking_scores_info = []
 
 
 acc_value_list = []
@@ -182,6 +184,19 @@ while True:
 			cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
 			cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
+			cv_time = time.time() - small_start_time
+
+			##apply rankings
+			scores_stored = []
+			my_rankings_on_tiny = [variance, chi2_score_wo, my_fisher_score]
+			for rr_i in range(len(my_rankings_on_tiny)):
+				start_scoring_tiny = time.time()
+				scores_tiny = my_rankings_on_tiny[rr_i](X_train_tiny, y_train_tiny)
+				scores_stored.append({'name': my_rankings_on_tiny[rr_i].__name__, 'scores': scores_tiny, 'time': time.time() - start_scoring_tiny})
+
+
+
+
 			#construct feature vector
 			feature_list = []
 			#user-specified constraints
@@ -198,7 +213,7 @@ while True:
 			feature_list.append(cv_k - hps['k'])
 			feature_list.append((cv_k - hps['k']) * X_train.shape[1])
 			feature_list.append(cv_robust - hps['robustness'])
-			feature_list.append(time.time() - small_start_time)
+			feature_list.append(cv_time)
 			#privacy constraint is always satisfied => difference always zero => constant => unnecessary
 
 			#metadata features
@@ -210,7 +225,7 @@ while True:
 			#predict the best model and calculate uncertainty
 
 			loss = 0
-			return {'loss': loss, 'status': STATUS_OK, 'features': features, 'search_time': hps['search_time']}
+			return {'loss': loss, 'status': STATUS_OK, 'features': features, 'search_time': hps['search_time'], 'ranking_scores': scores_stored}
 		except:
 			return {'loss': np.inf, 'status': STATUS_OK}
 
@@ -409,10 +424,13 @@ while True:
 		X_train_meta_classifier.append(best_trial['result']['features'])
 		y_train_meta_classifier.append(best_strategy)
 
+		ranking_scores_info.append(best_trial['result']['ranking_scores'])
+
 		#pickle everything and store it
 		one_big_object = {}
 		one_big_object['features'] = X_train_meta_classifier
 		one_big_object['best_strategy'] = y_train_meta_classifier
+		one_big_object['ranking_scores_info'] = ranking_scores_info
 
 		runtime_value_list.append(runtime_values)
 		acc_value_list.append(accuracy_values)

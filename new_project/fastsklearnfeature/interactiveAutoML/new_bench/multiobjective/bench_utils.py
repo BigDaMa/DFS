@@ -43,6 +43,7 @@ from fastsklearnfeature.configuration.Config import Config
 from sklearn import preprocessing
 import openml
 import random
+from sklearn.impute import SimpleImputer
 
 def get_data(data_path='/adult/dataset_183_adult.csv', continuous_columns = [0, 2, 4, 10, 11, 12], sensitive_attribute = "sex", limit = 1000):
 
@@ -112,36 +113,95 @@ def get_data_openml(data_infos, limit=None):
 	while not found:
 		continuous_columns = []
 		categorical_features = []
-		try:
-			# pick random dataset
-			data_id = random.randint(0, len(data_infos) - 1)
-			dataset = openml.datasets.get_dataset(data_infos[data_id]['did'])
-			X, y, categorical_indicator, attribute_names = dataset.get_data(
-				dataset_format='dataframe',
-				target=dataset.default_target_attribute
-			)
+		#try:
+		# pick random dataset
+		#data_id = random.randint(0, len(data_infos) - 1)
+		#dataset = openml.datasets.get_dataset(data_infos[data_id]['did'])
 
-			class_id = -1
-			for f_i in range(len(dataset.features)):
-				if dataset.features[f_i].name == dataset.default_target_attribute:
-					class_id = f_i
+		data_ids = [41146,#sylvine
+					1489,#Phoneme
+					3,#kr-vs-kp
+					41143,#jasmine
+					1067,#kc1
+					31,#credit-g => personal status, foreign_worker
+					41142,#christine
+					40981, #australian, we could guess gender (A11)
+					1464, #blood-transfusion-service-center
+					1590, #adult => sex, race
+					4135,#Amazon_employee_access
+					41138,#APSFailure
+					1461,#bank-marketing => age
+					41159,#guillermo
+					23512,#higgs
+					1111,#KDDCup09_appetency
+					41150,#MiniBooNE
+					1486,#nomao
+					23517,#numerai28.6
+					41161,#riccardo
+					1169,#airlines
+					41147#albert
+					]
+
+		data_ids = [
+					31,  # credit-g => personal status, foreign_worker
+					1590,  # adult => sex, race
+					1461,  # bank-marketing => age
+
+					42193,#compas-two-years => sex, age, race
+					1480,#ilpd => sex => V2
+					804, #hutsof99_logis => age,gender
+					42178,#telco-customer-churn => gender
+					981, #kdd_internet_usage => gender
+					40536, #SpeedDating => race
+					40704, #Titanic => Sex
+					451, #Irish => Sex
+					945, #kidney => sex
+					446, #prnn_crabs => sex
+					1017, #arrhythmia => sex
+					957, #braziltourism => sex
+					41430, #DiabeticMellitus => sex
+					1240, #AirlinesCodrnaAdult sex
+					1018, #ipums_la_99-small
+					1012, #flags => religion
+					55, #hepatitis
+					802,#pbcseq
+					38,#sick
+					40713, #dis
+					]
+
+		limit =300
+
+		#dataset = openml.tasks.get_task(data_ids[0]).get_dataset()
+		dataset = openml.datasets.get_dataset(data_ids[1])
+
+
+
+		X, y, categorical_indicator, attribute_names = dataset.get_data(
+			dataset_format='dataframe',
+			target=dataset.default_target_attribute
+		)
+
+		class_id = -1
+		for f_i in range(len(dataset.features)):
+			if dataset.features[f_i].name == dataset.default_target_attribute:
+				class_id = f_i
+				break
+
+		for f_i in range(len(attribute_names)):
+			for data_feature_o in range(len(dataset.features)):
+				if attribute_names[f_i] == dataset.features[data_feature_o].name:
+					if dataset.features[data_feature_o].data_type == 'nominal':
+						categorical_features.append(f_i)
+					if dataset.features[data_feature_o].data_type == 'numeric':
+						continuous_columns.append(f_i)
 					break
 
-			for f_i in range(len(attribute_names)):
-				for data_feature_o in range(len(dataset.features)):
-					if attribute_names[f_i] == dataset.features[data_feature_o].name:
-						if dataset.features[data_feature_o].data_type == 'nominal':
-							categorical_features.append(f_i)
-						if dataset.features[data_feature_o].data_type == 'numeric':
-							continuous_columns.append(f_i)
-						break
+		# randomly draw one attribute as sensitive attribute from continuous attributes
+		sensitive_attribute_id = categorical_features[random.randint(0, len(categorical_features) - 1)]
 
-			# randomly draw one attribute as sensitive attribute from continuous attributes
-			sensitive_attribute_id = categorical_features[random.randint(0, len(categorical_features) - 1)]
-
-			found = True
-		except:
-			pass
+		found = True
+		#except:
+		#	pass
 	print(data_infos[data_id]['name'])
 
 	if type(limit) != type(None):
@@ -160,7 +220,7 @@ def get_data_openml(data_infos, limit=None):
 		ct = ColumnTransformer([("onehot", OneHotEncoder(handle_unknown='ignore', sparse=False), categorical_features)])
 		my_transformers.append(("o", ct))
 	if len(continuous_columns) > 0:
-		scale = ColumnTransformer([("scale", MinMaxScaler(), continuous_columns)])
+		scale = ColumnTransformer([("scale", Pipeline([('impute', SimpleImputer(missing_values=np.nan, strategy='mean')), ('scale', MinMaxScaler())]), continuous_columns)])
 		my_transformers.append(("s", scale))
 
 	pipeline = FeatureUnion(my_transformers)
