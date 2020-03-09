@@ -259,20 +259,20 @@ map_dataset['1590'] = 'sex@{Female,Male}'
 map_dataset['1461'] = 'AGE@{True,False}'
 map_dataset['42193'] ='race_Caucasian@{0,1}'
 map_dataset['1480'] = 'V2@{Female,Male}'
-map_dataset['804'] = 'Gender@{0,1}'
+#map_dataset['804'] = 'Gender@{0,1}'
 map_dataset['42178'] = 'gender@STRING'
 map_dataset['981'] = 'Gender@{Female,Male}'
 map_dataset['40536'] = 'samerace@{0,1}'
 map_dataset['40945'] = 'sex@{female,male}'
 map_dataset['451'] = 'Sex@{female,male}'
-map_dataset['945'] = 'sex@{female,male}'
+#map_dataset['945'] = 'sex@{female,male}'
 map_dataset['446'] = 'sex@{Female,Male}'
 map_dataset['1017'] = 'sex@{0,1}'
 map_dataset['957'] = 'Sex@{0,1,4}'
 map_dataset['41430'] = 'SEX@{True,False}'
 map_dataset['1240'] = 'sex@{Female,Male}'
 map_dataset['1018'] = 'sex@{Female,Male}'
-map_dataset['55'] = 'SEX@{male,female}'
+#map_dataset['55'] = 'SEX@{male,female}'
 map_dataset['802'] = 'sex@{female,male}'
 map_dataset['38'] = 'sex@{F,M}'
 map_dataset['40713'] = 'SEX@{True,False}'
@@ -300,104 +300,64 @@ def get_sensitive_attribute_id(df, sensitive_attribute_name):
 		if str(df.columns[i]) == sensitive_attribute_name:
 			return i
 
-key= '1590'
-value = map_dataset[key]
-with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as f:
-	df = a2p.load(f)
+for key in map_dataset.keys():
+	value = map_dataset[key]
+	with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as f:
+		df = a2p.load(f)
 
-	print("dataset: " + str(key))
+		print("dataset: " + str(key))
 
-	number_instances.append(df.shape[0])
-	number_attributes.append(df.shape[1])
+		number_instances.append(df.shape[0])
+		number_attributes.append(df.shape[1])
 
-	y = copy.deepcopy(df[get_class_attribute_name(df)])
-	X = df.drop(columns=[get_class_attribute_name(df)])
+		y = copy.deepcopy(df[get_class_attribute_name(df)])
+		X = df.drop(columns=[get_class_attribute_name(df)])
 
-	categorical_features = []
-	continuous_columns = []
-	for type_i in range(len(X.columns)):
-		if X.dtypes[type_i] == object:
-			categorical_features.append(type_i)
-		else:
-			continuous_columns.append(type_i)
+		categorical_features = []
+		continuous_columns = []
+		for type_i in range(len(X.columns)):
+			if X.dtypes[type_i] == object:
+				categorical_features.append(type_i)
+			else:
+				continuous_columns.append(type_i)
 
 
-	sensitive_attribute_id = get_sensitive_attribute_id(X, value)
+		sensitive_attribute_id = get_sensitive_attribute_id(X, value)
 
-	print(sensitive_attribute_id)
+		print(sensitive_attribute_id)
 
-	X_datat = X.values
-	for x_i in range(X_datat.shape[0]):
-		for y_i in range(X_datat.shape[1]):
-			if type(X_datat[x_i][y_i]) == type(None):
-				if X.dtypes[y_i] == object:
-					X_datat[x_i][y_i] = 'missing'
-				else:
-					X_datat[x_i][y_i] = np.nan
+		X_datat = X.values
+		for x_i in range(X_datat.shape[0]):
+			for y_i in range(X_datat.shape[1]):
+				if type(X_datat[x_i][y_i]) == type(None):
+					if X.dtypes[y_i] == object:
+						X_datat[x_i][y_i] = 'missing'
+					else:
+						X_datat[x_i][y_i] = np.nan
 
-	X_train, X_test, y_train, y_test = train_test_split(X_datat, y.values.astype('str'), test_size=0.5,
-															random_state=42, stratify=y.values.astype('str'))
+		X_train, X_test, y_train, y_test = train_test_split(X_datat, y.values.astype('str'), test_size=0.5,
+																random_state=42, stratify=y.values.astype('str'))
 
-	cat_sensitive_attribute_id = -1
-	for c_i in range(len(categorical_features)):
-		if categorical_features[c_i] == sensitive_attribute_id:
-			cat_sensitive_attribute_id = c_i
-			break
+		cat_sensitive_attribute_id = -1
+		for c_i in range(len(categorical_features)):
+			if categorical_features[c_i] == sensitive_attribute_id:
+				cat_sensitive_attribute_id = c_i
+				break
 
-	my_transformers = []
-	if len(categorical_features) > 0:
-		ct = ColumnTransformer(
-			[("onehot", OneHotEncoder(handle_unknown='ignore', sparse=False), categorical_features)])
-		my_transformers.append(("o", ct))
-	if len(continuous_columns) > 0:
-		scale = ColumnTransformer([("scale", Pipeline(
-			[('impute', SimpleImputer(missing_values=np.nan, strategy='mean')), ('scale', MinMaxScaler())]),
-									continuous_columns)])
-		my_transformers.append(("s", scale))
+		my_transformers = []
+		if len(categorical_features) > 0:
+			ct = ColumnTransformer(
+				[("onehot", OneHotEncoder(handle_unknown='ignore', sparse=False), categorical_features)])
+			my_transformers.append(("o", ct))
+		if len(continuous_columns) > 0:
+			scale = ColumnTransformer([("scale", Pipeline(
+				[('impute', SimpleImputer(missing_values=np.nan, strategy='mean')), ('scale', MinMaxScaler())]),
+										continuous_columns)])
+			my_transformers.append(("s", scale))
 
-	pipeline = FeatureUnion(my_transformers)
-	pipeline.fit(X_train)
-	X_train = pipeline.transform(X_train)
-	X_test = pipeline.transform(X_test)
+		pipeline = FeatureUnion(my_transformers)
+		pipeline.fit(X_train)
+		X_train = pipeline.transform(X_train)
+		X_test = pipeline.transform(X_test)
 
-	number_features.append(X_train.shape[1])
-
-	all_columns = []
-	for ci in range(len(X.columns)):
-		all_columns.append(str(X.columns[ci]).split('@')[0])
-	X.columns = all_columns
-
-	names = ct.get_feature_names()
-	for c in continuous_columns:
-		names.append(str(X.columns[c]))
-
-	for n_i in range(len(names)):
-		if names[n_i].startswith('onehot__x'):
-			tokens = names[n_i].split('_')
-			category = ''
-			for ti in range(3, len(tokens)):
-				category += '_' + tokens[ti]
-			cat_id = int(names[n_i].split('_')[2].split('x')[1])
-			names[n_i] = str(X.columns[categorical_features[cat_id]]) + category
-
-	print(names)
-
-	print(len(names))
-
-	sensitive_ids = []
-	all_names = ct.get_feature_names()
-	for fname_i in range(len(all_names)):
-		if all_names[fname_i].startswith('onehot__x' + str(cat_sensitive_attribute_id) + '_'):
-			sensitive_ids.append(fname_i)
-
-	print(sensitive_ids)
-
-	le = preprocessing.LabelEncoder()
-	le.fit(y_train)
-	y_train = le.fit_transform(y_train)
-	y_test = le.transform(y_test)
-
-	cv_splitter = StratifiedKFold(5, random_state=42)
-
-	evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=LogisticRegression(), min_accuracy=1.0,
-			  min_fairness=1.0, min_robustness=0.0, max_number_features=0.05, cv_splitter=cv_splitter)
+		print("X_train: " + str(X_train.shape) + ' key: ' + str(key))

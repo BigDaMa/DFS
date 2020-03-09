@@ -39,10 +39,89 @@ from sklearn.impute import SimpleImputer
 import copy
 from sklearn.model_selection import StratifiedKFold
 
+from hyperopt import fmin, hp, tpe, Trials, space_eval, STATUS_OK
 
-def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=None, min_accuracy=0.0,
-			  min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None):
-	def calculate_loss(cv_acc, cv_fair, cv_robust, cv_number_features):
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import chi2
+
+from sklearn.model_selection import cross_val_score
+from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import robust_score
+
+import diffprivlib.models as models
+from sklearn import preprocessing
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data
+
+from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelection import WeightedRankingSelection
+from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
+
+
+
+def map_hyper2vals(hyper):
+	new_vals = {}
+	for k, v in hyper.items():
+		new_vals[k] = [v]
+	return new_vals
+
+
+loss_history = []
+
+def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
+
+	start_time = time.time()
+
+	auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
+	fair_train = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train[:, sensitive_ids[0]])
+	fair_test = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_test[:, sensitive_ids[0]])
+
+	def f_clf1(hps):
+		mask = np.zeros(len(hps), dtype=bool)
+		for k, v in hps.items():
+			mask[int(k.split('_')[1])] = v
+
+
+		#repair number of features if neccessary
+		max_k = max(int(max_number_features * X_train.shape[1]), 1)
+		if np.sum(mask) > max_k:
+			id_features_used = np.nonzero(mask)[0]  # indices where features are used
+			np.random.shuffle(id_features_used)  # shuffle ids
+			ids_tb_deactived = id_features_used[max_k:]  # deactivate features
+			for item_to_remove in ids_tb_deactived:
+				mask[item_to_remove] = False
+
+		for mask_i in range(len(mask)):
+			hps['f_' + str(mask_i)] = mask[mask_i]
+
+		model = Pipeline([
+			('selection', MaskSelection(mask)),
+			('clf', LogisticRegression())
+		])
+
+		return model, hps
+
+	def f_to_min1(hps):
+		model, hps = f_clf1(hps)
+
+		print("hyperopt: " + str(hps))
+
+		if np.sum(model.named_steps['selection'].mask) == 0:
+			return {'loss': 4, 'status': STATUS_OK, 'model': model, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
+
+
+
+		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf, feature_selector=model.named_steps['selection'], scorer=auc_scorer)
+
+		cv = GridSearchCV(model, param_grid={'clf__C': [1.0]}, cv=cv_splitter,
+						  scoring={'AUC': auc_scorer, 'Fairness': fair_train, 'Robustness': robust_scorer},
+						  refit=False)
+		cv.fit(X_train, pd.DataFrame(y_train))
+		cv_acc = cv.cv_results_['mean_test_AUC'][0]
+		cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
+
+		cv_number_features = float(np.sum(model.named_steps['selection']._get_support_mask())) / float(len(model.named_steps['selection']._get_support_mask()))
+
 		loss = 0.0
 		if cv_acc >= min_accuracy and \
 				cv_fair >= min_fairness and \
@@ -60,68 +139,51 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 				loss += (min_accuracy - cv_acc) ** 2
 			if min_robustness > 0.0 and cv_robust < min_robustness:
 				loss += (min_robustness - cv_robust) ** 2
-		return loss
 
-	hash = str(random.getrandbits(128)) + str(time.time())
-	cheating_global.successfull_result[hash] = {}
-	cheating_global.successfull_result[hash]['cv_number_evaluations'] = 0
+		loss_history.append(loss)
 
-	start_time = time.time()
 
-	auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
-	fair_train = make_scorer(true_positive_rate_score, greater_is_better=True,
-							 sensitive_data=X_train[:, sensitive_ids[0]])
-	fair_test = make_scorer(true_positive_rate_score, greater_is_better=True,
-							sensitive_data=X_test[:, sensitive_ids[0]])
+		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_number_features': cv_number_features, 'updated_parameters': hps}
 
-	def f_clf1(mask):
-		model = Pipeline([
-			('selection', MaskSelection(mask)),
-			('clf', LogisticRegression())
-		])
-		return model
+	space = {}
+	for f_i in range(X_train.shape[1]):
+		space['f_' + str(f_i)] = hp.randint('f_' + str(f_i), 2)
 
-	# define an objective function
-	def objective(features):
-		if 'time' in cheating_global.successfull_result[hash]:
-			return [0.0, 0.0, 0.0, 0.0]
+	cv_fair = 0
+	cv_acc = 0
+	cv_robust = 0
+	cv_number_features = 1.0
 
-		if np.sum(features) == 0:
-			return [0.0, 0.0, 0.0, 0.0]
+	number_of_evaluations = 0
 
-		model = f_clf1(features)
+	trials = Trials()
+	i = 1
+	success = False
+	while True:
+		if time.time() - start_time > max_search_time:
+			break
+		fmin(f_to_min1, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
 
-		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf,
-									feature_selector=model.named_steps['selection'], scorer=auc_scorer)
+		#update repair in database
+		try:
+			current_trial = trials.trials[-1]
+			if type(current_trial['result']['updated_parameters']) != type(None):
+				trials._dynamic_trials[-1]['misc']['vals'] = map_hyper2vals(current_trial['result']['updated_parameters'])
+		except:
+			print("found an error in repair")
 
-		cv = GridSearchCV(model, param_grid={'clf__C': [1.0]}, cv=cv_splitter,
-						  scoring={'AUC': auc_scorer, 'Fairness': fair_train, 'Robustness': robust_scorer},
-						  refit=False)
-		cv.fit(X_train, pd.DataFrame(y_train))
-		cv_acc = cv.cv_results_['mean_test_AUC'][0]
-		cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
-		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
-		cheating_global.successfull_result[hash]['cv_number_evaluations'] += 1
 
-		cv_number_features = float(np.sum(model.named_steps['selection']._get_support_mask())) / float(
-			len(model.named_steps['selection']._get_support_mask()))
+		number_of_evaluations += 1
 
-		cv_simplicity = 1.0 - cv_number_features
+		cv_fair = trials.trials[-1]['result']['cv_fair']
+		cv_acc = trials.trials[-1]['result']['cv_acc']
+		cv_robust = trials.trials[-1]['result']['cv_robust']
+		cv_number_features = trials.trials[-1]['result']['cv_number_features']
 
-		if not 'cv_acc' in cheating_global.successfull_result[hash] or \
-				calculate_loss(cheating_global.successfull_result[hash]['cv_acc'],
-							   cheating_global.successfull_result[hash]['cv_fair'],
-							   cheating_global.successfull_result[hash]['cv_robust'],
-							   cheating_global.successfull_result[hash]['cv_number_features']
-							   ) > calculate_loss(cv_acc, cv_fair, cv_robust, cv_number_features):
-			cheating_global.successfull_result[hash]['cv_acc'] = cv_acc
-			cheating_global.successfull_result[hash]['cv_robust'] = cv_robust
-			cheating_global.successfull_result[hash]['cv_fair'] = cv_fair
-			cheating_global.successfull_result[hash]['cv_number_features'] = cv_number_features
-
-		# check constraints for test set
 		if cv_fair >= min_fairness and cv_acc >= min_accuracy and cv_robust >= min_robustness and cv_number_features <= max_number_features:
+			model = trials.trials[-1]['result']['model']
+
 			model.fit(X_train, pd.DataFrame(y_train))
 
 			test_acc = 0.0
@@ -132,120 +194,27 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 				test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
 			test_robust = 0.0
 			if min_robustness > 0.0:
-				test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
-													  model=model.named_steps['clf'],
-													  feature_selector=model.named_steps['selection'],
-													  scorer=auc_scorer)
+				test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test, model=model.named_steps['clf'], feature_selector=model.named_steps['selection'], scorer=auc_scorer)
 
 			if test_fair >= min_fairness and test_acc >= min_accuracy and test_robust >= min_robustness:
-				print(
-					'fair: ' + str(min(cv_fair, test_fair)) + ' acc: ' + str(min(cv_acc, test_acc)) + ' robust: ' + str(
-						min(test_robust, cv_robust)) + ' k: ' + str(cv_number_features))
-				cheating_global.successfull_result[hash]['time'] = time.time() - start_time
-				cheating_global.successfull_result[hash]['cv_acc'] = cv_acc
-				cheating_global.successfull_result[hash]['cv_robust'] = cv_robust
-				cheating_global.successfull_result[hash]['cv_fair'] = cv_fair
-				cheating_global.successfull_result[hash]['cv_number_features'] = cv_number_features
+				print('fair: ' + str(min(cv_fair, test_fair)) + ' acc: ' + str(min(cv_acc, test_acc)) + ' robust: ' + str(min(test_robust, cv_robust)) + ' k: ' + str(cv_number_features))
+				success = True
+				break
 
-		return [cv_acc, cv_fair, cv_robust, cv_simplicity]
+		i += 1
 
-	class MyProblem(Problem):
+	if not success:
+		try:
+			cv_fair = trials.best_trial['result']['cv_fair']
+			cv_acc = trials.best_trial['result']['cv_acc']
+			cv_robust = trials.best_trial['result']['cv_robust']
+			cv_number_features = trials.best_trial['result']['cv_number_features']
+		except:
+			pass
 
-		def __init__(self):
-			number_objectives = 0
-			if min_accuracy > 0.0:
-				number_objectives += 1
-			if min_fairness > 0.0:
-				number_objectives += 1
-			if min_robustness > 0.0:
-				number_objectives += 1
-			if number_objectives == 0:
-				number_objectives = 3
+	runtime = time.time() - start_time
+	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features, 'cv_number_evaluations': number_of_evaluations}
 
-			super().__init__(n_var=X_train.shape[1],
-							 n_obj=number_objectives,
-							 n_constr=0,
-							 xl=0, xu=1, type_var=anp.bool)
-
-		def _evaluate(self, x, out, *args, **kwargs):
-			accuracy_batch = []
-			fairness_batch = []
-			robustness_batch = []
-			simplicity_batch = []
-
-			for i in range(len(x)):
-				results = objective(x[i])
-				accuracy_batch.append(results[0] * -1)  # accuracy
-				fairness_batch.append(results[1] * -1)  # fairness
-				robustness_batch.append(results[2] * -1)  # robustness
-				simplicity_batch.append(results[3] * -1)  # simplicity
-
-			##objectives
-			objectives = []
-			if min_accuracy > 0.0 or self.n_obj == 3:
-				objectives.append(accuracy_batch)
-			if min_fairness > 0.0 or self.n_obj == 3:
-				objectives.append(fairness_batch)
-			if min_robustness > 0.0 or self.n_obj == 3:
-				objectives.append(robustness_batch)
-
-			out["F"] = anp.column_stack(objectives)
-
-	problem = MyProblem()
-
-	class NumberFeaturesRepair(Repair):
-
-		def __init__(self, max_number_features=None):
-			self.max_number_features = max_number_features
-
-		def _do(self, problem, pop, **kwargs):
-			# the packing plan for the whole population (each row one individual)
-			Z = pop.get("X")
-			# now repair each indvidiual i
-			for i in range(len(Z)):
-				if np.sum(Z[i]) > self.max_number_features:
-					id_features_used = np.nonzero(Z[i])[0]  # indices where features are used
-					np.random.shuffle(id_features_used)  # shuffle ids
-					ids_tb_deactived = id_features_used[self.max_number_features:]  # deactivate features
-					for item_to_remove in ids_tb_deactived:
-						Z[i][item_to_remove] = False
-
-			# set the design variables for the population
-			pop.set("X", Z)
-			return pop
-
-	repair_strategy = None
-	if max_number_features < 1.0:
-		max_k = max(int(max_number_features * X_train.shape[1]), 1)
-		repair_strategy = NumberFeaturesRepair(max_k)
-
-	population_size = 100
-	cross_over_rate = 0.9
-	algorithm = NSGA2(pop_size=population_size,
-					  sampling=get_sampling("bin_random"),
-					  crossover=get_crossover('bin_one_point'),
-					  # get_crossover("bin_hux"),#get_crossover("bin_two_point"),
-					  mutation=BinaryBitflipMutation(1.0 / X_train.shape[1]),
-					  elimate_duplicates=True,
-					  repair=repair_strategy,
-					  # n_offsprings= cross_over_rate * population_size
-					  )
-
-	res = minimize(problem, algorithm, ('n_gen', 5), disp=False)
-
-	print(res.F)
-	print(res.X)
-
-	for res_i in range(len(res.F)):
-		#print('Accuracy: ' + str(res.F[res_i][0] *-1) + ' Fairness: ' + str(res.F[res_i][1] *-1) + ' Robustness: ' + str(res.F[res_i][2]*-1) + ' Simplicity: ' + str(res.F[res_i][3]*-1))
-		print('Accuracy: ' + str(res.F[res_i][0] * -1) + ' Fairness: ' + str(
-			res.F[res_i][1] * -1))
-
-		my_features = 'Features: '
-		for fi in range(len(res.X[res_i])):
-			if res.X[res_i][fi]:
-				my_features += names[fi] + ','
-		print(my_features + '\n\n')
 
 
 
@@ -399,5 +368,7 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 
 	cv_splitter = StratifiedKFold(5, random_state=42)
 
-	evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=LogisticRegression(), min_accuracy=1.0,
-			  min_fairness=1.0, min_robustness=0.0, max_number_features=0.05, cv_splitter=cv_splitter)
+	hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=LogisticRegression(), min_accuracy=1.0,
+			  min_fairness=1.0, min_robustness=0.0, max_number_features=0.1, cv_splitter=cv_splitter, max_search_time=60 * 60)
+
+	print(loss_history)

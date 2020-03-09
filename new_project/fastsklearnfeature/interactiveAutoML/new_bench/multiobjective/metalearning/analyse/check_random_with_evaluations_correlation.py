@@ -75,7 +75,9 @@ def print_strategies(results):
 # list files "/home/felix/phd/meta_learn/random_configs_eval"
 #all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval/*.pickle")
 #all_files = glob.glob("/home/felix/phd/meta_learn/random_configs_eval_long/*.pickle")
-all_files = glob.glob("/home/felix/phd/meta_learn/random_confifg/*.pickle")
+#all_files = glob.glob("/home/felix/phd/meta_learn/random_confifg/*.pickle")
+all_files = glob.glob("/home/felix/phd/meta_learn/3h_configs/*.pickle")
+
 
 dataset = {}
 for afile in all_files:
@@ -96,6 +98,8 @@ all_number_features_abs = []
 all_accuracy = []
 all_safety = []
 
+all_runtime = []
+
 
 for i in range(len(dataset['acc_value'])):
 	curr_results = dataset['acc_value']
@@ -106,6 +110,7 @@ for i in range(len(dataset['acc_value'])):
 		all_privacy.append(dataset['features'][i][5])
 		all_number_features.append(dataset['k_value'][i][8][0])
 		all_number_features_abs.append(dataset['k_value'][i][8][0] * dataset['features'][i][14])
+		all_runtime.append(dataset['times_value'][i][8][0])
 
 
 all_privacy = np.array(all_privacy)*-1 #make greater = better
@@ -127,6 +132,14 @@ print('privacy - number features: ' + str(pearsonr(all_privacy, all_number_featu
 print('safety - number features: ' + str(pearsonr(all_safety, all_number_features)))
 print('fairness - number features: ' + str(pearsonr(all_fairness, all_number_features)))
 print('accuracy - number features: ' + str(pearsonr(all_accuracy, all_number_features)))
+
+
+print('relation to search time: ')
+print('features - search time: ' + str(pearsonr(all_number_features, all_runtime)))
+print('privacy - search time: ' + str(pearsonr(all_privacy, all_runtime)))
+print('safety - search time: ' + str(pearsonr(all_safety, all_runtime)))
+print('fairness - search time: ' + str(pearsonr(all_fairness, all_runtime)))
+print('accuracy - search time: ' + str(pearsonr(all_accuracy, all_runtime)))
 
 
 

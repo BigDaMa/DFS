@@ -50,13 +50,13 @@ from art.attacks import HopSkipJump
 
 
 from fastsklearnfeature.interactiveAutoML.feature_selection.RunAllKBestSelection import RunAllKBestSelection
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import variance
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import model_score
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fairness_score
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import robustness_score
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import chi2_score_wo
-from fastsklearnfeature.interactiveAutoML.feature_selection.BackwardSelection import BackwardSelection
+from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
+from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import my_mcfs
 from sklearn.model_selection import train_test_split
 
 from fastsklearnfeature.interactiveAutoML.new_bench import my_global_utils1
@@ -78,11 +78,13 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measur
 
 from fastsklearnfeature.configuration.Config import Config
 
-from skrebate import ReliefF
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import my_fisher_score
 
 from skrebate import ReliefF
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import my_fisher_score
+from sklearn.feature_selection import mutual_info_classif
+
+
+
 from functools import partial
 from hyperopt import fmin, hp, tpe, Trials, space_eval, STATUS_OK
 
@@ -93,6 +95,7 @@ from sklearn.feature_selection import f_classif
 from sklearn.model_selection import cross_val_score
 from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import robust_score
+from skrebate import ReliefF
 
 from sklearn.ensemble import RandomForestRegressor
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.multiprocessing_global as mp_global
@@ -106,10 +109,15 @@ from sklearn.ensemble import RandomForestClassifier
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import hyperparameter_optimization
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.evolution import evolution
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.exhaustive import exhaustive
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_selection import forward_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_selection import backward_selection
+
+
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data_openml
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 
@@ -144,7 +152,7 @@ cv_splitter = StratifiedKFold(5, random_state=42)
 auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
 while True:
-	X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_data_openml(data_infos)
+	X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_fair_data()
 
 	#run on tiny sample
 	X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42, stratify=y_train)
@@ -294,10 +302,11 @@ while True:
 		mp_global.clf = model
 
 		#define rankings
-		rankings = [variance, chi2_score_wo] #simple rankings
-		rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
+		rankings = [variance, chi2_score_wo, fcbf, my_fisher_score, mutual_info_classif, my_mcfs] #simple rankings
+		#rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
 		rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
 		rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
+		rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
 
 
 		mp_global.min_accuracy = min_accuracy
@@ -319,7 +328,8 @@ while True:
 				mp_global.configurations.append(configuration)
 			strategy_id +=1
 
-		main_strategies = [weighted_ranking, hyperparameter_optimization, evolution]
+		#main_strategies = [weighted_ranking, hyperparameter_optimization, evolution, exhaustive]
+		main_strategies = [hyperparameter_optimization, evolution, exhaustive, forward_selection, backward_selection]
 
 		#run main strategies
 		for strategy in main_strategies:
