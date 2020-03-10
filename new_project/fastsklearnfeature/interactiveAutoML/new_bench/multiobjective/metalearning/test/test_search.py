@@ -44,8 +44,9 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import hyperparameter_optimization
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.evolution import evolution
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.exhaustive import exhaustive
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_selection import forward_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_selection import backward_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_floating_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.fabolas import run_fabolas
 
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import variance
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import model_score
@@ -145,9 +146,16 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 				else:
 					X_datat[x_i][y_i] = np.nan
 
+
 	limit = 200
 	X_train, X_test, y_train, y_test = train_test_split(X_datat[0:limit,:], y.values[0:limit].astype('str'), test_size=0.5,
 															random_state=42, stratify=y.values[0:limit].astype('str'))
+
+	'''
+	X_train, X_test, y_train, y_test = train_test_split(X_datat, y.values.astype('str'),
+														test_size=0.5,
+														random_state=42, stratify=y.values.astype('str'))
+	'''
 
 	cat_sensitive_attribute_id = -1
 	for c_i in range(len(categorical_features)):
@@ -225,10 +233,6 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 		new_result = result.max(1)
 		return new_result
 
-	def my_rfs(X, y):
-		result =  rfs(copy.deepcopy(X), copy.deepcopy(y.flatten()))
-		return result
-
 
 
 	from sklearn.feature_selection import mutual_info_classif
@@ -238,5 +242,14 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 	#rankings = [variance]
 	#rankings= [mutual_info_classif]
 	#rankings = [my_mcfs]
-	rankings = [my_rfs]
-	weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=rankings,clf=LogisticRegression(), min_accuracy=1.0,min_fairness = 1.0, min_robustness = 0.0, max_number_features = 0.3, cv_splitter = cv_splitter)
+	#weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=rankings,clf=LogisticRegression(), min_accuracy=1.0,min_fairness = 1.0, min_robustness = 0.0, max_number_features = 0.3, cv_splitter = cv_splitter)
+
+	'''
+	run_fabolas(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
+					   clf=LogisticRegression(), min_accuracy=1.0,
+					   min_fairness=1.0, min_robustness=0.0, max_number_features=0.05, cv_splitter=cv_splitter)
+	'''
+
+	forward_floating_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
+					 clf=LogisticRegression(), min_accuracy=1.0, min_fairness=1.0, min_robustness=0.0,
+					 max_number_features=0.05, cv_splitter=cv_splitter, floating=True)
