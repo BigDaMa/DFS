@@ -100,10 +100,10 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import
 
 
 def forward_floating_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None):
-	return forward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None, floating=True)
+	return forward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=clf, min_accuracy = min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, cv_splitter=cv_splitter, floating=True)
 
 def forward_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None):
-	return forward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None, floating=False)
+	return forward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=clf, min_accuracy = min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, cv_splitter=cv_splitter, floating=False)
 
 
 def forward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None, floating=True):

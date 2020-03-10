@@ -98,16 +98,14 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils i
 from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelection import WeightedRankingSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 
-import itertools
 
-def map_hyper2vals(hyper):
-	new_vals = {}
-	for k, v in hyper.items():
-		new_vals[k] = [v]
-	return new_vals
+def backward_floating_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None):
+	return backward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=clf, min_accuracy = min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, cv_splitter=cv_splitter, floating=True)
+def backward_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None):
+	return backward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=clf, min_accuracy = min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, cv_splitter=cv_splitter, floating=False)
 
 
-def backward_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
+def backward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None, floating=True):
 
 	start_time = time.time()
 
@@ -133,7 +131,7 @@ def backward_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, r
 	def f_to_min1(hps):
 		model, hps = f_clf1(hps)
 
-		print("backward selection: " + str(hps))
+		print("forward selection: " + str(hps))
 
 		if np.sum(model.named_steps['selection'].mask) == 0:
 			return {'loss': 4, 'status': STATUS_OK, 'model': model, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
@@ -173,6 +171,53 @@ def backward_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, r
 
 		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_number_features': cv_number_features, 'updated_parameters': hps}
 
+
+	def execute_feature_combo(feature_combo, number_of_evaluations):
+		hps = {}
+		for f_i in range(X_train.shape[1]):
+			if f_i in feature_combo:
+				hps['f_' + str(f_i)] = 1
+			else:
+				hps['f_' + str(f_i)] = 0
+
+		result = f_to_min1(hps)
+
+		cv_fair = result['cv_fair']
+		cv_acc = result['cv_acc']
+		cv_robust = result['cv_robust']
+		cv_number_features = result['cv_number_features']
+
+		if cv_fair >= min_fairness and cv_acc >= min_accuracy and cv_robust >= min_robustness and cv_number_features <= max_number_features:
+			model = result['model']
+
+			model.fit(X_train, pd.DataFrame(y_train))
+
+			test_acc = 0.0
+			if min_accuracy > 0.0:
+				test_acc = auc_scorer(model, X_test, pd.DataFrame(y_test))
+			test_fair = 0.0
+			if min_fairness > 0.0:
+				test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
+			test_robust = 0.0
+			if min_robustness > 0.0:
+				test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
+													  model=model.named_steps['clf'],
+													  feature_selector=model.named_steps['selection'],
+													  scorer=auc_scorer)
+
+			if test_fair >= min_fairness and test_acc >= min_accuracy and test_robust >= min_robustness:
+				print(
+					'fair: ' + str(min(cv_fair, test_fair)) + ' acc: ' + str(min(cv_acc, test_acc)) + ' robust: ' + str(
+						min(test_robust, cv_robust)) + ' k: ' + str(cv_number_features))
+
+				runtime = time.time() - start_time
+				return result['loss'], {'time': runtime, 'success': True, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair,
+						'cv_number_features': cv_number_features, 'cv_number_evaluations': number_of_evaluations}
+		return result['loss'], {}
+
+
+
+
 	space = {}
 	for f_i in range(X_train.shape[1]):
 		space['f_' + str(f_i)] = hp.randint('f_' + str(f_i), 2)
@@ -184,64 +229,65 @@ def backward_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, r
 
 	number_of_evaluations = 0
 
-	max_k = max(int(max_number_features * X_train.shape[1]), 1)
-
 	current_feature_set = list(range(X_train.shape[1]))
-	remaining_features = list(range(X_train.shape[1]))
+	removed_features = []
 
-	while len(remaining_features) > 0:
+	history = {}
+	while len(current_feature_set) > 1:
+		# select best feature
 		best_feature_id = -1
 		lowest_loss = np.inf
-		for new_feature in remaining_features:
+		for new_feature in current_feature_set:
 
 			feature_combo = copy.deepcopy(current_feature_set)
 			feature_combo.remove(new_feature)
 
-			hps = {}
-			for f_i in range(X_train.shape[1]):
-				if f_i in feature_combo:
-					hps['f_' + str(f_i)] = 1
-				else:
-					hps['f_' + str(f_i)] = 0
-
-			result = f_to_min1(hps)
-
-			if result['loss'] < lowest_loss:
-				best_feature_id = new_feature
-				lowest_loss = result['loss']
-
+			# book-keeping to avoid infinite loops
+			if frozenset(feature_combo) in history:
+				continue
 			number_of_evaluations += 1
+			combo_loss, combo_result = execute_feature_combo(feature_combo, number_of_evaluations)
+			history[frozenset(feature_combo)] = combo_loss
+			print('loss: ' + str(combo_loss))
+			if len(combo_result) > 0:
+				return combo_result
 
-			cv_fair = result['cv_fair']
-			cv_acc = result['cv_acc']
-			cv_robust = result['cv_robust']
-			cv_number_features = result['cv_number_features']
-
-			if cv_fair >= min_fairness and cv_acc >= min_accuracy and cv_robust >= min_robustness and cv_number_features <= max_number_features:
-				model = result['model']
-
-				model.fit(X_train, pd.DataFrame(y_train))
-
-				test_acc = 0.0
-				if min_accuracy > 0.0:
-					test_acc = auc_scorer(model, X_test, pd.DataFrame(y_test))
-				test_fair = 0.0
-				if min_fairness > 0.0:
-					test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
-				test_robust = 0.0
-				if min_robustness > 0.0:
-					test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test, model=model.named_steps['clf'], feature_selector=model.named_steps['selection'], scorer=auc_scorer)
-
-				if test_fair >= min_fairness and test_acc >= min_accuracy and test_robust >= min_robustness:
-					print('fair: ' + str(min(cv_fair, test_fair)) + ' acc: ' + str(min(cv_acc, test_acc)) + ' robust: ' + str(min(test_robust, cv_robust)) + ' k: ' + str(cv_number_features))
-
-					runtime = time.time() - start_time
-					return {'time': runtime, 'success': True, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features, 'cv_number_evaluations': number_of_evaluations}
+			if combo_loss < lowest_loss:
+				best_feature_id = new_feature
+				lowest_loss = combo_loss
 
 		current_feature_set.remove(best_feature_id)
-		remaining_features.remove(best_feature_id)
+		removed_features.append(best_feature_id)
 
+		if floating:
+			# select worst feature
+			while True:
+				best_feature_id = -1
+				lowest_loss_new = np.inf
+				for i in range(len(removed_features)-1,-1,-1):
+					new_feature = removed_features[i]
+					feature_combo = copy.deepcopy(current_feature_set)
+					feature_combo.append(new_feature)
 
+					#book-keeping to avoid infinite loops
+					if frozenset(feature_combo) in history:
+						continue
+					number_of_evaluations += 1
+					combo_loss, combo_result = execute_feature_combo(feature_combo, number_of_evaluations)
+					history[frozenset(feature_combo)] = combo_loss
+					if len(combo_result) > 0:
+						return combo_result
+					if combo_loss < lowest_loss_new:
+						best_feature_id = new_feature
+						lowest_loss_new = combo_loss
+
+				if lowest_loss_new > lowest_loss:
+					break
+				else:
+					lowest_loss = lowest_loss_new
+
+					current_feature_set.append(best_feature_id)
+					removed_features.remove(best_feature_id)
 
 	runtime = time.time() - start_time
 	return {'time': runtime, 'success': False}

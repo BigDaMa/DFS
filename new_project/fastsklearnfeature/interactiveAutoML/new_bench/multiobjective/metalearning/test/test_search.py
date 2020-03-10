@@ -44,8 +44,9 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import hyperparameter_optimization
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.evolution import evolution
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.exhaustive import exhaustive
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_selection import backward_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_floating_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
+
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.fabolas import run_fabolas
 
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import variance
@@ -250,6 +251,6 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 					   min_fairness=1.0, min_robustness=0.0, max_number_features=0.05, cv_splitter=cv_splitter)
 	'''
 
-	forward_floating_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
+	backward_floating_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
 					 clf=LogisticRegression(), min_accuracy=1.0, min_fairness=1.0, min_robustness=0.0,
-					 max_number_features=0.05, cv_splitter=cv_splitter, floating=True)
+					 max_number_features=0.05, cv_splitter=cv_splitter)
