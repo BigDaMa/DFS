@@ -199,7 +199,7 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 		max_k = max(int(max_number_features * X_train.shape[1]), 1)
 		repair_strategy = NumberFeaturesRepair(max_k)
 	
-	population_size = 100
+	population_size = 30
 	cross_over_rate = 0.9
 	algorithm = NSGA2(pop_size=population_size,
 					  sampling=get_sampling("bin_random"),

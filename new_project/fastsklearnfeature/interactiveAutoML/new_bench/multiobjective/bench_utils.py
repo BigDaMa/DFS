@@ -1,35 +1,6 @@
-import autograd.numpy as anp
 import numpy as np
-from pymoo.util.misc import stack
-from pymoo.model.problem import Problem
-import numpy as np
-import pickle
-from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
-from fastsklearnfeature.candidates.RawFeature import RawFeature
-from fastsklearnfeature.interactiveAutoML.feature_selection.ForwardSequentialSelection import ForwardSequentialSelection
-from fastsklearnfeature.transformations.OneHotTransformation import OneHotTransformation
-from typing import List, Dict, Set
-from fastsklearnfeature.interactiveAutoML.CreditWrapper import run_pipeline
-from pymoo.algorithms.so_genetic_algorithm import GA
-from pymoo.factory import get_crossover, get_mutation, get_sampling
-from pymoo.optimize import minimize
-from pymoo.algorithms.nsga2 import NSGA2
-import matplotlib.pyplot as plt
-from fastsklearnfeature.interactiveAutoML.Runner import Runner
 import copy
-from sklearn.linear_model import LogisticRegression
-from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import roc_auc_score
-from fastsklearnfeature.transformations.IdentityTransformation import IdentityTransformation
-from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMaxScalingTransformation
-from sklearn.linear_model import LogisticRegression
-import pickle
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import StratifiedKFold
-import argparse
 import warnings
 warnings.filterwarnings("ignore")
 import pandas as pd
@@ -41,11 +12,9 @@ from sklearn.compose import ColumnTransformer
 
 from fastsklearnfeature.configuration.Config import Config
 from sklearn import preprocessing
-import openml
 import random
 from sklearn.impute import SimpleImputer
 from arff2pandas import a2p
-import glob
 
 def get_data(data_path='/adult/dataset_183_adult.csv', continuous_columns = [0, 2, 4, 10, 11, 12], sensitive_attribute = "sex", limit = 1000):
 
@@ -132,9 +101,7 @@ def get_fair_data():
 	map_dataset['1240'] = 'sex@{Female,Male}'
 	map_dataset['1018'] = 'sex@{Female,Male}'
 	# map_dataset['55'] = 'SEX@{male,female}'
-	map_dataset['802'] = 'sex@{female,male}'
 	map_dataset['38'] = 'sex@{F,M}'
-	map_dataset['40713'] = 'SEX@{True,False}'
 	map_dataset['1003'] = 'sex@{male,female}'
 	map_dataset['934'] = 'race@{black,white}'
 
@@ -155,7 +122,7 @@ def get_fair_data():
 
 	key = list(map_dataset.keys())[random.randint(0, len(map_dataset) - 1)]#'1590'
 	value = map_dataset[key]
-	with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as f:
+	with open(Config.get('data_path') + "/downloaded_arff/" + str(key) + ".arff") as f:
 		df = a2p.load(f)
 
 		print("dataset: " + str(key))

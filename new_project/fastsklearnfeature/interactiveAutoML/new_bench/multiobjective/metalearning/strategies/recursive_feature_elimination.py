@@ -125,8 +125,6 @@ def recursive_feature_elimination(X_train, X_test, y_train, y_test, names, sensi
 	def f_to_min1(hps):
 		model, hps = f_clf1(hps)
 
-		print("forward selection: " + str(hps))
-
 		if np.sum(model.named_steps['selection'].mask) == 0:
 			return {'loss': 4, 'status': STATUS_OK, 'model': model, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
 
@@ -205,7 +203,7 @@ def recursive_feature_elimination(X_train, X_test, y_train, y_test, names, sensi
 						min(test_robust, cv_robust)) + ' k: ' + str(cv_number_features))
 
 				runtime = time.time() - start_time
-				return result['loss'], {'time': runtime, 'success': True, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair,
+				return result, {'time': runtime, 'success': True, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair,
 						'cv_number_features': cv_number_features, 'cv_number_evaluations': number_of_evaluations}
 		return result, {}
 

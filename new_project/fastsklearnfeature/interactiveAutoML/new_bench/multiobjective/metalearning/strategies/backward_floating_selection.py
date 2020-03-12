@@ -131,8 +131,6 @@ def backward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sen
 	def f_to_min1(hps):
 		model, hps = f_clf1(hps)
 
-		print("forward selection: " + str(hps))
-
 		if np.sum(model.named_steps['selection'].mask) == 0:
 			return {'loss': 4, 'status': STATUS_OK, 'model': model, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
 

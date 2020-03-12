@@ -107,12 +107,15 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import hyperparameter_optimization
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import TPE
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import simulated_annealing
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.evolution import evolution
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.exhaustive import exhaustive
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_selection import forward_selection
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_selection import backward_selection
-
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_floating_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
 
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
@@ -155,7 +158,11 @@ while True:
 	X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_fair_data()
 
 	#run on tiny sample
-	X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42, stratify=y_train)
+	if X_train.shape[0] > 100:
+		X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42, stratify=y_train)
+	else:
+		X_train_tiny = X_train
+		y_train_tiny = y_train
 
 	fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train_tiny[:, sensitive_ids[0]])
 
@@ -302,12 +309,16 @@ while True:
 		mp_global.clf = model
 
 		#define rankings
-		rankings = [variance, chi2_score_wo, fcbf, my_fisher_score, mutual_info_classif, my_mcfs] #simple rankings
+		rankings = [variance,
+					chi2_score_wo,
+					fcbf,
+					my_fisher_score,
+					mutual_info_classif,
+					my_mcfs]
 		#rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
-		rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
-		rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
+		#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
+		#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
 		rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
-
 
 		mp_global.min_accuracy = min_accuracy
 		mp_global.min_fairness = min_fairness
@@ -328,8 +339,15 @@ while True:
 				mp_global.configurations.append(configuration)
 			strategy_id +=1
 
-		#main_strategies = [weighted_ranking, hyperparameter_optimization, evolution, exhaustive]
-		main_strategies = [hyperparameter_optimization, evolution, exhaustive, forward_selection, backward_selection]
+		main_strategies = [TPE,
+						   simulated_annealing,
+						   evolution,
+						   exhaustive,
+						   forward_selection,
+						   backward_selection,
+						   forward_floating_selection,
+						   backward_floating_selection,
+						   recursive_feature_elimination]
 
 		#run main strategies
 		for strategy in main_strategies:

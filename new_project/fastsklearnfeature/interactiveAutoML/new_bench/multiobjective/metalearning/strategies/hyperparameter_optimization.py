@@ -97,6 +97,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils i
 
 from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelection import WeightedRankingSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
+import hyperopt.anneal
 
 def map_hyper2vals(hyper):
 	new_vals = {}
@@ -104,8 +105,22 @@ def map_hyper2vals(hyper):
 		new_vals[k] = [v]
 	return new_vals
 
+def TPE(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
+	return hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
+									   clf=clf, min_accuracy=min_accuracy, min_fairness=min_fairness,
+									   min_robustness=min_robustness, max_number_features=max_number_features,
+									   max_search_time=max_search_time, cv_splitter=cv_splitter,
+									   algo=tpe.suggest)
 
-def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
+
+def simulated_annealing(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=None, min_accuracy=0.0,
+			min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None):
+
+	return hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=clf, min_accuracy=min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, cv_splitter=cv_splitter, algo=hyperopt.anneal.suggest)
+
+
+
+def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None, algo=tpe.suggest):
 
 	start_time = time.time()
 
@@ -140,8 +155,6 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 
 	def f_to_min1(hps):
 		model, hps = f_clf1(hps)
-
-		print("hyperopt: " + str(hps))
 
 		if np.sum(model.named_steps['selection'].mask) == 0:
 			return {'loss': 4, 'status': STATUS_OK, 'model': model, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
@@ -198,7 +211,7 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 	while True:
 		if time.time() - start_time > max_search_time:
 			break
-		fmin(f_to_min1, space=space, algo=tpe.suggest, max_evals=i, trials=trials)
+		fmin(f_to_min1, space=space, algo=algo, max_evals=i, trials=trials)
 
 		#update repair in database
 		try:
