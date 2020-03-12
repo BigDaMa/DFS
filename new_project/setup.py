@@ -33,7 +33,8 @@ setup(
                       "tqdm",
                       "openml",
                       "diffprivlib",
-                      "pebble"
+                      "pebble",
+                      "arff2pandas"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
