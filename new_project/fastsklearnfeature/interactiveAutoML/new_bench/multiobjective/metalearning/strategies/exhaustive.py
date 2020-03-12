@@ -236,7 +236,7 @@ def exhaustive(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_f
 					return {'time': runtime, 'success': True, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features, 'cv_number_evaluations': number_of_evaluations}
 
 	runtime = time.time() - start_time
-	return {'time': runtime, 'success': False}
+	return {'time': runtime, 'success': False, 'cv_acc': -1, 'cv_robust': -1, 'cv_fair': -1,'cv_number_features': -1, 'cv_number_evaluations': number_of_evaluations}
 
 
 

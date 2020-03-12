@@ -301,7 +301,7 @@ def forward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sens
 					remaining_features.append(best_feature_id)
 
 	runtime = time.time() - start_time
-	return {'time': runtime, 'success': False}
+	return {'time': runtime, 'success': False, 'cv_acc': -1, 'cv_robust': -1, 'cv_fair': -1,'cv_number_features': -1, 'cv_number_evaluations': number_of_evaluations}
 
 
 
