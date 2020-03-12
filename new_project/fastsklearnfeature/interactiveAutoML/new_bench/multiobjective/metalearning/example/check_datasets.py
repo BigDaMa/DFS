@@ -247,6 +247,31 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 				my_features += names[fi] + ','
 		print(my_features + '\n\n')
 
+map_dataset2name = {}
+map_dataset2name['31'] = 'German Credit'
+map_dataset2name['802'] = 'Primary Biliary Cirrhosis'
+map_dataset2name['1590'] = 'Adult'
+map_dataset2name['1461'] = 'Bank Marketing'
+map_dataset2name['42193'] = 'COMPAS'
+map_dataset2name['1480'] = 'Indian Liver Patient'
+#map_dataset2name['804'] = 'hutsof99_logis'
+map_dataset2name['42178'] = 'Telco Customer Churn'
+map_dataset2name['981'] = 'KDD Internet Usage'
+map_dataset2name['40536'] = 'Speed Dating'
+map_dataset2name['40945'] = 'Titanic'
+map_dataset2name['451'] = 'Irish Educational Transitions'
+#map_dataset2name['945'] = 'Kidney'
+map_dataset2name['446'] = 'Leptograpsus crabs'
+map_dataset2name['1017'] = 'Arrhythmia'
+map_dataset2name['957'] = 'Brazil Tourism'
+map_dataset2name['41430'] = 'Diabetic Mellitus'
+map_dataset2name['1240'] = 'AirlinesCodrnaAdult'
+map_dataset2name['1018'] = 'IPUMS Census'
+#map_dataset2name['55'] = 'Hepatitis'
+map_dataset2name['38'] = 'Thyroid Disease'
+map_dataset2name['1003'] = 'Primary Tumor'
+map_dataset2name['934'] ='Social Mobility'
+
 
 
 
@@ -273,9 +298,7 @@ map_dataset['41430'] = 'SEX@{True,False}'
 map_dataset['1240'] = 'sex@{Female,Male}'
 map_dataset['1018'] = 'sex@{Female,Male}'
 #map_dataset['55'] = 'SEX@{male,female}'
-map_dataset['802'] = 'sex@{female,male}'
 map_dataset['38'] = 'sex@{F,M}'
-map_dataset['40713'] = 'SEX@{True,False}'
 map_dataset['1003'] = 'sex@{male,female}'
 map_dataset['934'] = 'race@{black,white}'
 
@@ -300,6 +323,7 @@ def get_sensitive_attribute_id(df, sensitive_attribute_name):
 		if str(df.columns[i]) == sensitive_attribute_name:
 			return i
 
+latex_string = ""
 for key in map_dataset.keys():
 	value = map_dataset[key]
 	with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as f:
@@ -360,4 +384,9 @@ for key in map_dataset.keys():
 		X_train = pipeline.transform(X_train)
 		X_test = pipeline.transform(X_test)
 
-		print("X_train: " + str(X_train.shape) + ' key: ' + str(key))
+		print("X_train: " + str(X_train.shape) + ' key: ' + str(key) + ' name: ' + str(map_dataset2name[key]) + ' total size' + str(X_datat.shape) + ' sensitive attribute: ' + str(map_dataset[key].split('@')[0]))
+
+		latex_string += str(map_dataset2name[key]) + ' & ' + str(X_datat.shape[0]) + ' && ' + str(X_train.shape[1]) + ' && ' + str(map_dataset[key].split('@')[0]) + '\\\\ \n'
+		print(latex_string)
+
+	print(latex_string)

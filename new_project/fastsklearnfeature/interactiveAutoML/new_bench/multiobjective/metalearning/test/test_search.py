@@ -46,6 +46,8 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.exhaustive import exhaustive
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
+
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.fabolas import run_fabolas
 
@@ -251,6 +253,6 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 					   min_fairness=1.0, min_robustness=0.0, max_number_features=0.05, cv_splitter=cv_splitter)
 	'''
 
-	backward_floating_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
+	recursive_feature_elimination(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
 					 clf=LogisticRegression(), min_accuracy=1.0, min_fairness=1.0, min_robustness=0.0,
 					 max_number_features=0.05, cv_splitter=cv_splitter)
