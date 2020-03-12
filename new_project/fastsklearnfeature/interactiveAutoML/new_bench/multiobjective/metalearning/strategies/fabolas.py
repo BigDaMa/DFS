@@ -120,7 +120,7 @@ def run_fabolas(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_
 	def f_clf1(mask):
 		model = Pipeline([
 			('selection', MaskSelection(mask)),
-			('clf', LogisticRegression())
+			('clf', clf)
 		])
 
 		return model

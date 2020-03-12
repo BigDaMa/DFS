@@ -38,6 +38,7 @@ import random
 from sklearn.impute import SimpleImputer
 import copy
 from sklearn.model_selection import StratifiedKFold
+import diffprivlib.models as models
 
 
 def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=None, min_accuracy=0.0,
@@ -77,7 +78,7 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 	def f_clf1(mask):
 		model = Pipeline([
 			('selection', MaskSelection(mask)),
-			('clf', LogisticRegression())
+			('clf', clf)
 		])
 		return model
 
@@ -101,6 +102,8 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 		cv_acc = cv.cv_results_['mean_test_AUC'][0]
 		cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
 		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
+
+		print("accuracy: " + str(cv_acc) + ' - fairness: ' + str(cv_fair) + ' safety: ' + str(cv_robust))
 
 		cheating_global.successfull_result[hash]['cv_number_evaluations'] += 1
 
@@ -219,7 +222,7 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 		max_k = max(int(max_number_features * X_train.shape[1]), 1)
 		repair_strategy = NumberFeaturesRepair(max_k)
 
-	population_size = 100
+	population_size = 30
 	cross_over_rate = 0.9
 	algorithm = NSGA2(pop_size=population_size,
 					  sampling=get_sampling("bin_random"),
@@ -399,5 +402,7 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 
 	cv_splitter = StratifiedKFold(5, random_state=42)
 
-	evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=LogisticRegression(), min_accuracy=1.0,
-			  min_fairness=1.0, min_robustness=0.0, max_number_features=0.05, cv_splitter=cv_splitter)
+	model = models.LogisticRegression(epsilon=0.0001)
+
+	evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=model, min_accuracy=1.0,
+			  min_fairness=0.0, min_robustness=0.0, max_number_features=1.0, cv_splitter=cv_splitter)

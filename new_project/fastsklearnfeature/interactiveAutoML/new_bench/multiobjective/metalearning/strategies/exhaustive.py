@@ -134,7 +134,7 @@ def exhaustive(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_f
 
 		model = Pipeline([
 			('selection', MaskSelection(mask)),
-			('clf', LogisticRegression())
+			('clf', clf)
 		])
 
 		return model, hps

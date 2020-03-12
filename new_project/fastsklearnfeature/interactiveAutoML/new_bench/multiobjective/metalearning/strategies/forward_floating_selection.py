@@ -133,7 +133,7 @@ def forward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sens
 
 		model = Pipeline([
 			('selection', MaskSelection(mask)),
-			('clf', LogisticRegression())
+			('clf', clf)
 		])
 
 		return model, hps

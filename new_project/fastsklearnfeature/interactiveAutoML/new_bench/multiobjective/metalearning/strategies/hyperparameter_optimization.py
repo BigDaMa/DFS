@@ -148,7 +148,7 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 
 		model = Pipeline([
 			('selection', MaskSelection(mask)),
-			('clf', LogisticRegression())
+			('clf', clf)
 		])
 
 		return model, hps
