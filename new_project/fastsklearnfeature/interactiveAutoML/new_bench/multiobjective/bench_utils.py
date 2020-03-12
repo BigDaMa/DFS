@@ -120,7 +120,8 @@ def get_fair_data():
 			if str(df.columns[i]) == sensitive_attribute_name:
 				return i
 
-	key = list(map_dataset.keys())[random.randint(0, len(map_dataset) - 1)]#'1590'
+	#key = list(map_dataset.keys())[random.randint(0, len(map_dataset) - 1)]#'1590'
+	key = "40945"
 	value = map_dataset[key]
 	with open(Config.get('data_path') + "/downloaded_arff/" + str(key) + ".arff") as f:
 		df = a2p.load(f)

@@ -163,6 +163,7 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc,
 				'cv_robust': cv_robust, 'cv_number_features': cv_number_features}
 
+	print("X shape: " + str(X_train.shape) + 'max number features: ' + str(max_number_features))
 	max_k = max(int(max_number_features * X_train.shape[1]), 1)
 	space = {'k': scope.int(hp.quniform('k', 0, max_k - 1, 1))}
 

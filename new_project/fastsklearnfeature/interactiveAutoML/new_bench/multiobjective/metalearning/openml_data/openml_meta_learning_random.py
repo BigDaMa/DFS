@@ -222,7 +222,7 @@ while True:
 		min_robustness = 0.0
 		if most_uncertain_f['robustness_choice'][0]:
 			min_robustness = most_uncertain_f['robustness_specified'][0]
-		max_number_features = X_train.shape[1]
+		max_number_features = 1.0
 		if most_uncertain_f['k_choice'][0]:
 			max_number_features = most_uncertain_f['k_specified'][0]
 
