@@ -266,6 +266,8 @@ def forward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sens
 				best_feature_id = new_feature
 				lowest_loss = combo_loss
 
+		if best_feature_id == -1:
+			break
 
 		current_feature_set.append(best_feature_id)
 		remaining_features.remove(best_feature_id)

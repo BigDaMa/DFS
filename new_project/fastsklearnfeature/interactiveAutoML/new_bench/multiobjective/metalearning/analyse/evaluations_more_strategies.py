@@ -198,7 +198,7 @@ for s_i in success_ids:
 	if not delete_b:
 		new_success_ids.append(s_i)
 
-success_ids = new_success_ids
+#success_ids = new_success_ids
 
 print("training size: " + str(len(success_ids)))
 
@@ -260,7 +260,7 @@ for data_id in np.unique(groups):
 
 classifiers = []
 classifier_names = []
-for i in range(1, 9):
+for i in range(1, len(mappnames) + 1):
 	classifiers.append(DummyClassifier(strategy="constant", constant=i))
 	classifier_names.append(mappnames[i])
 
@@ -324,7 +324,7 @@ means_runs = []
 stds_runs = []
 
 #calculate real runtime std
-for current_strategy in range(1,9):
+for current_strategy in range(1,len(mappnames) + 1):
 	all_runtimes = []
 	for current_id in success_ids:
 		if current_strategy in dataset['times_value'][current_id] and len(
@@ -346,7 +346,7 @@ for current_strategy in range(1,9):
 all_runtimes = []
 for current_id in success_ids:
 	best_runtime = dataset['features'][current_id][6]
-	for s in range(1, 9):
+	for s in range(1, len(mappnames) + 1):
 		if s in dataset['times_value'][current_id] and len(dataset['times_value'][current_id][s]) >= 1:
 			runtime = min(dataset['times_value'][current_id][s])
 			if runtime < best_runtime:
@@ -443,7 +443,7 @@ def get_optimal_runtime_for_fold_predictions(test_ids):
 	for p_i in range(len(test_ids)):
 		current_id = success_ids[test_ids[p_i]]
 		best_runtime = dataset['features'][current_id][6]
-		for s in range(1, 9):
+		for s in range(1, len(mappnames) + 1):
 			if s in dataset['times_value'][current_id] and len(dataset['times_value'][current_id][s]) >= 1:
 				runtime = min(dataset['times_value'][current_id][s])
 				if runtime < best_runtime:
@@ -516,7 +516,7 @@ for run in range(len(dataset['times_value'])):
 	if run in new_success_ids:
 		if dataset['features'][run][0] > 0.6:
 			if dataset['best_strategy'][run] != 0:
-				for s in range(1, 9):
+				for s in range(1, len(mappnames) + 1):
 					run_v.append(run)
 					strategy_v.append(mappnames[s])
 					if s in dataset['times_value'][run] and len(dataset['times_value'][run][s]) >= 1:
@@ -572,11 +572,11 @@ print(max(runtime_dist))
 best_variance_against_evo = all_ids[np.argmax(runtime_dist)]
 
 
-success_check = np.zeros(9)
+success_check = np.zeros(len(mappnames) + 1)
 s_names = []
 for run in range(len(dataset['success_value'])):
 	s_names = []
-	for s in range(1, 9):
+	for s in range(1, len(mappnames) + 1):
 		s_names.append(mappnames[s])
 		if s in dataset['success_value'][run]:
 			success_check[s] += np.sum(dataset['success_value'][run][s])
@@ -605,7 +605,7 @@ plt.show()
 
 print_strategies(success_check / (len(dataset['success_value']*2)))
 
-best_strategy_count = np.zeros(9)
+best_strategy_count = np.zeros(len(mappnames) + 1)
 for run in range(len(dataset['best_strategy'])):
 
 	best_strategy_count[dataset['best_strategy'][run]] += 1
@@ -613,7 +613,7 @@ for run in range(len(dataset['best_strategy'])):
 print("Best count: ")
 print_strategies(best_strategy_count / len(dataset['best_strategy']))
 
-for s in range(1, 9):
+for s in range(1, len(mappnames) + 1):
 	with open('/tmp/' + mappnames[s] + '_success.txt', 'w+') as the_file:
 		for run in range(len(dataset['times_value'])):
 			if s in dataset['success_value'][run] and dataset['success_value'][run][s][0] == True:

@@ -254,6 +254,8 @@ def backward_floating_selection_lib(X_train, X_test, y_train, y_test, names, sen
 				best_feature_id = new_feature
 				lowest_loss = combo_loss
 
+		if best_feature_id == -1:
+			break
 		current_feature_set.remove(best_feature_id)
 		removed_features.append(best_feature_id)
 

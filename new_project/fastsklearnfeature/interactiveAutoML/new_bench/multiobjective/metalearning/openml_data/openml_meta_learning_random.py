@@ -350,13 +350,40 @@ while True:
 					evaluation_values[results[r]['strategy_id']] = []
 
 				#add stuff
-				accuracy_values[results[r]['strategy_id']].append(results[r]['cv_acc'])
-				fairness_values[results[r]['strategy_id']].append(results[r]['cv_fair'])
-				robustness_values[results[r]['strategy_id']].append(results[r]['cv_robust'])
-				k_values[results[r]['strategy_id']].append(results[r]['cv_number_features'])
-				success_values[results[r]['strategy_id']].append(results[r]['success'])
-				runtime_values[results[r]['strategy_id']].append(results[r]['time'])
-				evaluation_values[results[r]['strategy_id']].append(results[r]['cv_number_evaluations'])
+				if 'cv_acc' in results[r]:
+					accuracy_values[results[r]['strategy_id']].append(results[r]['cv_acc'])
+				else:
+					accuracy_values[results[r]['strategy_id']].append(-1)
+
+				if 'cv_fair' in results[r]:
+					fairness_values[results[r]['strategy_id']].append(results[r]['cv_fair'])
+				else:
+					fairness_values[results[r]['strategy_id']].append(-1)
+
+				if 'cv_robust' in results[r]:
+					robustness_values[results[r]['strategy_id']].append(results[r]['cv_robust'])
+				else:
+					robustness_values[results[r]['strategy_id']].append(-1)
+
+				if 'cv_number_features' in results[r]:
+					k_values[results[r]['strategy_id']].append(results[r]['cv_number_features'])
+				else:
+					k_values[results[r]['strategy_id']].append(-1)
+
+				if 'success' in results[r]:
+					success_values[results[r]['strategy_id']].append(results[r]['success'])
+				else:
+					success_values[results[r]['strategy_id']].append(-1)
+
+				if 'time' in results[r]:
+					runtime_values[results[r]['strategy_id']].append(results[r]['time'])
+				else:
+					runtime_values[results[r]['strategy_id']].append(-1)
+
+				if 'cv_number_evaluations' in results[r]:
+					evaluation_values[results[r]['strategy_id']].append(results[r]['cv_number_evaluations'])
+				else:
+					evaluation_values[results[r]['strategy_id']].append(-1)
 			if results[r]['success']:
 				success[results[r]['strategy_id']] = True
 
