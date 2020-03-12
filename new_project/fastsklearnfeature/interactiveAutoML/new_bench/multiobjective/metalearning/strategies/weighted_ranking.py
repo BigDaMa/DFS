@@ -34,6 +34,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import pandas as pd
 import time
+from hyperopt.pyll.base import scope
 
 from art.metrics import RobustnessVerificationTreeModelsCliqueMethod
 from art.metrics import loss_sensitivity
@@ -163,7 +164,7 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 				'cv_robust': cv_robust, 'cv_number_features': cv_number_features}
 
 	max_k = max(int(max_number_features * X_train.shape[1]), 1)
-	space = {'k': hp.randint('k', max_k)}
+	space = {'k': scope.int(hp.quniform('k', 0, max_k - 1, 1))}
 
 	if len(rankings) > 1:
 		for i in range(len(rankings)):
