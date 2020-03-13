@@ -196,11 +196,15 @@ while True:
 					try:
 						result = next(iterator)
 						if result['success'] == True:
-							results_heatmap [(min_accuracy, min_fairness)] = (result['runtime'], result['strategy_id'])
-							print(results_heatmap)
-							pool.stop()
-							pool.join(timeout=0)
-							break
+							try:
+								print(result)
+								results_heatmap [(min_accuracy, min_fairness)] = (result['time'], result['strategy_id'])
+								print('my heat map is here: ' + str(results_heatmap))
+								pool.stop()
+								pool.join(timeout=0)
+								break
+							except:
+								print("fail strategy Id: " + str(result['strategy_id']))
 					except StopIteration:
 						break
 					except TimeoutError as error:
