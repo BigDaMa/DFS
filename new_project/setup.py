@@ -26,7 +26,6 @@ setup(
                       "xgboost",
                       "matplotlib",
                       "numpy_indexed",
-                      "imbalanced-learn",
                       "autofeat",
                       "joblib",
                       "sympy",
