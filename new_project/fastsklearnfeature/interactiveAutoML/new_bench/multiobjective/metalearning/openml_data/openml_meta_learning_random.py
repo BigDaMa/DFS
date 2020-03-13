@@ -48,7 +48,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 
@@ -83,7 +83,7 @@ cv_splitter = StratifiedKFold(5, random_state=42)
 auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
 while True:
-	X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_fair_data()
+	X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_fair_data1()
 
 	#run on tiny sample
 	if X_train.shape[0] > 100:

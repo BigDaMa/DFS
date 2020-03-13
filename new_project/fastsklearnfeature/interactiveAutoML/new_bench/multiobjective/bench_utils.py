@@ -78,7 +78,7 @@ def get_data(data_path='/adult/dataset_183_adult.csv', continuous_columns = [0, 
 
 
 
-def get_fair_data(dataset_key=None):
+def get_fair_data1(dataset_key=None):
 	map_dataset = {}
 
 	map_dataset['31'] = 'foreign_worker@{yes,no}'
