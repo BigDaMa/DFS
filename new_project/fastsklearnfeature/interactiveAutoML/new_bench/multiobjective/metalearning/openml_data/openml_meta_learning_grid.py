@@ -83,7 +83,7 @@ cv_splitter = StratifiedKFold(5, random_state=42)
 auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
 while True:
-	X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_fair_data('1590')
+	X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_fair_data(dataset_key='1590')
 
 	mp_global.X_train = X_train
 	mp_global.X_test = X_test
