@@ -188,7 +188,7 @@ while True:
 
 			results = []
 			check_strategies = np.zeros(strategy_id)
-			with ProcessPool() as pool:
+			with ProcessPool(max_workers=16) as pool:
 				future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 				iterator = future.result()
