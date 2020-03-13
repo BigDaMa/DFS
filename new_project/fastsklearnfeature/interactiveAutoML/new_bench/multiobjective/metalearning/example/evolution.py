@@ -402,7 +402,7 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 
 	cv_splitter = StratifiedKFold(5, random_state=42)
 
-	model = models.LogisticRegression(epsilon=0.0001)
+	model = models.LogisticRegression(epsilon=10)
 
 	evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=model, min_accuracy=1.0,
 			  min_fairness=0.0, min_robustness=0.0, max_number_features=1.0, cv_splitter=cv_splitter)

@@ -101,6 +101,11 @@ for afile in all_files:
 print(dataset['best_strategy'])
 print(len(dataset['best_strategy']))
 
+#dict_keys(['features', 'best_strategy', 'ranking_scores_info', 'times_value', 'k_value', 'acc_value', 'fair_value', 'robust_value', 'success_value', 'evaluation_value', 'dataset_id', 'sensitive_attribute_id'])
+assert len(dataset['best_strategy']) == len(dataset['times_value'])
+assert len(dataset['success_value']) == len(dataset['times_value'])
+
+
 print(dataset.keys())
 
 
@@ -108,6 +113,25 @@ print(dataset.keys())
 eval_strategies = []
 for i in range(len(mappnames) + 1):
 	eval_strategies.append([])
+
+
+##calculate best strategy:
+best_strategies_real = []
+for current_id in range(len(dataset['best_strategy'])):
+	best_runtime = dataset['features'][current_id][6]
+	best_id = 0
+	for s in range(1, len(mappnames) + 1):
+		if s in dataset['success_value'][current_id] and len(dataset['success_value'][current_id][s]) > 0 and \
+				dataset['success_value'][current_id][s][0] == True:
+
+			runtime = min(dataset['times_value'][current_id][s])
+			if runtime < best_runtime:
+				best_runtime = runtime
+				best_id = s
+	best_strategies_real.append(best_id)
+print('real best:' + str(best_strategies_real))
+
+
 
 print(eval_strategies)
 for bests in range(len(dataset['best_strategy'])):
@@ -134,10 +158,10 @@ for i in range(len(mappnames) + 1):
 
 #print(logs_regression['features'])
 
-my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset)
+my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset, number_strategiesplus1=len(mappnames)+1)
 my_recall_score = make_scorer(get_recall, logs=dataset)
 my_runtime_score = make_scorer(get_avg_runtime, logs=dataset)
-my_optimal_runtime_score = make_scorer(get_optimum_avg_runtime, logs=dataset)
+my_optimal_runtime_score = make_scorer(get_optimum_avg_runtime, logs=dataset, number_strategiesplus1=len(mappnames)+1)
 
 X_train = dataset['features']
 y_train = dataset['best_strategy']
@@ -148,40 +172,6 @@ meta_classifier = meta_classifier.fit(X_train, np.array(y_train) == 0)
 #meta_classifier = meta_classifier.fit(X_train, y_train)
 
 
-
-'''
-# Export as dot file
-export_graphviz(meta_classifier, out_file='/tmp/tree.dot',
-                feature_names = ['accuracy',
-											  'fairness',
-											  'k_rel',
-											  'k',
-											  'robustness',
-											  'privacy',
-											  'cv_acc - acc',
-											  'cv_fair - fair',
-											  'cv_k - k rel',
-											  'cv_k - k',
-											  'cv_robust - robust',
-											  'rows',
-											  'columns'],
-                class_names = np.array(meta_classifier.classes_, dtype=str),#['nothing','var','chi2','acc rank','robust rank','fair rank','weighted ranking','hyperopt','evo'],#['success', 'failure'],
-                rounded = True, proportion = False,
-                precision = 2, filled = True)
-
-call(['dot', '-Tpng', '/tmp/tree.dot', '-o', '/tmp/tree.png', '-Gdpi=600'])
-
-plt.show()
-'''
-
-
-
-#meta_classifier = DummyClassifier(strategy="uniform")
-#meta_classifier = DummyClassifier(strategy="most_frequent")
-#meta_classifier = DummyClassifier(strategy="constant", constant=8)
-
-#scores = cross_val_score(meta_classifier, X_train, np.array(y_train) == 0, cv=10, scoring='f1')
-#print('did it fail: ' + str(np.mean(scores)))
 
 
 success_ids = np.where(np.array(y_train) > 0)[0]
@@ -204,36 +194,8 @@ print("training size: " + str(len(success_ids)))
 
 
 
-my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset)
+my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset, number_strategiesplus1=len(mappnames)+1)
 
-'''
-balance_threshold = 5
-
-#todo: balance by the dataset occurence
-groups = np.array(dataset['dataset_id'])[success_ids]
-print('number datasets: ' + str(len(np.unique(groups))))
-
-datasets_with_enough_runs = []
-for data_id in np.unique(groups):
-	print(str(data_id) + ":  " + str(np.count_nonzero(groups == data_id)))
-	if np.count_nonzero(groups == data_id) >= balance_threshold:
-		datasets_with_enough_runs.append(data_id)
-
-balanced_success_ids = []
-map_data2count = {}
-for i in success_ids:
-	cur_data_id = np.array(dataset['dataset_id'])[i]
-	if cur_data_id in datasets_with_enough_runs:
-		if not cur_data_id in map_data2count:
-			map_data2count[cur_data_id] = 0
-		if map_data2count[cur_data_id] < balance_threshold:
-			balanced_success_ids.append(i)
-			map_data2count[cur_data_id] += 1
-
-X_data = np.array(X_train)[balanced_success_ids]
-y_data = pd.DataFrame(y_train).iloc[balanced_success_ids]
-groups = np.array(dataset['dataset_id'])[balanced_success_ids]
-'''
 
 #todo: balance by class
 
@@ -269,7 +231,8 @@ classifier_names.append('random')
 
 #best_param = {'n_estimators': 400, 'min_samples_split': 10, 'min_samples_leaf': 2, 'max_features': 'auto', 'max_depth': 40, 'bootstrap': False}
 #best_param  = {'n_estimators': 600, 'min_samples_split': 2, 'min_samples_leaf': 2, 'max_features': 'sqrt', 'max_depth': 110, 'bootstrap': False}
-best_param = {'n_estimators': 1000, 'min_samples_split': 5, 'min_samples_leaf': 4, 'max_features': 'auto', 'max_depth': 100, 'bootstrap': True}
+#best_param = {'n_estimators': 1000, 'min_samples_split': 5, 'min_samples_leaf': 4, 'max_features': 'auto', 'max_depth': 100, 'bootstrap': True}
+best_param = {'n_estimators': 1000, 'min_samples_split': 10, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 70, 'bootstrap': True}
 classifiers.append(RandomForestClassifier(**best_param))
 classifier_names.append('meta learned')
 
@@ -277,98 +240,7 @@ logo = LeaveOneGroupOut()
 
 outer_cv = list(GroupKFold(n_splits=4).split(X_data, y_data, groups=groups))
 
-#implement custom cv splitter based on dataset
 
-loss_all_strategies = []
-strategy_names = []
-for i in range(len(classifiers)):
-	scores = cross_val_score(classifiers[i], X_data, y_data, cv=outer_cv, scoring=my_score)
-	print(classifier_names[i] + " avg runtime distance to optimum: " + str(np.nanmean(scores)))
-
-	if np.nanmean(scores) < 0:
-		loss_all_strategies.append(np.nanmean(scores))
-		strategy_names.append(classifier_names[i])
-
-x = np.arange(len(loss_all_strategies))  # the label locations
-width = 0.35  # the width of the bars
-loss_ids = np.argsort(loss_all_strategies)
-fig, ax = plt.subplots()
-rects1 = ax.bar(x, np.array(loss_all_strategies)[loss_ids] * -1, width)
-ax.set_ylabel('Loss')
-ax.set_title('Loss across strategies')
-ax.set_xticks(x)
-ax.set_xticklabels(np.array(strategy_names)[loss_ids])
-fig.tight_layout()
-plt.show()
-
-
-for i in range(len(classifiers)):
-	cv_recall = cross_val_score(classifiers[i], X_data, y_data, cv=outer_cv, scoring=my_recall_score)
-	print(classifier_names[i] + " recall scores: " + str(np.nanmean(cv_recall)))
-
-
-for i in range(len(classifiers)):
-	cv_runtime = cross_val_score(classifiers[i], X_data, y_data, cv=outer_cv, scoring=my_runtime_score)
-	print(classifier_names[i] + " avg runtime: " + str(np.nanmean(cv_runtime)) + ' median runtime: ' + str(np.nanmedian(cv_runtime)) + ' std runtime: ' + str(np.nanstd(cv_runtime)))
-
-cv_runtime = cross_val_score(classifiers[0], X_data, y_data, cv=outer_cv, scoring=my_optimal_runtime_score)
-print('optimal(min)' + " avg runtime: " + str(np.nanmean(cv_runtime)) + " median runtime: " + str(np.nanmedian(cv_runtime)) + ' std runtime: ' + str(np.nanstd(cv_runtime)))
-
-print('\n\n\nnow better:\n')
-
-
-
-mins_runs = []
-maxs_runs = []
-means_runs = []
-stds_runs = []
-
-#calculate real runtime std
-for current_strategy in range(1,len(mappnames) + 1):
-	all_runtimes = []
-	for current_id in success_ids:
-		if current_strategy in dataset['times_value'][current_id] and len(
-				dataset['times_value'][current_id][current_strategy]) >= 1:
-			all_runtimes.append(min(dataset['times_value'][current_id][current_strategy]))
-		else:
-			all_runtimes.append(dataset['features'][current_id][6])
-	print(mappnames[current_strategy] + " avg runtime: " + str(np.nanmean(all_runtimes)) + ' median runtime: ' + str(
-		np.nanmedian(all_runtimes)) + ' std runtime: ' + str(np.nanstd(all_runtimes)))
-
-	mins_runs.append(np.min(all_runtimes))
-	maxs_runs.append(np.max(all_runtimes))
-	means_runs.append(np.mean(all_runtimes))
-	stds_runs.append(np.std(all_runtimes))
-
-#calculate
-
-##calculate optimum
-all_runtimes = []
-for current_id in success_ids:
-	best_runtime = dataset['features'][current_id][6]
-	for s in range(1, len(mappnames) + 1):
-		if s in dataset['times_value'][current_id] and len(dataset['times_value'][current_id][s]) >= 1:
-			runtime = min(dataset['times_value'][current_id][s])
-			if runtime < best_runtime:
-				best_runtime = runtime
-	all_runtimes.append(best_runtime)
-print('optimal '+ " avg runtime: " + str(np.nanmean(all_runtimes)) + ' median runtime: ' + str(
-		np.nanmedian(all_runtimes)) + ' std runtime: ' + str(np.nanstd(all_runtimes)))
-
-mins_runs.append(np.min(all_runtimes))
-maxs_runs.append(np.max(all_runtimes))
-means_runs.append(np.mean(all_runtimes))
-stds_runs.append(np.std(all_runtimes))
-
-plt.errorbar(np.arange(len(mins_runs)), means_runs, stds_runs, fmt='ok', lw=3)
-plt.errorbar(np.arange(len(mins_runs)), means_runs, [np.array(means_runs) - np.array(mins_runs), np.array(maxs_runs) - np.array(means_runs)], fmt='.k', ecolor='gray', lw=1)
-plt.ylim(bottom=0)
-plt.show()
-
-
-
-
-best_param = {'n_estimators': 400, 'min_samples_split': 10, 'min_samples_leaf': 2, 'max_features': 'auto', 'max_depth': 40, 'bootstrap': False}
 clf = RandomForestClassifier(**best_param)
 clf.fit(X_data, y_data)
 print_constraints_2(clf.feature_importances_)
@@ -388,7 +260,7 @@ plt.show()
 
 
 
-my_squared_score = make_scorer(time_score2, greater_is_better=False, logs=dataset, squared=True)
+my_squared_score = make_scorer(time_score2, greater_is_better=False, logs=dataset, squared=True, number_strategiesplus1=len(mappnames)+1)
 #hyperparameter optimization
 # Number of trees in random forest
 n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
@@ -410,15 +282,7 @@ random_grid = {'n_estimators': n_estimators,
                'min_samples_split': min_samples_split,
                'min_samples_leaf': min_samples_leaf,
                'bootstrap': bootstrap}
-'''
-rf = RandomForestClassifier()
-rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=100, cv=logo.split(X_data, y_data, groups), verbose=2, random_state=42, n_jobs=-1, scoring=my_squared_score)
-# Fit the random search model
-rf_random.fit(X_data, y_data)
 
-print(rf_random.best_params_)
-print(rf_random.best_score_)
-'''
 
 
 nested_cv_squared_scores = []
@@ -431,8 +295,9 @@ def get_runtime_for_fold_predictions(predictions, test_ids):
 	for p_i in range(len(predictions)):
 		current_strategy = predictions[p_i]
 		current_id = success_ids[test_ids[p_i]]
-		if current_strategy in dataset['times_value'][current_id] and len(
-				dataset['times_value'][current_id][current_strategy]) >= 1:
+		if current_strategy in dataset['success_value'][current_id] and len(
+				dataset['success_value'][current_id][current_strategy]) > 0 and \
+				dataset['success_value'][current_id][current_strategy][0] == True:
 			all_runtimes.append(min(dataset['times_value'][current_id][current_strategy]))
 		else:
 			all_runtimes.append(dataset['features'][current_id][6])
@@ -444,7 +309,8 @@ def get_optimal_runtime_for_fold_predictions(test_ids):
 		current_id = success_ids[test_ids[p_i]]
 		best_runtime = dataset['features'][current_id][6]
 		for s in range(1, len(mappnames) + 1):
-			if s in dataset['times_value'][current_id] and len(dataset['times_value'][current_id][s]) >= 1:
+			if s in dataset['success_value'][current_id] and len(dataset['success_value'][current_id][s]) > 0 and \
+					dataset['success_value'][current_id][s][0] == True:
 				runtime = min(dataset['times_value'][current_id][s])
 				if runtime < best_runtime:
 					best_runtime = runtime
@@ -458,7 +324,7 @@ all_runtimes_in_cv_folds = []
 strategies_in_cv_folds = []
 optimal_in_cv_folds = []
 
-for s_i in range(8):
+for s_i in range(len(mappnames)):
 	strategies_in_cv_folds.append([])
 
 for train_ids, test_ids in outer_cv_all:
@@ -477,13 +343,13 @@ for train_ids, test_ids in outer_cv_all:
 	predicted_strategies_fold = rf_random.predict(X_data[test_ids, :])
 	all_runtimes_in_cv_folds.extend(get_runtime_for_fold_predictions(predicted_strategies_fold, test_ids))
 
-	for s_i in range(8):
+	for s_i in range(len(mappnames)):
 		one_strategy = np.ones(len(predicted_strategies_fold)) * (s_i+1)
 		strategies_in_cv_folds[s_i].extend(get_runtime_for_fold_predictions(one_strategy, test_ids))
 
 	optimal_in_cv_folds.extend(get_optimal_runtime_for_fold_predictions(test_ids))
 
-for s_i in range(8):
+for s_i in range(len(mappnames)):
 	print(mappnames[s_i+1] + ' cv' + " avg runtime: " + str(np.nanmean(strategies_in_cv_folds[s_i])) + " median runtime: " + str(np.nanmedian(strategies_in_cv_folds[s_i])) + ' std runtime: ' + str(np.nanstd(strategies_in_cv_folds[s_i])))
 
 print('metalearning cv' + " avg runtime: " + str(np.nanmean(all_runtimes_in_cv_folds)) + " median runtime: " + str(np.nanmedian(all_runtimes_in_cv_folds)) + ' std runtime: ' + str(np.nanstd(all_runtimes_in_cv_folds)))
@@ -519,7 +385,9 @@ for run in range(len(dataset['times_value'])):
 				for s in range(1, len(mappnames) + 1):
 					run_v.append(run)
 					strategy_v.append(mappnames[s])
-					if s in dataset['times_value'][run] and len(dataset['times_value'][run][s]) >= 1:
+					if s in dataset['success_value'][run] and len(
+							dataset['success_value'][run][s]) > 0 and \
+							dataset['success_value'][run][s][0] == True:
 						runtime_v.append(min(dataset['times_value'][run][s]))
 					else:
 						runtime_v.append(0.0)
