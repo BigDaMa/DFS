@@ -108,7 +108,7 @@ while True:
 
 			min_robustness = 0.0
 			max_number_features = 1.0
-			max_search_time = 10 * 60
+			max_search_time = 20 * 60
 			privacy = None
 
 			# Execute each search strategy with a given time limit (in parallel)
@@ -172,18 +172,33 @@ while True:
 				strategy_id += 1
 
 			def my_function(config_id):
-				conf = mp_global.configurations[config_id]
-				result = conf['main_strategy'](mp_global.X_train, mp_global.X_test, mp_global.y_train, mp_global.y_test, mp_global.names, mp_global.sensitive_ids,
-							 ranking_functions=conf['ranking_functions'],
-							 clf=mp_global.clf,
-							 min_accuracy=mp_global.min_accuracy,
-							 min_fairness=mp_global.min_fairness,
-							 min_robustness=mp_global.min_robustness,
-							 max_number_features=mp_global.max_number_features,
-							 max_search_time=mp_global.max_search_time,
-							 cv_splitter=mp_global.cv_splitter)
-				result['strategy_id'] = conf['strategy_id']
-				return result
+				new_result = {}
+				search_times = []
+				successes = []
+				number_runs = 2
+				for run_i in range(number_runs):
+					conf = mp_global.configurations[config_id]
+					result = conf['main_strategy'](mp_global.X_train, mp_global.X_test, mp_global.y_train, mp_global.y_test, mp_global.names, mp_global.sensitive_ids,
+								 ranking_functions=conf['ranking_functions'],
+								 clf=mp_global.clf,
+								 min_accuracy=mp_global.min_accuracy,
+								 min_fairness=mp_global.min_fairness,
+								 min_robustness=mp_global.min_robustness,
+								 max_number_features=mp_global.max_number_features,
+								 max_search_time=mp_global.max_search_time,
+								 cv_splitter=mp_global.cv_splitter)
+					new_result['strategy_id'] = conf['strategy_id']
+					successes.append(result['success'])
+					search_times.append(result['time'])
+
+				if np.sum(successes) == number_runs:
+					new_result['success'] = True
+					new_result['time'] = np.mean(search_times)
+				else:
+					new_result['success'] = False
+
+
+				return new_result
 
 
 			results = []

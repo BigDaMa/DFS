@@ -157,8 +157,13 @@ def get_fair_data1(dataset_key=None):
 					else:
 						X_datat[x_i][y_i] = np.nan
 
+
 		X_train, X_test, y_train, y_test = train_test_split(X_datat, y.values.astype('str'), test_size=0.5,
 															random_state=42, stratify=y.values.astype('str'))
+		'''
+		X_train, X_test, y_train, y_test = train_test_split(X_datat[0:200,:], y.values[0:200].astype('str'), test_size=0.5,
+															random_state=42, stratify=y.values[0:200].astype('str'))
+		'''
 
 		cat_sensitive_attribute_id = -1
 		for c_i in range(len(categorical_features)):
