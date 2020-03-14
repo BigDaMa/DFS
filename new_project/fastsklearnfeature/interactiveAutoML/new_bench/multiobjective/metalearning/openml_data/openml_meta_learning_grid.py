@@ -207,6 +207,13 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 
 			iterator = future.result()
 			while True:
+				#log
+				f = open('/tmp/current_heat_map.txt', 'w+')
+				f.write(str(results_heatmap) + ' current position: fair: ' + str(min_fairness) + ' acc: ' + str(
+					min_accuracy))
+				f.flush()
+				f.close()
+
 				try:
 					result = next(iterator)
 					if result['success'] == True:
