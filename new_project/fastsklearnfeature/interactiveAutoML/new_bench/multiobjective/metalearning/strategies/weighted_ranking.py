@@ -165,7 +165,11 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 
 	print("X shape: " + str(X_train.shape) + 'max number features: ' + str(max_number_features))
 	max_k = max(int(max_number_features * X_train.shape[1]), 1)
-	space = {'k': scope.int(hp.quniform('k', 0, max_k - 1, 1))}
+	space = {}
+	if max_k - 1 == 0:
+		space = {'k': 0}
+	else:
+		space = {'k': scope.int(hp.quniform('k', 0, max_k - 1, 1))}
 
 	if len(rankings) > 1:
 		for i in range(len(rankings)):
