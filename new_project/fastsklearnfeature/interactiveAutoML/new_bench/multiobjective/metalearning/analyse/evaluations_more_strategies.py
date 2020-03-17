@@ -66,19 +66,6 @@ def print_constraints_2(features):
 	print(my_str)
 
 
-def print_strategies(results):
-	print("all strategies failed: " + str(results[0]) +
-		  "\nvar rank: " + str(results[1]) +
-		  '\nchi2 rank: ' + str(results[2]) +
-		  '\naccuracy rank: ' + str(results[3]) +
-		  '\nrobustness rank: ' + str(results[4]) +
-		  '\nfairness rank: ' + str(results[5]) +
-		  '\nweighted ranking: ' + str(results[6]) +
-		  '\nhyperparameter opt: ' + str(results[7]) +
-		  '\nevolution: ' + str(results[8])
-		  )
-
-
 #logs_adult = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_adult.pickle', 'rb'))
 #logs_heart = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_heart.pickle', 'rb'))
 
@@ -261,6 +248,8 @@ plt.show()
 
 
 my_squared_score = make_scorer(time_score2, greater_is_better=False, logs=dataset, squared=True, number_strategiesplus1=len(mappnames)+1)
+#my_squared_score = make_scorer(get_recall, greater_is_better=True, logs=dataset)
+
 #hyperparameter optimization
 # Number of trees in random forest
 n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
@@ -402,84 +391,6 @@ sns.barplot(x="run", hue="strategy", y="runtime", data=df)
 plt.show()
 
 
-
-
-
-'''
-labels = list(range(dataset['times_value']))
-x = np.arange(len(labels))  # the label locations
-width = 0.35  # the width of the bars
-
-fig, ax = plt.subplots()
-rects1 = ax.bar(x - width/2, men_means, width, label='Men')
-rects2 = ax.bar(x + width/2, women_means, width, label='Women')
-
-# Add some text for labels, title and custom x-axis tick labels, etc.
-ax.set_ylabel('Scores')
-ax.set_title('Scores by group and gender')
-ax.set_xticks(x)
-ax.set_xticklabels(labels)
-ax.legend()
-fig.tight_layout()
-plt.show()
-'''
-
-
-
-
-
-all_ids = []
-for run in range(len(dataset['times_value'])):
-	if first_strategy in dataset['success_value'][run] and np.sum(dataset['success_value'][run][first_strategy]) >= 1.0 and \
-		second_strategy in dataset['success_value'][run] and np.sum(dataset['success_value'][run][second_strategy]) >= 1.0:
-		#if dataset['features'][run][0] > 0.6:
-		runtime_dist.append(min(dataset['times_value'][run][first_strategy]) - min(dataset['times_value'][run][second_strategy]))
-		all_ids.append(run)
-
-print(max(runtime_dist))
-best_variance_against_evo = all_ids[np.argmax(runtime_dist)]
-
-
-success_check = np.zeros(len(mappnames) + 1)
-s_names = []
-for run in range(len(dataset['success_value'])):
-	s_names = []
-	for s in range(1, len(mappnames) + 1):
-		s_names.append(mappnames[s])
-		if s in dataset['success_value'][run]:
-			success_check[s] += np.sum(dataset['success_value'][run][s])
-
-success_v = success_check[1:] / (len(dataset['success_value']*2))
-
-print(success_v)
-
-x_id = np.arange(len(s_names))  # the label locations
-width = 0.35  # the width of the bars
-recall_ids = np.argsort(success_v)
-print(recall_ids)
-fig, ax = plt.subplots()
-
-print(len(np.array(success_v)[recall_ids]))
-print(len(x_id))
-
-rects1 = ax.bar(x_id, np.array(success_v)[recall_ids], width)
-ax.set_ylabel('Recall')
-ax.set_title('Recall')
-ax.set_xticks(x)
-ax.set_xticklabels(np.array(s_names)[recall_ids])
-fig.tight_layout()
-plt.show()
-
-
-print_strategies(success_check / (len(dataset['success_value']*2)))
-
-best_strategy_count = np.zeros(len(mappnames) + 1)
-for run in range(len(dataset['best_strategy'])):
-
-	best_strategy_count[dataset['best_strategy'][run]] += 1
-
-print("Best count: ")
-print_strategies(best_strategy_count / len(dataset['best_strategy']))
 
 for s in range(1, len(mappnames) + 1):
 	with open('/tmp/' + mappnames[s] + '_success.txt', 'w+') as the_file:
