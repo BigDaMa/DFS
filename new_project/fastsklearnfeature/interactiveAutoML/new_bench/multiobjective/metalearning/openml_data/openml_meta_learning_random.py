@@ -260,9 +260,9 @@ while True:
 		for r in range(len(rankings)):
 			for run in range(number_of_runs):
 				configuration = {}
-				configuration['ranking_functions'] = [rankings[r]]
+				configuration['ranking_functions'] = copy.deepcopy([rankings[r]])
 				configuration['run_id'] = copy.deepcopy(run)
-				configuration['main_strategy'] = weighted_ranking
+				configuration['main_strategy'] = copy.deepcopy(weighted_ranking)
 				configuration['strategy_id'] = copy.deepcopy(strategy_id)
 				mp_global.configurations.append(configuration)
 			strategy_id +=1
@@ -281,9 +281,9 @@ while True:
 		for strategy in main_strategies:
 			for run in range(number_of_runs):
 					configuration = {}
-					configuration['ranking_functions'] = rankings
+					configuration['ranking_functions'] = []
 					configuration['run_id'] = copy.deepcopy(run)
-					configuration['main_strategy'] = strategy
+					configuration['main_strategy'] = copy.deepcopy(strategy)
 					configuration['strategy_id'] = copy.deepcopy(strategy_id)
 					mp_global.configurations.append(configuration)
 			strategy_id += 1
