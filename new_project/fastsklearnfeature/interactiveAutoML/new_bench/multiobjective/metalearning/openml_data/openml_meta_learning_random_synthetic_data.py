@@ -204,7 +204,7 @@ how_many_samples = int(input('enter number of samples please: '))
 for number_samples in [how_many_samples]:#[100, 1000, 10000, 100000]:
 
 	for config in configurations:
-		X_train, X_test, y_train, y_test = get_synthetic_data(100, 50, config, test_samples=1000)
+		X_train, X_test, y_train, y_test = get_synthetic_data(number_samples, 50, config, test_samples=1000)
 
 		mp_global.X_train = X_train
 		mp_global.X_test = X_test
