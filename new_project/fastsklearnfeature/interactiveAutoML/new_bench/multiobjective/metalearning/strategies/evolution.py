@@ -53,9 +53,14 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 	start_time = time.time()
 
 	auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
-	fair_train = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train[:, sensitive_ids[0]])
-	fair_test = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_test[:, sensitive_ids[0]])
 
+	fair_train = None
+	fair_test = None
+	if type(sensitive_ids) != type(None):
+		fair_train = make_scorer(true_positive_rate_score, greater_is_better=True,
+								 sensitive_data=X_train[:, sensitive_ids[0]])
+		fair_test = make_scorer(true_positive_rate_score, greater_is_better=True,
+								sensitive_data=X_test[:, sensitive_ids[0]])
 
 	def f_clf1(mask):
 		model = Pipeline([
@@ -77,12 +82,19 @@ def evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_fu
 		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf,
 									feature_selector=model.named_steps['selection'], scorer=auc_scorer)
 
+		scoring_functions = {'AUC': auc_scorer, 'Robustness': robust_scorer}
+		if type(sensitive_ids) != type(None):
+			scoring_functions['Fairness'] = fair_train
+
 		cv = GridSearchCV(model, param_grid={'clf__C': [1.0]}, cv=cv_splitter,
-						  scoring={'AUC': auc_scorer, 'Fairness': fair_train, 'Robustness': robust_scorer},
+						  scoring=scoring_functions,
 						  refit=False)
 		cv.fit(X_train, pd.DataFrame(y_train))
 		cv_acc = cv.cv_results_['mean_test_AUC'][0]
-		cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+		if type(sensitive_ids) != type(None):
+			cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+		else:
+			cv_fair = 0.0
 		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
 		cheating_global.successfull_result[hash]['cv_number_evaluations'] += 1
