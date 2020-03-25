@@ -130,7 +130,6 @@ def weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ran
 		return model
 
 	def f_to_min1(hps):
-		print(hps)
 		model = f_clf1(hps)
 
 		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf,

@@ -20,7 +20,7 @@ def pivot2latex(my_pivot):
 	for i in range(len(axes[0])):
 		my_latex += str(axes[0][len(axes[0]) - 1 - i]) + ', '
 	my_latex = my_latex[:-2]
-	my_latex += "}, x tick label style={rotate=90,anchor=east}, axis line style={draw=none}, x=1cm,y=1cm, x label style={at={(axis description cs:0.5,-0.05)},anchor=north}]\n\\addplot+[sharp plot, opacity=0.0] coordinates {(0,0)("+ str(len(axes[1])-1) +","+ str(len(axes[0])-1) +"))};\n"
+	my_latex += "}, x tick label style={rotate=90,anchor=east}, axis line style={draw=none}, x=1cm,y=1cm, x label style={at={(axis description cs:0.5,-0.05)},anchor=north}]\n\\addplot+[sharp plot, opacity=0.0] coordinates {(0,0)("+ str(len(axes[1])-1) +","+ str(len(axes[0])-1) +")};\n"
 
 
 	for y_value_i in range(values.shape[0]):
