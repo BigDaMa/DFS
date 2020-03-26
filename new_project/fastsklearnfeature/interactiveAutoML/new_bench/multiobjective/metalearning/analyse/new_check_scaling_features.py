@@ -121,6 +121,7 @@ for number_observations in map_observations2file.keys():#, 1000000]:
 
 
 print("minimum runs: " + str(minimum_runs))
+minimum_runs = 20
 
 map_rows2strategy_mean_time = {}
 

@@ -52,9 +52,6 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils i
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 
-#load list of viable datasets
-data_infos = pickle.load(open(Config.get('data_path') + '/openml_data/fitting_datasets.pickle', 'rb'))
-
 current_run_time_id = time.time()
 
 time_limit = 60 * 60 * 3
@@ -76,6 +73,7 @@ evaluation_value_list = []
 k_value_list = []
 
 dataset_did_list = []
+constraint_set_list = []
 dataset_sensitive_attribute_list = []
 
 cv_splitter = StratifiedKFold(5, random_state=42)
@@ -168,7 +166,7 @@ while True:
 			#predict the best model and calculate uncertainty
 
 			loss = 0
-			return {'loss': loss, 'status': STATUS_OK, 'features': features, 'search_time': hps['search_time'], 'ranking_scores': scores_stored}
+			return {'loss': loss, 'status': STATUS_OK, 'features': features, 'search_time': hps['search_time'], 'ranking_scores': scores_stored, 'constraints': hps }
 		except:
 			return {'loss': np.inf, 'status': STATUS_OK}
 
@@ -425,6 +423,7 @@ while True:
 
 		dataset_did_list.append(data_did)
 		dataset_sensitive_attribute_list.append(sensitive_attribute_id)
+		constraint_set_list.append(trials.trials[-1]['result']['constraints'])
 
 		one_big_object['times_value'] = runtime_value_list
 		one_big_object['k_value'] = k_value_list
@@ -434,6 +433,7 @@ while True:
 		one_big_object['success_value'] = success_value_list
 		one_big_object['evaluation_value'] = evaluation_value_list
 		one_big_object['dataset_id'] = dataset_did_list
+		one_big_object['constraint_set_list'] = constraint_set_list
 		one_big_object['sensitive_attribute_id'] = dataset_sensitive_attribute_list
 
 		pickle.dump(one_big_object, open('/tmp/metalearning_data' + str(current_run_time_id) + '.pickle', 'wb'))

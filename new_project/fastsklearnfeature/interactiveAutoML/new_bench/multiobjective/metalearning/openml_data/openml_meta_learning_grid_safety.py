@@ -211,7 +211,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 			while True:
 				#log
 				f = open('/tmp/current_heat_map.txt', 'w+')
-				f.write(str(results_heatmap) + ' current position: fair: ' + str(min_robustness) + ' acc: ' + str(
+				f.write(str(results_heatmap) + ' current position: safety: ' + str(min_robustness) + ' acc: ' + str(
 					min_accuracy))
 				f.flush()
 				f.close()

@@ -221,7 +221,7 @@ my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset, numbe
 X_data = np.matrix(X_train)[success_ids]
 y_data = np.array(y_train)[success_ids]
 groups = np.array(dataset['dataset_id'])[success_ids]
-outer_cv_all = list(GroupKFold(n_splits=4).split(X_data, None, groups=groups))
+outer_cv_all = list(GroupKFold(n_splits=20).split(X_data, None, groups=groups))
 
 
 strategy_search_times = np.zeros((X_data.shape[0], len(mappnames)))
@@ -274,6 +274,8 @@ feature_list.append(X_train.shape[1])#number columns
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1
 from scipy.stats import skew
 
+'''
+
 save_data = {}
 
 save_data = pickle.load(open("/tmp/save_data.p", "rb"))
@@ -281,7 +283,7 @@ save_data = pickle.load(open("/tmp/save_data.p", "rb"))
 
 
 
-'''
+
 variance_skew = []
 binary_columns_abs = []
 binary_columns_rel = []
@@ -320,14 +322,14 @@ def make_stakeable(mylist):
 	my_array = my_array.transpose()
 	return my_array
 
-#X_data = np.hstack([X_data, make_stakeable(variance_skew)])
-#names_features.append('variance_skew')
-#X_data = np.hstack([X_data, make_stakeable(binary_columns_abs)])
-#names_features.append('binary_columns_abs')
+X_data = np.hstack([X_data, make_stakeable(variance_skew)])
+names_features.append('variance_skew')
+X_data = np.hstack([X_data, make_stakeable(binary_columns_abs)])
+names_features.append('binary_columns_abs')
 #X_data = np.hstack([X_data, make_stakeable(binary_columns_rel)])
 #names_features.append('binary_columns_rel')
-
 '''
+
 
 
 
@@ -408,13 +410,14 @@ def get_is_fastest_for_fold_predictions(predictions, test_ids):
 	return all_success
 
 
+f1_scorer = make_scorer(f1_score, greater_is_better=True)
+
 all_runtimes_in_cv_folds = []
 all_success_in_cv_folds = []
 all_fastest_in_cv_folds = []
 for train_ids, test_ids in outer_cv_all:
 	predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
 
-	f1_scorer = make_scorer(f1_score, greater_is_better=True)
 	for my_strategy in range(strategy_success.shape[1]):
 
 		inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], None, groups=groups[train_ids])

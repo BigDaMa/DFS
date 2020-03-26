@@ -44,22 +44,22 @@ Meta-learned Strategy Choice & $x \pm y$ && x\\
 '''
 
 
-mappnames = {1:'Hyperopt(KBest(Variance))',
-			 2: 'Hyperopt(KBest($\chi^2$))',
-			 3:'Hyperopt(KBest(FCBF))',
-			 4: 'Hyperopt(KBest(Fisher Score))',
-			 5: 'Hyperopt(KBest(Mutual Information))',
-			 6: 'Hyperopt(KBest(MCFS))',
-			 7: 'Hyperopt(KBest(ReliefF))',
-			 8: 'Ranking-free Hyperopt',
-             9: 'Ranking-free Simulated Annealing',
-			 10: 'Ranking-free NSGA-II',
-			 11: 'Exhaustive Search',
-			 12: 'Forward Selection',
-			 13: 'Backward Selection',
-			 14: 'Forward Floating Selection',
-			 15: 'Backward Floating Selection',
-			 16: 'Recursive Feature Elimination'
+mappnames = {1:'TPE(Variance)',
+			 2: 'TPE($\chi^2$))',
+			 3:'TPE(FCBF))',
+			 4: 'TPE(Fisher Score))',
+			 5: 'TPE(Mutual Information))',
+			 6: 'TPE(MCFS))',
+			 7: 'TPE(ReliefF))',
+			 8: 'TPE(no ranking)',
+             9: 'Simulated Annealing(no ranking)',
+			 10: 'NSGA-II(no ranking)',
+			 11: 'Exhaustive Search(no ranking)',
+			 12: 'Forward Selection(no ranking)',
+			 13: 'Backward Selection(no ranking)',
+			 14: 'Forward Floating Selection(no ranking)',
+			 15: 'Backward Floating Selection(no ranking)',
+			 16: 'RFE(Logistic Regression)'
 			 }
 
 names = ['accuracy',
@@ -94,7 +94,7 @@ def print_constraints_2(features):
 
 #get all files from folder
 
-all_files = glob.glob("/home/felix/phd/meta_learn/fair_data/*.pickle") #1hour
+all_files = glob.glob("/home/felix/phd/meta_learn/new_bugfree/*.pickle")
 
 
 dataset = {}
@@ -111,10 +111,12 @@ assert len(dataset['success_value']) == len(dataset['best_strategy'])
 joined_strategies = []
 
 
+my_latex = ''
 
-for rounds in range(6):
+for rounds in range(8):
 	best_recall = 0
 	best_combo = []
+	best_name = ""
 	for s in range(1,len(mappnames) + 1):
 		new_joined_strategies = copy.deepcopy(joined_strategies)
 		new_joined_strategies.append(s)
@@ -138,9 +140,13 @@ for rounds in range(6):
 		if best_recall < calc_recall:
 			best_recall = calc_recall
 			best_combo = new_joined_strategies
+			best_name = my_string
+	my_latex += str(len(best_combo)) + "& + " + mappnames[best_combo[-1]] + " && " + "{:.3f}".format(best_recall) + "\\\\ \n"
 	joined_strategies = best_combo
 	print("\n\n")
 
+
+print(my_latex)
 
 for s in range(1, len(mappnames) + 1):
 	with open('/tmp/' + mappnames[s] + '_success.txt', 'w+') as the_file:
