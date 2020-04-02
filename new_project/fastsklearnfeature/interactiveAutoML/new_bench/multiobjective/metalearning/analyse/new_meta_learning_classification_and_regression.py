@@ -203,7 +203,11 @@ for s_i in success_ids:
 	if not delete_b:
 		new_success_ids.append(s_i)
 
-#success_ids = new_success_ids
+#change here
+#success_ids = np.array(new_success_ids)
+
+success_ids = success_ids[0:1000]
+
 
 print("training size: " + str(len(success_ids)))
 
@@ -336,6 +340,21 @@ names_features.append('binary_columns_abs')
 #my_ids = [0,1,2,3,4,5,7,8,9,10,11,12,13,14,15]
 my_ids = list(range(X_data.shape[1]))
 
+#7,8,11,12
+#to_remove = [7,8,11,12] #constraints only
+#to_remove = [8,11,12] #constraints + cv acc
+#to_remove = [7,8,11] #constraints + cv time
+to_remove = []
+
+to_remove_names = [names_features[id] for id in to_remove]
+
+for mi in range(len(to_remove)):
+	my_ids.remove(to_remove[mi])
+	names_features.remove(to_remove_names[mi])
+
+print(names_features)
+
+
 
 
 #hyperparameter optimization
@@ -412,6 +431,10 @@ def get_is_fastest_for_fold_predictions(predictions, test_ids):
 
 f1_scorer = make_scorer(f1_score, greater_is_better=True)
 
+
+#choose_among_strategies = [1,2,3,8,10,14] #works better
+choose_among_strategies = [2,8,14]
+
 all_runtimes_in_cv_folds = []
 all_success_in_cv_folds = []
 all_fastest_in_cv_folds = []
@@ -420,32 +443,38 @@ for train_ids, test_ids in outer_cv_all:
 
 	for my_strategy in range(strategy_success.shape[1]):
 
-		inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], None, groups=groups[train_ids])
-		'''
-		rf = RandomForestClassifier()
-		rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=100,
-									   cv=inner_cv, verbose=2, random_state=42,
-									   n_jobs=-1, scoring=f1_scorer)
-		'''
-		rf_random = RandomForestClassifier(n_estimators=1000, class_weight='balanced')
-		rf_random.fit(X_data[train_ids][:, my_ids], strategy_success[train_ids, my_strategy])
+		if True:#(my_strategy + 1) in choose_among_strategies:
+			'''
+			inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], None, groups=groups[train_ids])
+			rf = RandomForestClassifier()
+			rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=200,
+										   cv=inner_cv, verbose=2, random_state=42,
+										   n_jobs=-1, scoring=f1_scorer)
+			'''
 
-		'''
-		calibration = CalibratedClassifierCV(base_estimator=rf_random, cv=5 )
-		calibration.fit(X_data[train_ids][:, my_ids], strategy_success[train_ids, my_strategy])
-		predictions_probabilities[:, my_strategy] = calibration.predict_proba(X_data[test_ids][:, my_ids])[:,1]
-		'''
 
-		print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, X_data[test_ids][:, my_ids], strategy_success[test_ids,my_strategy])))
+			rf_random = RandomForestClassifier(n_estimators=1000, class_weight='balanced')
+			rf_random.fit(X_data[train_ids][:, my_ids], strategy_success[train_ids, my_strategy])
 
-		predictions_probabilities[:, my_strategy] = rf_random.predict_proba(X_data[test_ids][:, my_ids])[:,1]
+			'''
+			calibration = CalibratedClassifierCV(base_estimator=rf_random, cv=5 )
+			calibration.fit(X_data[train_ids][:, my_ids], strategy_success[train_ids, my_strategy])
+			predictions_probabilities[:, my_strategy] = calibration.predict_proba(X_data[test_ids][:, my_ids])[:,1]
+			'''
 
-		print(mappnames[my_strategy + 1] + ' prob : ' + str(np.mean(predictions_probabilities[:, my_strategy])))
+			print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, X_data[test_ids][:, my_ids], strategy_success[test_ids,my_strategy])))
+
+			predictions_probabilities[:, my_strategy] = rf_random.predict_proba(X_data[test_ids][:, my_ids])[:,1]
+
+			print(mappnames[my_strategy + 1] + ' prob : ' + str(np.mean(predictions_probabilities[:, my_strategy])))
+		else:
+			predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
 
 	predictions = np.argmax(predictions_probabilities, axis=1)
 	predictions += 1
 	print(predictions.shape)
 	print(predictions)
+	print(np.array(dataset['best_strategy'])[success_ids[test_ids]])
 
 	runtimes_test_fold = get_runtime_for_fold_predictions(predictions, test_ids)
 	print('mean time:  ' + str(np.mean(runtimes_test_fold)) + ' std: ' + str(np.std(runtimes_test_fold)))

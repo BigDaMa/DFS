@@ -106,12 +106,20 @@ for afile in all_files:
 		dataset[key].extend(data[key])
 
 
+success_ids = []
+for run in range(len(dataset['best_strategy'])):
+	if dataset['best_strategy'][run] > 0:
+		success_ids.append(run)
+		if len(success_ids) == 1000:
+			break
+
+
 assert len(dataset['success_value']) == len(dataset['best_strategy'])
 
 strategy_recall = []
 for s in range(1, len(mappnames) + 1):
 	current_recall = []
-	for run in range(len(dataset['best_strategy'])):
+	for run in success_ids:
 		if dataset['best_strategy'][run] > 0:
 			if s in dataset['success_value'][run] and len(dataset['success_value'][run][s]) > 0:
 				current_recall.append(dataset['success_value'][run][s][0])
@@ -127,7 +135,7 @@ for s in range(len(mappnames)):
 strategy_time = []
 for s in range(1, len(mappnames) + 1):
 	current_time = []
-	for run in range(len(dataset['best_strategy'])):
+	for run in success_ids:
 		if dataset['best_strategy'][run] > 0:
 			if s in dataset['success_value'][run] and len(dataset['success_value'][run][s]) > 0 and dataset['success_value'][run][s][0] == True:
 				current_time.append(dataset['times_value'][run][s][0])
@@ -150,7 +158,7 @@ for s in range(len(mappnames)):
 
 ##report fastest strategy
 fastest_strategies = np.zeros(len(mappnames))
-for run in range(len(dataset['best_strategy'])):
+for run in success_ids:
 	if dataset['best_strategy'][run] > 0:
 		best_time = np.inf
 		best_strategy = -1
@@ -189,7 +197,7 @@ print("\n\n")
 
 
 all_runtimes = []
-for run in range(len(dataset['best_strategy'])):
+for run in success_ids:
 	if dataset['best_strategy'][run] > 0:
 		best_runtime = dataset['features'][run][6]
 		for s in range(1, len(mappnames) + 1):

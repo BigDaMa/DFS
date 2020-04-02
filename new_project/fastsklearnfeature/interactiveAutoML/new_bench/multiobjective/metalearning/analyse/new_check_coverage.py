@@ -105,6 +105,13 @@ for afile in all_files:
 			dataset[key] = []
 		dataset[key].extend(data[key])
 
+success_ids = []
+for run in range(len(dataset['best_strategy'])):
+	if dataset['best_strategy'][run] > 0:
+		success_ids.append(run)
+		if len(success_ids) == 1000:
+			break
+
 
 assert len(dataset['success_value']) == len(dataset['best_strategy'])
 
@@ -113,7 +120,7 @@ joined_strategies = []
 
 my_latex = ''
 
-for rounds in range(8):
+for rounds in range(10):
 	best_recall = 0
 	best_combo = []
 	best_name = ""
@@ -121,7 +128,7 @@ for rounds in range(8):
 		new_joined_strategies = copy.deepcopy(joined_strategies)
 		new_joined_strategies.append(s)
 		current_recall = []
-		for run in range(len(dataset['best_strategy'])):
+		for run in success_ids:
 			if dataset['best_strategy'][run] > 0:
 				found = False
 				for js in new_joined_strategies:
@@ -150,6 +157,6 @@ print(my_latex)
 
 for s in range(1, len(mappnames) + 1):
 	with open('/tmp/' + mappnames[s] + '_success.txt', 'w+') as the_file:
-		for run in range(len(dataset['times_value'])):
+		for run in success_ids:
 			if s in dataset['success_value'][run] and dataset['success_value'][run][s][0] == True:
 				the_file.write(str(run) + '\n')
