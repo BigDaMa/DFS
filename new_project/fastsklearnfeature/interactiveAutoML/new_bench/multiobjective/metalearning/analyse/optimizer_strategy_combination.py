@@ -381,50 +381,52 @@ random_grid = {'n_estimators': n_estimators,
 			   'class_weight': ['balanced']
 			   }
 
-def get_runtime_for_fold_predictions(predictions, test_ids):
+def get_combination_runtime_for_fold_predictions(predictions, test_ids):
 	all_runtimes = []
 	for p_i in range(len(predictions)):
-		current_strategy = predictions[p_i]
 		current_id = success_ids[test_ids[p_i]]
-		if current_strategy in dataset['success_value'][current_id] and len(
-				dataset['success_value'][current_id][current_strategy]) > 0 and \
-				dataset['success_value'][current_id][current_strategy][0] == True:
-			all_runtimes.append(min(dataset['times_value'][current_id][current_strategy]) + dataset['features'][current_id][12])
-		else:
-			all_runtimes.append(dataset['features'][current_id][6])
+		min_time = dataset['features'][current_id][6]
+		for current_strategy in predictions[p_i]:
+			if current_strategy in dataset['success_value'][current_id] and len(
+					dataset['success_value'][current_id][current_strategy]) > 0 and \
+					dataset['success_value'][current_id][current_strategy][0] == True:
+				if min_time > min(dataset['times_value'][current_id][current_strategy]):
+					min_time = min(dataset['times_value'][current_id][current_strategy]) + dataset['features'][current_id][12]
+		all_runtimes.append(min_time)
 	return all_runtimes
 
-def get_success_for_fold_predictions(predictions, test_ids):
+def get_combination_success_for_fold_predictions(predictions, test_ids):
 	all_success = []
 	for p_i in range(len(predictions)):
-		current_strategy = predictions[p_i]
 		current_id = success_ids[test_ids[p_i]]
-		if current_strategy in dataset['success_value'][current_id] and len(
-				dataset['success_value'][current_id][current_strategy]) > 0 and \
-				dataset['success_value'][current_id][current_strategy][0] == True:
-			all_success.append(True)
-		else:
-			all_success.append(False)
+		min_success = False
+		for current_strategy in predictions[p_i]:
+			if current_strategy in dataset['success_value'][current_id] and len(
+					dataset['success_value'][current_id][current_strategy]) > 0 and \
+					dataset['success_value'][current_id][current_strategy][0] == True:
+				min_success = True
+		all_success.append(min_success)
+
 	return all_success
 
-
-def get_is_fastest_for_fold_predictions(predictions, test_ids):
+def combination_get_is_fastest_for_fold_predictions(predictions, test_ids):
 	all_success = []
 	for p_i in range(len(predictions)):
-		current_strategy = predictions[p_i]
 		current_id = success_ids[test_ids[p_i]]
-
-		best_time = np.inf
-		best_strategy = -1
-		for s in range(1, len(mappnames) + 1):
-			if s in dataset['success_value'][current_id] and len(dataset['success_value'][current_id][s]) > 0 and \
-					dataset['success_value'][current_id][s][0] == True:
-				cu_time = dataset['times_value'][current_id][s][0]
-				if cu_time < best_time:
-					best_time = cu_time
-					best_strategy = s
-
-		all_success.append(best_strategy == current_strategy)
+		min_fastest = False
+		for current_strategy in predictions[p_i]:
+			best_time = np.inf
+			best_strategy = -1
+			for s in range(1, len(mappnames) + 1):
+				if s in dataset['success_value'][current_id] and len(dataset['success_value'][current_id][s]) > 0 and \
+						dataset['success_value'][current_id][s][0] == True:
+					cu_time = dataset['times_value'][current_id][s][0]
+					if cu_time < best_time:
+						best_time = cu_time
+						best_strategy = s
+			if best_strategy == current_strategy:
+				min_fastest = True
+		all_success.append(min_fastest)
 
 	return all_success
 
@@ -471,17 +473,17 @@ for train_ids, test_ids in outer_cv_all:
 		else:
 			predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
 
-	predictions = np.argmax(predictions_probabilities, axis=1)
+	predictions = np.argsort(predictions_probabilities*-1, axis=1)[:, 0:6]
 	predictions += 1
 	print(predictions.shape)
 	print(predictions)
 	print(np.array(dataset['best_strategy'])[success_ids[test_ids]])
 
-	runtimes_test_fold = get_runtime_for_fold_predictions(predictions, test_ids)
+	runtimes_test_fold = get_combination_runtime_for_fold_predictions(predictions, test_ids)
 	print('mean time:  ' + str(np.mean(runtimes_test_fold)) + ' std: ' + str(np.std(runtimes_test_fold)))
 	all_runtimes_in_cv_folds.extend(runtimes_test_fold)
-	all_success_in_cv_folds.extend(get_success_for_fold_predictions(predictions, test_ids))
-	all_fastest_in_cv_folds.extend(get_is_fastest_for_fold_predictions(predictions, test_ids))
+	all_success_in_cv_folds.extend(get_combination_success_for_fold_predictions(predictions, test_ids))
+	all_fastest_in_cv_folds.extend(combination_get_is_fastest_for_fold_predictions(predictions, test_ids))
 
 print('\n final mean time:  ' + str(np.mean(all_runtimes_in_cv_folds)) + ' std: ' + str(np.std(all_runtimes_in_cv_folds)))
 print('\n final coverage:  ' + str(np.sum(all_success_in_cv_folds) / float(len(all_success_in_cv_folds))))

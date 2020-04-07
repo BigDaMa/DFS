@@ -124,7 +124,7 @@ for rounds in range(10):
 	best_recall = 0
 	best_combo = []
 	best_name = ""
-	for s in range(1,len(mappnames) + 1):
+	for s in range(1, len(mappnames) + 1):
 		new_joined_strategies = copy.deepcopy(joined_strategies)
 		new_joined_strategies.append(s)
 		current_recall = []
