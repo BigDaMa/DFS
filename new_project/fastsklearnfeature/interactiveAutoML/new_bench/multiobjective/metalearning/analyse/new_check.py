@@ -45,12 +45,12 @@ Meta-learned Strategy Choice & $x \pm y$ && x\\
 
 
 mappnames = {1:'TPE(Variance)',
-			 2: 'TPE($\chi^2$))',
-			 3:'TPE(FCBF))',
-			 4: 'TPE(Fisher Score))',
-			 5: 'TPE(Mutual Information))',
-			 6: 'TPE(MCFS))',
-			 7: 'TPE(ReliefF))',
+			 2: 'TPE($\chi^2$)',
+			 3:'TPE(FCBF)',
+			 4: 'TPE(Fisher Score)',
+			 5: 'TPE(Mutual Information)',
+			 6: 'TPE(MCFS)',
+			 7: 'TPE(ReliefF)',
 			 8: 'TPE(no ranking)',
              9: 'Simulated Annealing(no ranking)',
 			 10: 'NSGA-II(no ranking)',

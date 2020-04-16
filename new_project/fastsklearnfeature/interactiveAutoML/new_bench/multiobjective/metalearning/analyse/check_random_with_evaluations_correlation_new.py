@@ -90,7 +90,7 @@ def print_strategies(results):
 #get all files from folder
 
 # list files "/home/felix/phd/meta_learn/random_configs_eval"
-all_files = glob.glob("/home/felix/phd/meta_learn/fair_data/*.pickle")
+all_files = glob.glob("/home/felix/phd/meta_learn/new_bugfree/*.pickle")
 
 
 dataset = {}

@@ -45,12 +45,12 @@ Meta-learned Strategy Choice & $x \pm y$ && x\\
 
 
 mappnames = {1:'TPE(Variance)',
-			 2: 'TPE($\chi^2$)',
-			 3:'TPE(FCBF)',
-			 4: 'TPE(Fisher Score)',
-			 5: 'TPE(Mutual Information)',
-			 6: 'TPE(MCFS)',
-			 7: 'TPE(ReliefF)',
+			 2: 'TPE($\chi^2$))',
+			 3:'TPE(FCBF))',
+			 4: 'TPE(Fisher Score))',
+			 5: 'TPE(Mutual Information))',
+			 6: 'TPE(MCFS))',
+			 7: 'TPE(ReliefF))',
 			 8: 'TPE(no ranking)',
              9: 'Simulated Annealing(no ranking)',
 			 10: 'NSGA-II(no ranking)',
@@ -105,58 +105,34 @@ for afile in all_files:
 			dataset[key] = []
 		dataset[key].extend(data[key])
 
-success_ids = []
-for run in range(len(dataset['best_strategy'])):
-	if dataset['best_strategy'][run] > 0:
-		success_ids.append(run)
-		if len(success_ids) == 1000:
-			break
-
+print(dataset.keys())
 
 assert len(dataset['success_value']) == len(dataset['best_strategy'])
 
-joined_strategies = []
 
+'''
+feature_list.append(hps['accuracy'])
+			feature_list.append(hps['fairness'])
+			feature_list.append(hps['k'])
+			feature_list.append(hps['k'] * X_train.shape[1])
+			feature_list.append(hps['robustness'])
+			feature_list.append(cv_privacy)
+			feature_list.append(hps['search_time'])
+'''
 
-my_latex = ''
+for run in range(len(dataset['best_strategy'])):
+	if dataset['best_strategy'][run] > 0:
+		if dataset['dataset_id'][run] == '1240':
+			print("accuracy >= " + str(dataset['features'][run][0]) +
+				  " and fairness >= " + str(dataset['features'][run][1]) +
+				  " and number of features <= " + str(int(dataset['features'][run][3])) +
+				  " and safety against adversarial examples >= " + str(dataset['features'][run][4]) +
+				  " and privacy epsilon = " + str(dataset['features'][run][5]) +
+				  " and search time <= " + str(dataset['features'][run][6]) + ' seconds'
 
-for rounds in range(10):
-	best_recall = 0
-	best_combo = []
-	best_name = ""
-	for s in range(1, len(mappnames) + 1):
-		new_joined_strategies = copy.deepcopy(joined_strategies)
-		new_joined_strategies.append(s)
-		current_recall = []
-		for run in success_ids:
-			if dataset['best_strategy'][run] > 0:
-				found = False
-				for js in new_joined_strategies:
-					if js in dataset['success_value'][run] and len(dataset['success_value'][run][js]) > 0 and dataset['success_value'][run][js][0]==True:
-						found = True
-						break
-				current_recall.append(found)
+				  )
 
-		calc_recall = np.sum(current_recall) / float(len(current_recall))
-		my_string = ''
-		for js in new_joined_strategies:
-			my_string += mappnames[js] + ' + '
-		my_string += str(calc_recall)
-		print(my_string)
+			for s in range(1, len(mappnames) + 1):
+				if s in dataset['success_value'][run] and dataset['success_value'][run][s][0] == True:
+					print(mappnames[s] + ': ' + str(dataset['times_value'][run][s][0]) + 'evaluations: ' + str(dataset['evaluation_value'][run][s][0]))
 
-		if best_recall < calc_recall:
-			best_recall = calc_recall
-			best_combo = new_joined_strategies
-			best_name = my_string
-	my_latex += str(len(best_combo)) + "& + " + mappnames[best_combo[-1]] + " && " + "{:.3f}".format(best_recall) + "\\\\ \n"
-	joined_strategies = best_combo
-	print("\n\n")
-
-
-print(my_latex)
-
-for s in range(1, len(mappnames) + 1):
-	with open('/tmp/' + mappnames[s] + '_success.txt', 'w+') as the_file:
-		for run in success_ids:
-			if s in dataset['success_value'][run] and dataset['success_value'][run][s][0] == True:
-				the_file.write(str(run) + '\n')

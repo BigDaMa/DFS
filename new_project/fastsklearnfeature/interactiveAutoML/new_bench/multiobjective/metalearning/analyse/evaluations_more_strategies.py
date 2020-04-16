@@ -73,7 +73,8 @@ def print_constraints_2(features):
 
 #get all files from folder
 
-all_files = glob.glob("/home/felix/phd/meta_learn/fair_data/*.pickle") #1hour
+#all_files = glob.glob("/home/felix/phd/meta_learn/fair_data/*.pickle") #1hour
+all_files = glob.glob("/home/felix/phd/meta_learn/new_bugfree/*.pickle") #1hour
 
 
 dataset = {}

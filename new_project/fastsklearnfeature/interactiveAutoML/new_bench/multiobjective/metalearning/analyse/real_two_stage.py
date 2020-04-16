@@ -24,9 +24,6 @@ from sklearn.model_selection import RandomizedSearchCV
 import copy
 import glob
 from sklearn.metrics import f1_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-
 
 import numpy as np
 import copy
@@ -58,22 +55,22 @@ from sklearn.calibration import CalibratedClassifierCV
 
 
 
-mappnames = {1:'TPE(Variance)',
-			 2: 'TPE($\chi^2$)',
-			 3:'TPE(FCBF)',
-			 4: 'TPE(Fisher Score)',
-			 5: 'TPE(Mutual Information)',
-			 6: 'TPE(MCFS)',
-			 7: 'TPE(ReliefF)',
-			 8: 'TPE(no ranking)',
-             9: 'Simulated Annealing(no ranking)',
-			 10: 'NSGA-II(no ranking)',
-			 11: 'Exhaustive Search(no ranking)',
-			 12: 'Forward Selection(no ranking)',
-			 13: 'Backward Selection(no ranking)',
-			 14: 'Forward Floating Selection(no ranking)',
-			 15: 'Backward Floating Selection(no ranking)',
-			 16: 'RFE(Logistic Regression)'
+mappnames = {1:'var',
+			 2: 'chi2',
+			 3:'FCBF',
+			 4: 'Fisher score',
+			 5: 'mutual_info_classif',
+			 6: 'MCFS',
+			 7: 'ReliefF',
+			 8: 'TPE',
+             9: 'simulated_annealing',
+			 10: 'NSGA-II',
+			 11: 'exhaustive',
+			 12: 'forward_selection',
+			 13: 'backward_selection',
+			 14: 'forward_floating_selection',
+			 15: 'backward_floating_selection',
+			 16: 'recursive_feature_elimination'
 			 }
 
 names_features = ['accuracy',
@@ -206,11 +203,7 @@ for s_i in success_ids:
 	if not delete_b:
 		new_success_ids.append(s_i)
 
-#change here
-#success_ids = np.array(new_success_ids)
-
-success_ids = success_ids[0:1000]
-
+#success_ids = new_success_ids
 
 print("training size: " + str(len(success_ids)))
 
@@ -245,12 +238,8 @@ for c_i in range(len(mappnames)):
 
 
 strategy_success = np.zeros((X_data.shape[0], len(mappnames)))
+strategy_times = np.zeros((X_data.shape[0], len(mappnames)))
 
-for c_i in range(len(mappnames)):
-	current_strategy = c_i + 1
-	for current_id in range(X_data.shape[0]):
-		if current_strategy in dataset['success_value'][current_id] and dataset['success_value'][current_id][current_strategy][0] == True:
-			strategy_success[i, c_i] = True
 
 for c_i in range(len(mappnames)):
 	current_strategy = c_i + 1
@@ -258,7 +247,8 @@ for c_i in range(len(mappnames)):
 		current_id = success_ids[i]
 		if current_strategy in dataset['success_value'][current_id] and dataset['success_value'][current_id][current_strategy][0] == True:
 			strategy_success[i, c_i] = True
-			#print("hallo: " + str(i) + ": " + str(c_i))
+			strategy_times[i, c_i] = dataset['times_value'][current_id][current_strategy][0]
+
 
 
 '''
@@ -281,20 +271,19 @@ feature_list.append(X_train.shape[1])#number columns
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1
 from scipy.stats import skew
 
-
+'''
 
 save_data = {}
 
-#save_data = pickle.load(open("/tmp/save_data.p", "rb"))
+save_data = pickle.load(open("/tmp/save_data.p", "rb"))
 
 
 
-'''
+
 
 variance_skew = []
 binary_columns_abs = []
 binary_columns_rel = []
-class_distribution = []
 
 for i in range(len(success_ids)):
 	current_id = success_ids[i]
@@ -318,8 +307,6 @@ for i in range(len(success_ids)):
 			count_binary_col += 1
 	binary_columns_abs.append(count_binary_col)
 	binary_columns_rel.append(count_binary_col / float(X_train.shape[1]))
-
-	class_distribution.append( min([np.sum(y_train), len(y_train) - np.sum(y_train)]) / float(len(y_train)))
 	
 
 
@@ -332,15 +319,12 @@ def make_stakeable(mylist):
 	my_array = my_array.transpose()
 	return my_array
 
-#X_data = np.hstack([X_data, make_stakeable(variance_skew)])
-#names_features.append('variance_skew')
-#X_data = np.hstack([X_data, make_stakeable(binary_columns_abs)])
-#names_features.append('binary_columns_abs')
+X_data = np.hstack([X_data, make_stakeable(variance_skew)])
+names_features.append('variance_skew')
+X_data = np.hstack([X_data, make_stakeable(binary_columns_abs)])
+names_features.append('binary_columns_abs')
 #X_data = np.hstack([X_data, make_stakeable(binary_columns_rel)])
 #names_features.append('binary_columns_rel')
-
-X_data = np.hstack([X_data, make_stakeable(class_distribution)])
-names_features.append('class_distribution')
 '''
 
 
@@ -353,7 +337,6 @@ my_ids = list(range(X_data.shape[1]))
 #to_remove = [7,8,11,12] #constraints only
 #to_remove = [8,11,12] #constraints + cv acc
 #to_remove = [7,8,11] #constraints + cv time
-#to_remove = [7,8,11,12]
 to_remove = []
 
 to_remove_names = [names_features[id] for id in to_remove]
@@ -369,7 +352,7 @@ print(names_features)
 
 #hyperparameter optimization
 # Number of trees in random forest
-n_estimators = [int(x) for x in np.linspace(start = 200, stop = 5000, num = 10)]
+n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
 # Number of features to consider at every split
 max_features = ['auto', 'sqrt']
 # Maximum number of levels in tree
@@ -399,7 +382,7 @@ def get_runtime_for_fold_predictions(predictions, test_ids):
 		if current_strategy in dataset['success_value'][current_id] and len(
 				dataset['success_value'][current_id][current_strategy]) > 0 and \
 				dataset['success_value'][current_id][current_strategy][0] == True:
-			all_runtimes.append(min(dataset['times_value'][current_id][current_strategy]) + dataset['features'][current_id][12])
+			all_runtimes.append(min(dataset['times_value'][current_id][current_strategy]))
 		else:
 			all_runtimes.append(dataset['features'][current_id][6])
 	return all_runtimes
@@ -439,96 +422,63 @@ def get_is_fastest_for_fold_predictions(predictions, test_ids):
 	return all_success
 
 
-import operator
-def plot_most_important_features(rf_random, names_features, title='importance'):
-	importances =  {}
-	for name_i in range(len(names_features)):
-		importances[names_features[name_i]] = rf_random.feature_importances_[name_i]
-
-	sorted_x = sorted(importances.items(), key=operator.itemgetter(1), reverse=True)
-
-	labels = []
-	score = []
-	t = 0
-	for key, value in sorted_x:
-		labels.append(key)
-		score.append(value)
-		t += 1
-		if t == 25:
-			break
-
-	ind = np.arange(len(score))
-	plt.barh(ind, score, align='center', alpha=0.5)
-	plt.yticks(ind, labels)
-	plt.title(title)
-	plt.show()
-
-
 f1_scorer = make_scorer(f1_score, greater_is_better=True)
-
-
-#choose_among_strategies = [1,2,3,8,10,14] #works better
-choose_among_strategies = [2,8,14]
 
 all_runtimes_in_cv_folds = []
 all_success_in_cv_folds = []
 all_fastest_in_cv_folds = []
-
-strategy_folds_f1 = np.zeros((len(mappnames), len(outer_cv_all))) # strategies x datasets
-strategy_folds_precision= np.zeros((len(mappnames), len(outer_cv_all))) # strategies x datasets
-strategy_folds_recall = np.zeros((len(mappnames), len(outer_cv_all))) # strategies x datasets
-
-print('strategy size: ' + str(strategy_folds_f1.shape))
-
-dataset_id = 0
 for train_ids, test_ids in outer_cv_all:
 	predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
 
 	for my_strategy in range(strategy_success.shape[1]):
 
-		if True:#(my_strategy + 1) in choose_among_strategies:
 
-			'''
-			inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], None, groups=groups[train_ids])
-			rf = RandomForestClassifier()
-			rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=200,
-										   cv=inner_cv, verbose=2, random_state=42,
-										   n_jobs=-1, scoring=f1_scorer)
-			'''
+		'''
+		inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], None, groups=groups[train_ids])
 
-			rf_random = RandomForestClassifier(n_estimators=1000, class_weight='balanced')
-			rf_random.fit(X_data[train_ids][:, my_ids], strategy_success[train_ids, my_strategy])
+		rf = RandomForestClassifier()
+		rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=10,
+									   cv=inner_cv, verbose=2, random_state=42,
+									   n_jobs=-1, scoring=f1_scorer)
+		'''
 
-			plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
+		#predict where strategy is successful
+		rf_random = RandomForestClassifier(n_estimators=1000, class_weight='balanced')
+		rf_random.fit(X_data[train_ids][:, my_ids], strategy_success[train_ids, my_strategy])
 
-			#print("best params: " + str(rf_random.best_params_))
-			'''
-			calibration = CalibratedClassifierCV(base_estimator=rf_random, cv=5 )
-			calibration.fit(X_data[train_ids][:, my_ids], strategy_success[train_ids, my_strategy])
-			predictions_probabilities[:, my_strategy] = calibration.predict_proba(X_data[test_ids][:, my_ids])[:,1]
-			'''
+		#predict how fast strategy is when successful
+		rf_random_regr = RandomForestRegressor(n_estimators=1000)
 
-			print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, X_data[test_ids][:, my_ids], strategy_success[test_ids,my_strategy])))
+		train_filtered_ids = []
+		for t_i in range(len(train_ids)):
+			if strategy_success[train_ids[t_i], my_strategy]:
+				train_filtered_ids.append(train_ids[t_i])
 
 
-			my_predictions = rf_random.predict(X_data[test_ids][:, my_ids])
-			strategy_folds_f1[my_strategy, dataset_id] = f1_score(strategy_success[test_ids, my_strategy], my_predictions)
-			strategy_folds_precision[my_strategy, dataset_id] = precision_score(strategy_success[test_ids, my_strategy], my_predictions)
-			strategy_folds_recall[my_strategy, dataset_id] = recall_score(strategy_success[test_ids, my_strategy], my_predictions)
+		rf_random_regr.fit(X_data[train_filtered_ids][:, my_ids], strategy_times[train_filtered_ids, my_strategy])
 
-			predictions_probabilities[:, my_strategy] = rf_random.predict_proba(X_data[test_ids][:, my_ids])[:, 1]
+		#is_satisfying = rf_random.predict(X_data[test_ids][:, my_ids])
+		is_satisfying = rf_random.predict_proba(X_data[test_ids][:, my_ids])[:, 1] > 0.5
 
-			print(mappnames[my_strategy + 1] + ' prob : ' + str(np.mean(predictions_probabilities[:, my_strategy])))
-		else:
-			predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
+		predicted_times = rf_random_regr.predict(X_data[test_ids][:, my_ids])
 
-	dataset_id += 1
 
-	predictions = np.argmax(predictions_probabilities, axis=1)
+		filtered_times = np.ones(len(predicted_times)) * np.inf
+		for myi in range(len(predicted_times)):
+			if is_satisfying[myi]:
+				filtered_times[myi] = predicted_times[myi]
+
+		print(filtered_times)
+
+		predictions_probabilities[:, my_strategy] = filtered_times
+
+
+
+
+	predictions = np.argmin(predictions_probabilities, axis=1)
 	predictions += 1
 	print(predictions.shape)
 	print(predictions)
-	print(np.array(dataset['best_strategy'])[success_ids[test_ids]])
 
 	runtimes_test_fold = get_runtime_for_fold_predictions(predictions, test_ids)
 	print('mean time:  ' + str(np.mean(runtimes_test_fold)) + ' std: ' + str(np.std(runtimes_test_fold)))
@@ -541,16 +491,89 @@ print('\n final coverage:  ' + str(np.sum(all_success_in_cv_folds) / float(len(a
 print('\n final fastest:  ' + str(np.sum(all_fastest_in_cv_folds) / float(len(all_fastest_in_cv_folds))))
 
 
-print("average f1 scores: " + str(np.mean(strategy_folds_f1, axis=1)))
-print("average precision scores: " + str(np.mean(strategy_folds_precision, axis=1)))
-print("average recall scores: " + str(np.mean(strategy_folds_recall, axis=1)))
+'''
+number_models = 0
+for a in range(strategy_success.shape[1]):
+	a_strategy = a + 1
+	for b in range(strategy_success.shape[1]):
 
+		if a == b:
+			continue
+
+		b_strategy = b + 1
+
+		a_faster_b = []
+		for s_i in range(len(success_ids)):
+			current_id = success_ids[s_i]
+
+			if a_strategy in dataset['success_value'][current_id] and \
+			dataset['success_value'][current_id][a_strategy][0] == True:
+				if b_strategy in dataset['success_value'][current_id] and \
+						dataset['success_value'][current_id][b_strategy][0] == True:
+					if dataset['times_value'][current_id][a_strategy][0] < dataset['times_value'][current_id][b_strategy][0]:
+						a_faster_b.append(True)
+					else:
+						a_faster_b.append(False)
+				else:
+					a_faster_b.append(True)
+			else:
+				a_faster_b.append(False)
+		assert len(a_faster_b) == len(success_ids)
+
+		if len(np.unique(a_faster_b)) < 2:
+			continue
+
+
+		rf_random = RandomForestClassifier(n_estimators=1000, class_weight='balanced')
+		rf_random.fit(X_data[train_ids][:, my_ids], np.array(a_faster_b)[train_ids])
+		number_models +=1
+
+		print('a: ' + mappnames[a_strategy] + ' better than b: ' + mappnames[b_strategy] + " => " + str(
+			f1_scorer(rf_random, X_data[test_ids][:, my_ids], np.array(a_faster_b)[test_ids])))
+
+
+print("number models: " + str(number_models))
+'''
+
+'''
 for my_strategy in range(strategy_success.shape[1]):
-	print(str(mappnames[my_strategy + 1]) + ' & $' + str(
-		"{:.2f}".format(np.mean(strategy_folds_precision, axis=1)[my_strategy])) + ' \\pm ' + str(
-		"{:.2f}".format(np.std(strategy_folds_precision, axis=1)[my_strategy])) + '$ & $' + str(
-		"{:.2f}".format(np.mean(strategy_folds_recall, axis=1)[my_strategy])) + ' \\pm ' + str(
-		"{:.2f}".format(np.std(strategy_folds_recall, axis=1)[my_strategy])) + '$ & $' + str(
-		"{:.2f}".format(np.mean(strategy_folds_f1, axis=1)[my_strategy])) + ' \\pm ' + str(
-		"{:.2f}".format(np.std(strategy_folds_f1, axis=1)[my_strategy])) + '$ \\\\')
+
+	print('train ids: ' + str(len(train_ids)))
+	train_ids = list(set(train_ids).intersection(np.where(strategy_success[:,my_strategy])[0]))
+	print('train ids: ' + str(len(train_ids)))
+
+	test_ids = list(set(test_ids).intersection(np.where(strategy_success[:,my_strategy])[0]))
+
+	new_X_train = X_data[train_ids][:, my_ids]
+	new_X_test = X_data[test_ids][:, my_ids]
+
+
+
+
+	meta_classifier = RandomForestRegressor(n_estimators=1000)
+	meta_classifier = meta_classifier.fit(new_X_train, strategy_search_times[train_ids, my_strategy])
+
+	for i in range(len(meta_classifier.feature_importances_)):
+		print(names_features[i] + ": " + str(meta_classifier.feature_importances_[i]))
+
+
+	r2_scorer = make_scorer(r2_score, greater_is_better=True, multioutput='uniform_average')
+	print(mappnames[my_strategy+1] + ': ' +str(r2_scorer(meta_classifier, new_X_test, strategy_search_times[test_ids, my_strategy])))
+
+
+
+
+meta_classifier = RandomForestClassifier(n_estimators=1000)
+meta_classifier = meta_classifier.fit(new_X_train, strategy_success[train_ids])
+
+for i in range(len(meta_classifier.feature_importances_)):
+	print(names_features[i] + ": " + str(meta_classifier.feature_importances_[i]))
+
+f1_scorer = make_scorer(f1_score, greater_is_better=True, average='micro')
+print(f1_scorer(meta_classifier, new_X_test, strategy_success[test_ids]))
+'''
+
+
+#r2_scorer = make_scorer(r2_score, greater_is_better=True, multioutput='uniform_average')
+#print(r2_scorer(meta_classifier, new_X_test, strategy_search_times[test_ids,0]))
 
