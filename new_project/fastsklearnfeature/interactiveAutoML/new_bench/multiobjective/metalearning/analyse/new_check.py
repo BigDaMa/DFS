@@ -55,10 +55,10 @@ mappnames = {1:'TPE(Variance)',
              9: 'Simulated Annealing(no ranking)',
 			 10: 'NSGA-II(no ranking)',
 			 11: 'Exhaustive Search(no ranking)',
-			 12: 'Forward Selection(no ranking)',
-			 13: 'Backward Selection(no ranking)',
-			 14: 'Forward Floating Selection(no ranking)',
-			 15: 'Backward Floating Selection(no ranking)',
+			 12: 'SFS(no ranking)',
+			 13: 'SBS(no ranking)',
+			 14: 'SFFS(no ranking)',
+			 15: 'SBFS(no ranking)',
 			 16: 'RFE(Logistic Regression)'
 			 }
 
@@ -157,27 +157,30 @@ for s in range(len(mappnames)):
 	print(str(mappnames[s+1]) + ": " + str(mean_time[s]) + " std: " + str(std_time[s]))
 
 ##report fastest strategy
-fastest_strategies = np.zeros(len(mappnames))
-for run in success_ids:
-	if dataset['best_strategy'][run] > 0:
-		best_time = np.inf
-		best_strategy = -1
-		for s in range(1, len(mappnames) + 1):
-			if s in dataset['success_value'][run] and len(dataset['success_value'][run][s]) > 0 and dataset['success_value'][run][s][0] == True:
-				cu_time = dataset['times_value'][run][s][0]
-				if cu_time < best_time:
-					best_time = cu_time
-					best_strategy = s
-		fastest_strategies[best_strategy-1] += 1
 
-fastest_strategies_fraction = fastest_strategies / np.sum(fastest_strategies)
+topk=2
+dict_fastest = {}
+for topk in [1,2,3]:
+	dict_fastest[topk] = np.zeros(len(mappnames))
+	for run in success_ids:
+		if dataset['best_strategy'][run] > 0:
+			runtimes = np.ones(len(mappnames)) * np.inf
+			for s in range(1, len(mappnames) + 1):
+				if s in dataset['success_value'][run] and len(dataset['success_value'][run][s]) > 0 and dataset['success_value'][run][s][0] == True:
+					runtimes[s-1] = dataset['times_value'][run][s][0]
 
-print("number of rounds: " + str(np.sum(fastest_strategies)))
+			topk_strategies = np.argsort(runtimes * -1)[-topk:][::-1]
 
-print("\n\nfastest: ")
-for s in range(len(mappnames)):
-	print(str(mappnames[s+1]) + ": " + str(fastest_strategies_fraction[s]))
-print("\n\n")
+			dict_fastest[topk][topk_strategies] += 1
+
+	dict_fastest[topk] = dict_fastest[topk] / float(len(success_ids))
+
+
+for topk in [1,2,3]:
+	print("\n\nfastest: " + str(topk))
+	for s in range(len(mappnames)):
+		print(str(mappnames[s+1]) + ": " + str(dict_fastest[topk][s]))
+	print("\n\n")
 
 
 
@@ -191,7 +194,11 @@ latex_string = ''
 #for s in range(len(mappnames)):
 for s in np.array([11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
 	recall = np.sum(strategy_recall[s]) / float(strategy_recall.shape[1])
-	latex_string += str(mappnames[s+1]) + " & $" + "{:.0f}".format(mean_time[s]) + " \pm " + "{:.0f}".format(std_time[s]) + "$ && $" + "{:.2f}".format(fastest_strategies_fraction[s]) + "$ && $" + "{:.2f}".format(recall) + '$ \\\\ \n'
+	latex_string += str(mappnames[s+1]) + " & $" + "{:.0f}".format(mean_time[s]) + " \pm " + "{:.0f}".format(std_time[s])
+
+	for topk in [1]:
+		latex_string += "$ & $" + "{:.2f}".format(dict_fastest[topk][s])
+	latex_string += "$ & $" + "{:.3f}".format(recall) + '$ \\\\ \n'
 
 print("\n\n")
 
