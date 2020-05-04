@@ -54,8 +54,16 @@ import os
 
 def my_function(config_id):
 	conf = mp_global.configurations[config_id]
-	result = conf['main_strategy'](mp_global.X_train, mp_global.X_validation, mp_global.X_test, mp_global.y_train,
-								   mp_global.y_validation, mp_global.y_test, mp_global.names, mp_global.sensitive_ids,
+	result = conf['main_strategy'](mp_global.X_train,
+								   mp_global.X_validation,
+								   mp_global.X_train_val,
+								   mp_global.X_test,
+								   mp_global.y_train,
+								   mp_global.y_validation,
+								   mp_global.y_train_val,
+								   mp_global.y_test,
+								   mp_global.names,
+								   mp_global.sensitive_ids,
 								   ranking_functions=conf['ranking_functions'],
 								   clf=mp_global.clf,
 								   min_accuracy=mp_global.min_accuracy,
@@ -87,7 +95,7 @@ while True:
 	#create folder to store files:
 	os.mkdir('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
 
-	X_train, X_validation, X_test, y_train, y_validation, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590')
+	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590')
 
 	#run on tiny sample
 	if X_train.shape[0] > 100:
@@ -100,9 +108,11 @@ while True:
 
 	mp_global.X_train = X_train
 	mp_global.X_validation = X_validation
+	mp_global.X_train_val = X_train_val
 	mp_global.X_test = X_test
 	mp_global.y_train = y_train
 	mp_global.y_validation = y_validation
+	mp_global.y_train_val = y_train_val
 	mp_global.y_test = y_test
 	mp_global.names = names
 	mp_global.sensitive_ids = sensitive_ids
@@ -211,6 +221,7 @@ while True:
 		most_uncertain_f = last_trial['misc']['vals']
 		#print(most_uncertain_f)
 
+
 		min_accuracy = most_uncertain_f['accuracy_specified'][0]
 		min_fairness = 0.0
 		if most_uncertain_f['fairness_choice'][0]:
@@ -230,12 +241,12 @@ while True:
 		model = LogisticRegression(class_weight='balanced')
 		if most_uncertain_f['privacy_choice'][0]:
 			model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
-		mp_global.clf = model
 
+
+		mp_global.clf = model
 		#define rankings
 		rankings = [variance,
 					chi2_score_wo,
-					f_anova_wo,
 					fcbf,
 					my_fisher_score,
 					mutual_info_classif,
@@ -287,10 +298,7 @@ while True:
 			strategy_id += 1
 
 
-
-
-
-		with ProcessPool(max_workers=4) as pool:
+		with ProcessPool(max_workers=2) as pool:
 			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 			iterator = future.result()
@@ -307,11 +315,6 @@ while True:
 					print("function raised %s" % error)
 					print(error.traceback)  # Python's traceback of remote process
 
-
-		'''
-		for strategy in range(len(mp_global.configurations)):
-			my_function(strategy)
-		'''
 
 		# pickle everything and store it
 		one_big_object = {}

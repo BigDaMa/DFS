@@ -2,9 +2,11 @@ configurations = []
 
 X_train=None
 X_validation=None
+X_train_val=None
 X_test=None
 y_train=None
 y_validation=None
+y_train_val=None
 y_test=None
 names=None
 sensitive_ids=None

@@ -373,4 +373,7 @@ def get_fair_data1_validation(dataset_key=None):
 		y_validation = le.transform(y_validation)
 		y_test = le.transform(y_test)
 
-		return X_train, X_validation, X_test, y_train, y_validation, y_test, names, sensitive_ids, key, sensitive_attribute_id
+		X_train_val = np.vstack((X_train, X_validation))
+		y_train_val = np.append(y_train, y_validation)
+
+		return X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id

@@ -15,7 +15,7 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelec
 
 
 
-def weighted_ranking(X_train, X_validation, X_test, y_train, y_validation, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features: float = 1.0, max_search_time=np.inf, log_file=None):
+def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features: float = 1.0, max_search_time=np.inf, log_file=None):
 	min_loss = np.inf
 	f_log = open(log_file, 'wb+')
 
@@ -133,35 +133,35 @@ def weighted_ranking(X_train, X_validation, X_test, y_train, y_validation, y_tes
 		cv_fair = trials.trials[-1]['result']['cv_fair']
 		validation_acc = trials.trials[-1]['result']['cv_acc']
 		validation_robust = trials.trials[-1]['result']['cv_robust']
-		cv_number_features = trials.trials[-1]['result']['cv_number_features']
 
 		my_result = trials.trials[-1]['result']
 		my_result['number_evaluations'] = number_of_evaluations
-		if cv_fair >= min_fairness and validation_acc >= min_accuracy and validation_robust >= min_robustness and cv_number_features <= max_number_features:
-			model = trials.trials[-1]['result']['model']
 
-			X_train_val = np.vstack((X_train, X_validation))
-			y_train_val = np.append(y_train, y_validation)
-			model.fit(X_train_val, pd.DataFrame(y_train_val))
+		#check test results
+		model = trials.trials[-1]['result']['model']
+		model.fit(X_train_val, pd.DataFrame(y_train_val))
 
-			test_acc = 0.0
-			if min_accuracy > 0.0:
-				test_acc = auc_scorer(model, X_test, pd.DataFrame(y_test))
-			test_fair = 0.0
-			if min_fairness > 0.0:
-				test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
-			test_robust = 0.0
-			if min_robustness > 0.0:
-				test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
-													  model=model.named_steps['clf'],
-													  feature_selector=model.named_steps['selection'],
-													  scorer=auc_scorer)
+		test_acc = 0.0
+		if min_accuracy > 0.0:
+			test_acc = auc_scorer(model, X_test, pd.DataFrame(y_test))
+		test_fair = 0.0
+		if min_fairness > 0.0:
+			test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
+		test_robust = 0.0
+		if min_robustness > 0.0:
+			test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
+												  model=model.named_steps['clf'],
+												  feature_selector=model.named_steps['selection'],
+												  scorer=auc_scorer)
 
-			my_result['test_fair'] = test_fair
-			my_result['test_acc'] = test_acc
-			my_result['test_robust'] = test_robust
-			my_result['final_time'] = time.time() - start_time
+		my_result['test_fair'] = test_fair
+		my_result['test_acc'] = test_acc
+		my_result['test_robust'] = test_robust
+		my_result['final_time'] = time.time() - start_time
+
+		if cv_fair >= min_fairness and validation_acc >= min_accuracy and validation_robust >= min_robustness:
 			my_result['Finished'] = True
+			my_result['Validation_Satisfied'] = True
 
 			if test_fair >= min_fairness and test_acc >= min_accuracy and test_robust >= min_robustness:
 				success = True
@@ -178,7 +178,7 @@ def weighted_ranking(X_train, X_validation, X_test, y_train, y_validation, y_tes
 
 		i += 1
 
-	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'time': time.time() - start_time, 'Finished': True}
+	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time, 'Finished': True}
 	pickle.dump(my_result, f_log)
 	f_log.close()
 	return {'success': False}
