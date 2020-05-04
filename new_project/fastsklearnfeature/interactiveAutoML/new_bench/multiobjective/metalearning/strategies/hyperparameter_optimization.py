@@ -91,11 +91,6 @@ from sklearn.model_selection import cross_val_score
 from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import robust_score
 
-import diffprivlib.models as models
-from sklearn import preprocessing
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_data
-
-from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelection import WeightedRankingSelection
 from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 import hyperopt.anneal
 
@@ -105,34 +100,37 @@ def map_hyper2vals(hyper):
 		new_vals[k] = [v]
 	return new_vals
 
-def TPE(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None):
-	return hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
+def TPE(X_train, X_validation, X_test, y_train, y_validation, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file = None):
+	return hyperparameter_optimization(X_train, X_validation, X_test, y_train, y_validation, y_test, names, sensitive_ids, ranking_functions=[],
 									   clf=clf, min_accuracy=min_accuracy, min_fairness=min_fairness,
 									   min_robustness=min_robustness, max_number_features=max_number_features,
-									   max_search_time=max_search_time, cv_splitter=cv_splitter,
+									   max_search_time=max_search_time, log_file=log_file,
 									   algo=tpe.suggest)
 
 
-def simulated_annealing(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=None, min_accuracy=0.0,
-			min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, cv_splitter=None):
+def simulated_annealing(X_train, X_validation, X_test, y_train, y_validation, y_test, names, sensitive_ids, ranking_functions=[], clf=None, min_accuracy=0.0,
+			min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None):
 
-	return hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=clf, min_accuracy=min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, cv_splitter=cv_splitter, algo=hyperopt.anneal.suggest)
+	return hyperparameter_optimization(X_train, X_validation, X_test, y_train, y_validation, y_test, names, sensitive_ids, ranking_functions=[], clf=clf, min_accuracy=min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, log_file=log_file, algo=hyperopt.anneal.suggest)
 
 
 
-def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, cv_splitter = None, algo=tpe.suggest):
-
+def hyperparameter_optimization(X_train, X_validation, X_test, y_train, y_validation, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file=None, algo=tpe.suggest):
+	f_log = open(log_file, 'wb+')
+	min_loss = np.inf
 	start_time = time.time()
 
 	auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
-	fair_train = None
+	fair_validation = None
 	fair_test = None
 	if type(sensitive_ids) != type(None):
-		fair_train = make_scorer(true_positive_rate_score, greater_is_better=True,
-								 sensitive_data=X_train[:, sensitive_ids[0]])
+		fair_validation = make_scorer(true_positive_rate_score, greater_is_better=True,
+									  sensitive_data=X_validation[:, sensitive_ids[0]])
 		fair_test = make_scorer(true_positive_rate_score, greater_is_better=True,
 								sensitive_data=X_test[:, sensitive_ids[0]])
+
+	stored_results = {} #avoid duplicate hyperparameters
 
 	def f_clf1(hps):
 		mask = np.zeros(len(hps), dtype=bool)
@@ -152,78 +150,80 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 		for mask_i in range(len(mask)):
 			hps['f_' + str(mask_i)] = mask[mask_i]
 
-		model = Pipeline([
+		pipeline = Pipeline([
 			('selection', MaskSelection(mask)),
 			('clf', clf)
 		])
 
-		return model, hps
+		return pipeline, hps
 
 	def f_to_min1(hps):
-		model, hps = f_clf1(hps)
+		if str(hps) in stored_results:
+			return stored_results[str(hps)]
 
-		if np.sum(model.named_steps['selection'].mask) == 0:
-			return {'loss': 4, 'status': STATUS_OK, 'model': model, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
+		pipeline, hps = f_clf1(hps)
 
+		if np.sum(pipeline.named_steps['selection'].mask) == 0:
+			stored_results[str(hps)] = {'loss': 4, 'status': STATUS_OK, 'model': pipeline, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
+			return stored_results[str(hps)]
 
+		pipeline.fit(X_train, pd.DataFrame(y_train))
 
-		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train, y=y_train, model=clf, feature_selector=model.named_steps['selection'], scorer=auc_scorer)
+		validation_number_features = float(np.sum(pipeline.named_steps['selection']._get_support_mask())) / float(X_train.shape[1])
 
-		scoring_functions = {'AUC': auc_scorer, 'Robustness': robust_scorer}
-		if type(sensitive_ids) != type(None):
-			scoring_functions['Fairness'] = fair_train
+		validation_acc = auc_scorer(pipeline, X_validation, pd.DataFrame(y_validation))
 
-		cv = GridSearchCV(model, param_grid={'clf__C': [1.0]}, cv=cv_splitter,
-						  scoring=scoring_functions,
-						  refit=False)
-		cv.fit(X_train, pd.DataFrame(y_train))
-		cv_acc = cv.cv_results_['mean_test_AUC'][0]
-		if type(sensitive_ids) != type(None):
-			cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
-		else:
-			cv_fair = 0.0
-		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
-
-		cv_number_features = float(np.sum(model.named_steps['selection']._get_support_mask())) / float(len(model.named_steps['selection']._get_support_mask()))
+		validation_fair = 0.0
+		if type(sensitive_ids) != type(None) and min_fairness > 0.0:
+			validation_fair = 1.0 - fair_validation(pipeline, X_validation, pd.DataFrame(y_validation))
+		validation_robust = 0.0
+		if min_robustness > 0.0:
+			validation_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_validation, y_test=y_validation,
+														model=pipeline.named_steps['clf'],
+														feature_selector=pipeline.named_steps['selection'],
+														scorer=auc_scorer)
 
 		loss = 0.0
-		if cv_acc >= min_accuracy and \
-				cv_fair >= min_fairness and \
-				cv_robust >= min_robustness:
-			if min_fairness > 0.0:
-				loss += (min_fairness - cv_fair)
-			if min_accuracy > 0.0:
-				loss += (min_accuracy - cv_acc)
-			if min_robustness > 0.0:
-				loss += (min_robustness - cv_robust)
-		else:
-			if min_fairness > 0.0 and cv_fair < min_fairness:
-				loss += (min_fairness - cv_fair) ** 2
-			if min_accuracy > 0.0 and cv_acc < min_accuracy:
-				loss += (min_accuracy - cv_acc) ** 2
-			if min_robustness > 0.0 and cv_robust < min_robustness:
-				loss += (min_robustness - cv_robust) ** 2
+		if min_fairness > 0.0 and validation_fair < min_fairness:
+			loss += (min_fairness - validation_fair) ** 2
+		if min_accuracy > 0.0 and validation_acc < min_accuracy:
+			loss += (min_accuracy - validation_acc) ** 2
+		if min_robustness > 0.0 and validation_robust < min_robustness:
+			loss += (min_robustness - validation_robust) ** 2
 
+		current_time = time.time() - start_time
 
-		return {'loss': loss, 'status': STATUS_OK, 'model': model, 'cv_fair': cv_fair, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_number_features': cv_number_features, 'updated_parameters': hps}
+		stored_results[str(hps)] = {'loss': loss,
+									'status': STATUS_OK,
+									'model': pipeline,
+									'cv_fair': validation_fair,
+									'cv_acc': validation_acc,
+									'cv_robust': validation_robust,
+									'cv_number_features': validation_number_features,
+									'time': current_time,
+									'updated_parameters': hps}
+
+		return stored_results[str(hps)]
 
 	space = {}
 	for f_i in range(X_train.shape[1]):
 		space['f_' + str(f_i)] = hp.randint('f_' + str(f_i), 2)
-
-	cv_fair = 0
-	cv_acc = 0
-	cv_robust = 0
-	cv_number_features = 1.0
 
 	number_of_evaluations = 0
 
 	trials = Trials()
 	i = 1
 	success = False
+	fail_counter = [0]
+
 	while True:
 		if time.time() - start_time > max_search_time:
 			break
+		if fail_counter[0] >= 10:
+			fail_counter[0] += 1
+			break
+		fail_counter[0] = 0
+
 		fmin(f_to_min1, space=space, algo=algo, max_evals=i, trials=trials)
 
 		#update repair in database
@@ -235,18 +235,21 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 			print("found an error in repair")
 
 
-
 		number_of_evaluations += 1
 
 		cv_fair = trials.trials[-1]['result']['cv_fair']
-		cv_acc = trials.trials[-1]['result']['cv_acc']
-		cv_robust = trials.trials[-1]['result']['cv_robust']
+		validation_acc = trials.trials[-1]['result']['cv_acc']
+		validation_robust = trials.trials[-1]['result']['cv_robust']
 		cv_number_features = trials.trials[-1]['result']['cv_number_features']
 
-		if cv_fair >= min_fairness and cv_acc >= min_accuracy and cv_robust >= min_robustness and cv_number_features <= max_number_features:
+		my_result = trials.trials[-1]['result']
+		my_result['number_evaluations'] = number_of_evaluations
+		if cv_fair >= min_fairness and validation_acc >= min_accuracy and validation_robust >= min_robustness and cv_number_features <= max_number_features:
 			model = trials.trials[-1]['result']['model']
 
-			model.fit(X_train, pd.DataFrame(y_train))
+			X_train_val = np.vstack((X_train, X_validation))
+			y_train_val = np.append(y_train, y_validation)
+			model.fit(X_train_val, pd.DataFrame(y_train_val))
 
 			test_acc = 0.0
 			if min_accuracy > 0.0:
@@ -256,27 +259,36 @@ def hyperparameter_optimization(X_train, X_test, y_train, y_test, names, sensiti
 				test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
 			test_robust = 0.0
 			if min_robustness > 0.0:
-				test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test, model=model.named_steps['clf'], feature_selector=model.named_steps['selection'], scorer=auc_scorer)
+				test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
+													  model=model.named_steps['clf'],
+													  feature_selector=model.named_steps['selection'],
+													  scorer=auc_scorer)
+
+			my_result['test_fair'] = test_fair
+			my_result['test_acc'] = test_acc
+			my_result['test_robust'] = test_robust
+			my_result['final_time'] = time.time() - start_time
+			my_result['Finished'] = True
 
 			if test_fair >= min_fairness and test_acc >= min_accuracy and test_robust >= min_robustness:
-				print('fair: ' + str(min(cv_fair, test_fair)) + ' acc: ' + str(min(cv_acc, test_acc)) + ' robust: ' + str(min(test_robust, cv_robust)) + ' k: ' + str(cv_number_features))
 				success = True
-				break
+
+			my_result['success_test'] = success
+			pickle.dump(my_result, f_log)
+			f_log.close()
+			return {'success': success}
+
+		if min_loss > trials.trials[-1]['result']['loss']:
+			min_loss = trials.trials[-1]['result']['loss']
+			pickle.dump(my_result, f_log)
 
 		i += 1
 
-	if not success:
-		try:
-			cv_fair = trials.best_trial['result']['cv_fair']
-			cv_acc = trials.best_trial['result']['cv_acc']
-			cv_robust = trials.best_trial['result']['cv_robust']
-			cv_number_features = trials.best_trial['result']['cv_number_features']
-		except:
-			pass
-
-	runtime = time.time() - start_time
-	return {'time': runtime, 'success': success, 'cv_acc': cv_acc, 'cv_robust': cv_robust, 'cv_fair': cv_fair, 'cv_number_features': cv_number_features, 'cv_number_evaluations': number_of_evaluations}
-
+	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'time': time.time() - start_time,
+				 'Finished': True}
+	pickle.dump(my_result, f_log)
+	f_log.close()
+	return {'success': False}
 
 
 

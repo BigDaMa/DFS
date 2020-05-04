@@ -6,3 +6,4 @@ from .robustness_score import robustness_score
 from .fairness_score import fairness_score
 from .chi2_score_wo import chi2_score_wo
 from .mcfs_score import my_mcfs
+from .f_anova_wo import f_anova_wo

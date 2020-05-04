@@ -38,29 +38,14 @@ import random
 from sklearn.impute import SimpleImputer
 import copy
 from sklearn.model_selection import StratifiedKFold
+import diffprivlib.models as models
 
-
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import hyperparameter_optimization
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.evolution import evolution
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.exhaustive import exhaustive
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_floating_selection
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
-
-
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.fabolas_old import run_fabolas
-
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import variance
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import model_score
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fairness_score
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import robustness_score
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import chi2_score_wo
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
 
-from skrebate import ReliefF
 
-from functools import partial
+
 
 
 
@@ -149,16 +134,8 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 				else:
 					X_datat[x_i][y_i] = np.nan
 
-
-	limit = 200
-	X_train, X_test, y_train, y_test = train_test_split(X_datat[0:limit,:], y.values[0:limit].astype('str'), test_size=0.5,
-															random_state=42, stratify=y.values[0:limit].astype('str'))
-
-	'''
-	X_train, X_test, y_train, y_test = train_test_split(X_datat, y.values.astype('str'),
-														test_size=0.5,
-														random_state=42, stratify=y.values.astype('str'))
-	'''
+	X_train, X_test, y_train, y_test = train_test_split(X_datat, y.values.astype('str'), test_size=0.5,
+															random_state=42, stratify=y.values.astype('str'))
 
 	cat_sensitive_attribute_id = -1
 	for c_i in range(len(categorical_features)):
@@ -221,38 +198,18 @@ with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as
 
 	cv_splitter = StratifiedKFold(5, random_state=42)
 
-	'''
-	backward_selection(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[], clf=LogisticRegression(), min_accuracy=1.0,
-			  min_fairness=1.0, min_robustness=0.0, max_number_features=0.05, cv_splitter=cv_splitter)
-	'''
-
-	from skfeature.function.sparse_learning_based.MCFS import mcfs
-	from skfeature.function.sparse_learning_based.ll_l21 import proximal_gradient_descent
+	model = models.LogisticRegression()
 
 
+	start_time = time.time()
 
-	def my_mcfs(X, y):
-		result =  mcfs(copy.deepcopy(X), X_train.shape[1])
-		new_result = result.max(1)
-		return new_result
-
-
-
-	from sklearn.feature_selection import mutual_info_classif
-
-
-	#rankings= [partial(model_score, estimator=ReliefF(n_neighbors=10))]
-	#rankings = [variance]
-	#rankings= [mutual_info_classif]
-	#rankings = [my_mcfs]
-	#weighted_ranking(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=rankings,clf=LogisticRegression(), min_accuracy=1.0,min_fairness = 1.0, min_robustness = 0.0, max_number_features = 0.3, cv_splitter = cv_splitter)
+	evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[chi2_score_wo], clf=model, min_accuracy=0.85,
+			  min_fairness=0.86, min_robustness=0.80, max_number_features=0.2, cv_splitter=cv_splitter)
 
 	'''
-	run_fabolas(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
-					   clf=LogisticRegression(), min_accuracy=1.0,
-					   min_fairness=1.0, min_robustness=0.0, max_number_features=0.05, cv_splitter=cv_splitter)
+	evolution(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[chi2_score_wo],
+					 clf=model, min_accuracy=0.87,
+					 min_fairness=0.86, min_robustness=0.0, max_number_features=0.2, cv_splitter=cv_splitter)
 	'''
 
-	recursive_feature_elimination(X_train, X_test, y_train, y_test, names, sensitive_ids, ranking_functions=[],
-					 clf=LogisticRegression(), min_accuracy=1.0, min_fairness=1.0, min_robustness=0.0,
-					 max_number_features=0.05, cv_splitter=cv_splitter)
+	print("total time: " + str(time.time() - start_time))

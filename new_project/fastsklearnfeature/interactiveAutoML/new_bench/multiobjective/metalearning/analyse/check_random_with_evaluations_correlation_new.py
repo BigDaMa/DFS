@@ -69,17 +69,6 @@ def print_constraints_2(features):
 	print(my_str)
 
 
-def print_strategies(results):
-	print("all strategies failed: " + str(results[0]) +
-		  "\nvar rank: " + str(results[1]) +
-		  '\nchi2 rank: ' + str(results[2]) +
-		  '\naccuracy rank: ' + str(results[3]) +
-		  '\nrobustness rank: ' + str(results[4]) +
-		  '\nfairness rank: ' + str(results[5]) +
-		  '\nweighted ranking: ' + str(results[6]) +
-		  '\nhyperparameter opt: ' + str(results[7]) +
-		  '\nevolution: ' + str(results[8])
-		  )
 
 
 #logs_adult = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_adult.pickle', 'rb'))
@@ -117,14 +106,14 @@ all_runtime = []
 
 for i in range(len(dataset['acc_value'])):
 	curr_results = dataset['acc_value']
-	if 8 in dataset['acc_value'][i]:
-		all_accuracy.append(dataset['acc_value'][i][8][0])
-		all_fairness.append(dataset['fair_value'][i][8][0])
-		all_safety.append(dataset['robust_value'][i][8][0])
+	if 2 in dataset['acc_value'][i]:
+		all_accuracy.append(dataset['acc_value'][i][2][0])
+		all_fairness.append(dataset['fair_value'][i][2][0])
+		all_safety.append(dataset['robust_value'][i][2][0])
 		all_privacy.append(dataset['features'][i][5])
-		all_number_features.append(dataset['k_value'][i][8][0])
-		all_number_features_abs.append(dataset['k_value'][i][8][0] * dataset['features'][i][14])
-		all_runtime.append(dataset['times_value'][i][8][0])
+		all_number_features.append(dataset['k_value'][i][2][0])
+		all_number_features_abs.append(dataset['k_value'][i][2][0] * dataset['features'][i][14])
+		all_runtime.append(dataset['times_value'][i][2][0])
 
 
 all_privacy = np.array(all_privacy)*-1 #make greater = better
