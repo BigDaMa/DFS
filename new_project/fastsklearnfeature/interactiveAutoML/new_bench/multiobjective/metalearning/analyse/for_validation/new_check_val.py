@@ -124,8 +124,8 @@ for efolder in experiment_folders:
 		best_strategy = 0
 		for s in range(1, len(mappnames) + 1):
 			exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
-			#if len(exp_results) > 0 and 'test_acc' in exp_results[-1]: #constraints were satisfied on validation set
-			if len(exp_results) > 0 and 'success_test' in exp_results[-1] and exp_results[-1]['success_test'] == True:  # constraints were satisfied on validation set
+			#if len(exp_results) > 0 and 'success_test' in exp_results[-1] and exp_results[-1]['success_test'] == True:
+			if len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]:  # constraints were satisfied on validation set
 				runtime = exp_results[-1]['final_time']
 				if runtime < min_time:
 					min_time = runtime
@@ -145,7 +145,8 @@ for efolder in experiment_folders:
 
 #print(dataset)
 
-
+print(np.sum(np.array(dataset['best_strategy']) == 0) / float(len(dataset['best_strategy'])))
+print(dataset['best_strategy'])
 
 success_ids = []
 for run in range(len(dataset['best_strategy'])):
@@ -230,7 +231,7 @@ for topk in [1,2,3]:
 
 
 
-
+#TODO: calculate average distance to satisfying the constraint
 
 latex_string = ''
 #for s in range(len(mappnames)):
@@ -256,6 +257,8 @@ for run in success_ids:
 					best_runtime = runtime
 		all_runtimes.append(best_runtime)
 
-latex_string += str('Oracle') + " & $" + "{:.0f}".format(np.mean(all_runtimes)) + " \pm " + "{:.0f}".format(np.std(all_runtimes)) + "$ && $" + "{:.2f}".format(1.0) + "$ && $" + "{:.2f}".format(1.0) + '$ \\\\ \n'
+
+#TODO: recalculate oracle
+#latex_string += str('Oracle') + " & $" + "{:.0f}".format(np.mean(all_runtimes)) + " \pm " + "{:.0f}".format(np.std(all_runtimes)) + "$ && $" + "{:.2f}".format(1.0) + "$ && $" + "{:.2f}".format(1.0) + '$ \\\\ \n'
 
 print(latex_string)

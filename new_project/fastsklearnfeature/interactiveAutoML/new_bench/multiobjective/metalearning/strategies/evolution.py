@@ -67,14 +67,13 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 		validation_acc = auc_scorer(pipeline, X_validation, pd.DataFrame(y_validation))
 
 		validation_fair = 0.0
-		if type(sensitive_ids) != type(None) and min_fairness > 0.0:
+		if type(sensitive_ids) != type(None):
 			validation_fair = 1.0 - fair_validation(pipeline, X_validation, pd.DataFrame(y_validation))
-		validation_robust = 0.0
-		if min_robustness > 0.0:
-			validation_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_validation, y_test=y_validation,
-														model=pipeline.named_steps['clf'],
-														feature_selector=pipeline.named_steps['selection'],
-														scorer=auc_scorer)
+
+		validation_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_validation, y_test=y_validation,
+													model=pipeline.named_steps['clf'],
+													feature_selector=pipeline.named_steps['selection'],
+													scorer=auc_scorer)
 
 		loss = 0.0
 		if min_fairness > 0.0 and validation_fair < min_fairness:
@@ -102,18 +101,12 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 
 		pipeline.fit(X_train_val, pd.DataFrame(y_train_val))
 
-		test_acc = 0.0
-		if min_accuracy > 0.0:
-			test_acc = auc_scorer(pipeline, X_test, pd.DataFrame(y_test))
-		test_fair = 0.0
-		if min_fairness > 0.0:
-			test_fair = 1.0 - fair_test(pipeline, X_test, pd.DataFrame(y_test))
-		test_robust = 0.0
-		if min_robustness > 0.0:
-			test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
-												  model=pipeline.named_steps['clf'],
-												  feature_selector=pipeline.named_steps['selection'],
-												  scorer=auc_scorer)
+		test_acc = auc_scorer(pipeline, X_test, pd.DataFrame(y_test))
+		test_fair = 1.0 - fair_test(pipeline, X_test, pd.DataFrame(y_test))
+		test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
+											  model=pipeline.named_steps['clf'],
+											  feature_selector=pipeline.named_steps['selection'],
+											  scorer=auc_scorer)
 
 		my_result['test_fair'] = test_fair
 		my_result['test_acc'] = test_acc
