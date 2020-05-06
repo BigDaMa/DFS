@@ -78,6 +78,8 @@ def backward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, 
 			loss += (min_accuracy - validation_acc) ** 2
 		if min_robustness > 0.0 and validation_robust < min_robustness:
 			loss += (min_robustness - validation_robust) ** 2
+		if max_number_features < 1.0 and validation_number_features > max_number_features:
+			loss += (validation_number_features - max_number_features) ** 2
 
 		current_time = time.time() - start_time
 
