@@ -42,10 +42,6 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
-
-
-#static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
-
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
@@ -78,7 +74,7 @@ def my_function(config_id):
 
 current_run_time_id = time.time()
 
-time_limit = 5*60#60 * 60 * 3
+time_limit = 60 * 60 * 3
 n_jobs = 20
 number_of_runs = 1
 
@@ -298,7 +294,7 @@ while True:
 			strategy_id += 1
 
 
-		with ProcessPool(max_workers=2) as pool:
+		with ProcessPool(max_workers=17) as pool:
 			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 			iterator = future.result()
