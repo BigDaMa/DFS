@@ -6,7 +6,6 @@ import pickle
 from sklearn.model_selection import StratifiedKFold
 import warnings
 warnings.filterwarnings("ignore")
-import pandas as pd
 import time
 import numpy as np
 
@@ -15,25 +14,14 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import 
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import chi2_score_wo
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import my_mcfs
-from sklearn.model_selection import train_test_split
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import my_fisher_score
-
-
-from fastsklearnfeature.configuration.Config import Config
-
-
-
 from functools import partial
-from hyperopt import fmin, hp, tpe, Trials, STATUS_OK
-
 from sklearn.feature_selection import mutual_info_classif
-from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import robust_score
 from skrebate import ReliefF
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.multiprocessing_global as mp_global
 import diffprivlib.models as models
-from sklearn.model_selection import GridSearchCV
 
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.fullfeatures import fullfeatures
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import TPE
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.hyperparameter_optimization import simulated_annealing
@@ -48,12 +36,20 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 
-#load list of viable datasets
-data_infos = pickle.load(open(Config.get('data_path') + '/openml_data/fitting_datasets.pickle', 'rb'))
+def load_pickle(fname):
+	data = []
+	with open(fname, "rb") as f:
+		while True:
+			try:
+				data.append(pickle.load(f))
+			except EOFError:
+				break
+	return data
+
 
 current_run_time_id = time.time()
 
@@ -78,46 +74,60 @@ k_value_list = []
 dataset_did_list = []
 dataset_sensitive_attribute_list = []
 
+number_runs = 2
+
 cv_splitter = StratifiedKFold(5, random_state=42)
 
 auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
-X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_fair_data1(dataset_key='1590')
+mp_global.X_train = []
+mp_global.X_validation = []
+mp_global.X_train_val = []
+mp_global.X_test = []
+mp_global.y_train = []
+mp_global.y_validation = []
+mp_global.y_train_val = []
+mp_global.y_test = []
+mp_global.names = []
+mp_global.sensitive_ids = []
+mp_global.cv_splitter = []
 
-mp_global.X_train = X_train
-mp_global.X_test = X_test
-mp_global.y_train = y_train
-mp_global.y_test = y_test
-mp_global.names = names
-mp_global.sensitive_ids = sensitive_ids
-mp_global.cv_splitter = cv_splitter
+for nruns in range(number_runs):
+	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590', random_number=nruns)
+
+	mp_global.X_train.append(X_train)
+	mp_global.X_validation.append(X_validation)
+	mp_global.X_train_val.append(X_train_val)
+	mp_global.X_test.append(X_test)
+	mp_global.y_train.append(y_train)
+	mp_global.y_validation.append(y_validation)
+	mp_global.y_train_val.append(y_train_val)
+	mp_global.y_test.append(y_test)
+	mp_global.names.append(names)
+	mp_global.sensitive_ids.append(sensitive_ids)
+	mp_global.cv_splitter.append(cv_splitter)
 
 runs_per_dataset = 0
 i = 1
 l_acc = 0.7
 u_acc = 0.91
-l_safety = 0.5
-u_safety = 1.0
-
-print( np.arange(l_safety, u_safety + ((u_safety - l_safety) / 10.0), (u_safety - l_safety) / 10.0))
-
 
 results_heatmap = {}
 for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
-	for min_robustness in np.arange(l_safety, u_safety + ((u_safety - l_safety) / 10.0), (u_safety - l_safety) / 10.0):
+	for privacy in [10, 7, 3, 1, 0.7, 0.3, 0.1]:
 		i += 1
 
+		min_robustness = 0.0
 		min_fairness = 0.0
-		max_number_features = 1.0
 		max_search_time = 20 * 60
-		privacy = None
+		max_number_features = 1.0
 
 		# Execute each search strategy with a given time limit (in parallel)
 		# maybe run multiple times to smooth stochasticity
 
-		model = LogisticRegression()
+		model = LogisticRegression(class_weight='balanced')
 		if type(privacy) != type(None):
-			model = models.LogisticRegression(epsilon=privacy)
+			model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
 		mp_global.clf = model
 
 		#define rankings
@@ -159,7 +169,8 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 						   backward_selection,
 						   forward_floating_selection,
 						   backward_floating_selection,
-						   recursive_feature_elimination]
+						   recursive_feature_elimination,
+						   fullfeatures]
 
 		#run main strategies
 		for strategy in main_strategies:
@@ -176,21 +187,40 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 			new_result = {}
 			search_times = []
 			successes = []
-			number_runs = 2
+
 			for run_i in range(number_runs):
 				conf = mp_global.configurations[config_id]
-				result = conf['main_strategy'](mp_global.X_train, mp_global.X_test, mp_global.y_train, mp_global.y_test, mp_global.names, mp_global.sensitive_ids,
-							 ranking_functions=conf['ranking_functions'],
-							 clf=mp_global.clf,
-							 min_accuracy=mp_global.min_accuracy,
-							 min_fairness=mp_global.min_fairness,
-							 min_robustness=mp_global.min_robustness,
-							 max_number_features=mp_global.max_number_features,
-							 max_search_time=mp_global.max_search_time,
-							 cv_splitter=mp_global.cv_splitter)
-				new_result['strategy_id'] = conf['strategy_id']
+
+				log_file = '/tmp/experiment' + str(current_run_time_id) + '_run_' + str(run_i) + '_strategy' + str(conf['strategy_id']) + '.pickle'
+
+				result = conf['main_strategy'](mp_global.X_train[run_i],
+											   mp_global.X_validation[run_i],
+											   mp_global.X_train_val[run_i],
+											   mp_global.X_test[run_i],
+											   mp_global.y_train[run_i],
+											   mp_global.y_validation[run_i],
+											   mp_global.y_train_val[run_i],
+											   mp_global.y_test[run_i],
+											   mp_global.names[run_i],
+											   mp_global.sensitive_ids[run_i],
+											   ranking_functions=conf['ranking_functions'],
+											   clf=mp_global.clf,
+											   min_accuracy=mp_global.min_accuracy,
+											   min_fairness=mp_global.min_fairness,
+											   min_robustness=mp_global.min_robustness,
+											   max_number_features=mp_global.max_number_features,
+											   max_search_time=mp_global.max_search_time,
+											   log_file=log_file)
+
+
+				result['strategy_id'] = conf['strategy_id']
 				successes.append(result['success'])
-				search_times.append(result['time'])
+
+				if result['success']:
+					exp_results = load_pickle(log_file)
+					search_times.append(exp_results[-1]['final_time'])
+				else:
+					break
 
 			if np.sum(successes) == number_runs:
 				new_result['success'] = True
@@ -204,14 +234,14 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 
 		results = []
 		check_strategies = np.zeros(strategy_id)
-		with ProcessPool(max_workers=16) as pool:
+		with ProcessPool(max_workers=17) as pool:
 			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 			iterator = future.result()
 			while True:
 				#log
-				f = open('/tmp/current_heat_map.txt', 'w+')
-				f.write(str(results_heatmap) + ' current position: safety: ' + str(min_robustness) + ' acc: ' + str(
+				f = open('/tmp/current_heat_map_privacy_acc.txt', 'w+')
+				f.write(str(results_heatmap) + ' current position: privacy: ' + str(privacy) + ' acc: ' + str(
 					min_accuracy))
 				f.flush()
 				f.close()
@@ -221,7 +251,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 					if result['success'] == True:
 						try:
 							print(result)
-							results_heatmap [(min_accuracy, min_robustness)] = (result['time'], result['strategy_id'])
+							results_heatmap [(min_accuracy, privacy)] = (result['time'], result['strategy_id'])
 							print('my heat map is here: ' + str(results_heatmap))
 							pool.stop()
 							pool.join(timeout=0)

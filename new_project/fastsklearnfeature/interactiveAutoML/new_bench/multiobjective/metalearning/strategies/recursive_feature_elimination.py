@@ -14,7 +14,6 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import
 from sklearn.feature_selection.from_model import _get_feature_importances
 
 def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None):
-	f_log = open(log_file, 'wb+')
 	min_loss = np.inf
 	start_time = time.time()
 
@@ -129,7 +128,9 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 				success = True
 
 			my_result['success_test'] = success
-			pickle.dump(my_result, f_log)
+			f_log = open(log_file, 'ab')
+			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+			f_log.close()
 			return my_result, {'success': success}
 
 		return my_result, {}
@@ -147,7 +148,9 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 		my_result, combo_result = execute_feature_combo(feature_combo, number_of_evaluations)
 		if min_loss > my_result['loss']:
 			min_loss = my_result['loss']
-			pickle.dump(my_result, f_log)
+			f_log = open(log_file, 'ab')
+			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+			f_log.close()
 
 		combo_loss = my_result['loss']
 		print('RFE loss: ' + str(combo_loss))
@@ -160,7 +163,8 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 				 'Finished': True}
-	pickle.dump(my_result, f_log)
+	f_log = open(log_file, 'ab')
+	pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	f_log.close()
 	return {'success': False}
 

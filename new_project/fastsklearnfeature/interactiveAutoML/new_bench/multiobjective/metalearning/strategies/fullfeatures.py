@@ -21,7 +21,6 @@ def map_hyper2vals(hyper):
 
 
 def fullfeatures(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file=None):
-	f_log = open(log_file, 'wb+')
 	start_time = time.time()
 
 	auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
@@ -117,14 +116,18 @@ def fullfeatures(X_train, X_validation, X_train_val, X_test, y_train, y_validati
 			success = True
 
 		my_result['success_test'] = success
-		pickle.dump(my_result, f_log)
+		f_log = open(log_file, 'ab')
+		pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 		f_log.close()
 		return {'success': success}
 
-	pickle.dump(my_result, f_log)
+	f_log = open(log_file, 'ab')
+	pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+	f_log.close()
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 				 'Finished': True}
-	pickle.dump(my_result, f_log)
+	f_log = open(log_file, 'ab')
+	pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	f_log.close()
 	return {'success': False}
 

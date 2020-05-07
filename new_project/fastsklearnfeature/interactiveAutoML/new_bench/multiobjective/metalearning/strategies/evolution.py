@@ -28,7 +28,6 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 	cheating_global.successfull_result[hash] = {}
 	cheating_global.successfull_result[hash]['cv_number_evaluations'] = 0
 
-	f_log = open(log_file, 'wb+')
 	start_time = time.time()
 
 	auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
@@ -124,14 +123,17 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 			cheating_global.successfull_result[hash]['success'] = success
 
 			my_result['success_test'] = success
-			pickle.dump(my_result, f_log)
+			f_log = open(log_file, 'ab')
+			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 			f_log.close()
 			return [validation_acc, validation_fair, validation_robust, validation_simplicity, min_loss]
 
 
 		if min_loss > loss:
 			min_loss = loss
-			pickle.dump(my_result, f_log)
+			f_log = open(log_file, 'ab')
+			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+			f_log.close()
 
 		return [validation_acc, validation_fair, validation_robust, validation_simplicity, min_loss]
 	
@@ -242,7 +244,8 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 	if not 'success' in cheating_global.successfull_result[hash]:
 		my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 					 'Finished': True}
-		pickle.dump(my_result, f_log)
+		f_log = open(log_file, 'ab')
+		pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 		f_log.close()
 	else:
 		success = copy.deepcopy(cheating_global.successfull_result[hash]['success'])

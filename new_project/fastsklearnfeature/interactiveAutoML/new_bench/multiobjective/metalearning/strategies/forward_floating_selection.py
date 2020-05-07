@@ -23,7 +23,6 @@ def forward_selection(X_train, X_validation, X_train_val, X_test, y_train, y_val
 
 
 def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, floating=True):
-	f_log = open(log_file, 'wb+')
 	min_loss = np.inf
 	start_time = time.time()
 
@@ -143,7 +142,9 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 				success = True
 
 			my_result['success_test'] = success
-			pickle.dump(my_result, f_log)
+			f_log = open(log_file, 'ab')
+			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+			f_log.close()
 
 			return my_result, {'success': success}
 
@@ -186,9 +187,10 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 			my_result, combo_result = execute_feature_combo(feature_combo, number_of_evaluations)
 			if min_loss > my_result['loss']:
 				min_loss = my_result['loss']
-				pickle.dump(my_result, f_log)
-			if len(combo_result) > 0:
+				f_log = open(log_file, 'ab')
+				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 				f_log.close()
+			if len(combo_result) > 0:
 				return combo_result
 			combo_loss = my_result['loss']
 			print('FS: ' + str(combo_loss))
@@ -222,9 +224,10 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 					my_result, combo_result = execute_feature_combo(feature_combo, number_of_evaluations)
 					if min_loss > my_result['loss']:
 						min_loss = my_result['loss']
-						pickle.dump(my_result, f_log)
-					if len(combo_result) > 0:
+						f_log = open(log_file, 'ab')
+						pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 						f_log.close()
+					if len(combo_result) > 0:
 						return combo_result
 					combo_loss = my_result['loss']
 					print('FS: ' + str(combo_loss))
@@ -244,7 +247,8 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 				 'Finished': True}
-	pickle.dump(my_result, f_log)
+	f_log = open(log_file, 'ab')
+	pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	f_log.close()
 	return {'success': False}
 

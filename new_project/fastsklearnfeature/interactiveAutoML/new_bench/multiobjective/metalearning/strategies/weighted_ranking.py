@@ -17,7 +17,6 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelec
 
 def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features: float = 1.0, max_search_time=np.inf, log_file=None):
 	min_loss = np.inf
-	f_log = open(log_file, 'wb+')
 
 	start_time = time.time()
 
@@ -161,19 +160,23 @@ def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_vali
 				success = True
 
 			my_result['success_test'] = success
-			pickle.dump(my_result, f_log)
+			f_log = open(log_file, 'ab')
+			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 			f_log.close()
 			return {'success': success}
 
 
 		if min_loss > trials.trials[-1]['result']['loss']:
 			min_loss = trials.trials[-1]['result']['loss']
-			pickle.dump(my_result, f_log)
+			f_log = open(log_file, 'ab')
+			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+			f_log.close()
 
 		i += 1
 
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time, 'Finished': True}
-	pickle.dump(my_result, f_log)
+	f_log = open(log_file, 'ab')
+	pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	f_log.close()
 	return {'success': False}
 
