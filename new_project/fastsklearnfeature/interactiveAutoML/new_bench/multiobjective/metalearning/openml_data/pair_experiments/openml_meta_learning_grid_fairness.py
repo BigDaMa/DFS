@@ -122,7 +122,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 
 		min_robustness = 0.0
 		max_number_features = 1.0
-		max_search_time = 5 * 60
+		max_search_time = 20 * 60
 		privacy = None
 
 		# Execute each search strategy with a given time limit (in parallel)
