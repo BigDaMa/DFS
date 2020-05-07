@@ -75,7 +75,6 @@ def my_function(config_id):
 current_run_time_id = time.time()
 
 time_limit = 60 * 60 * 3
-n_jobs = 20
 number_of_runs = 1
 
 
@@ -91,7 +90,7 @@ while True:
 	#create folder to store files:
 	os.mkdir('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
 
-	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590')
+	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation()
 
 	#run on tiny sample
 	if X_train.shape[0] > 100:

@@ -223,7 +223,7 @@ def get_fair_data1(dataset_key=None):
 		return X_train, X_test, y_train, y_test, names, sensitive_ids, key, sensitive_attribute_id
 
 
-def get_fair_data1_validation(dataset_key=None):
+def get_fair_data1_validation(dataset_key=None, random_number=42):
 	map_dataset = {}
 
 	map_dataset['31'] = 'foreign_worker@{yes,no}'
@@ -304,11 +304,11 @@ def get_fair_data1_validation(dataset_key=None):
 
 
 		X_temp, X_test, y_temp, y_test = train_test_split(X_datat, y.values.astype('str'), test_size=0.2,
-															random_state=42, stratify=y.values.astype('str'))
+															random_state=random_number, stratify=y.values.astype('str'))
 
 
 		X_train, X_validation, y_train, y_validation = train_test_split(X_temp, y_temp, test_size=0.25,
-															random_state=42, stratify=y_temp)
+															random_state=random_number, stratify=y_temp)
 
 
 		'''
