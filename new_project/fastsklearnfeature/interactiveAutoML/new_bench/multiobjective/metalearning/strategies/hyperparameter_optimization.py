@@ -187,24 +187,22 @@ def hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_tr
 				success = True
 
 			my_result['success_test'] = success
-			f_log = open(log_file, 'ab')
-			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
-			f_log.close()
+			with open(log_file, 'ab') as f_log:
+				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 			return {'success': success}
 
 		if min_loss > trials.trials[-1]['result']['loss']:
 			min_loss = trials.trials[-1]['result']['loss']
-			f_log = open(log_file, 'ab')
-			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
-			f_log.close()
+			with open(log_file, 'ab') as f_log:
+				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 		i += 1
 
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 				 'Finished': True}
-	f_log = open(log_file, 'ab')
-	pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
-	f_log.close()
+	with open(log_file, 'ab') as f_log:
+		pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	return {'success': False}
 
 

@@ -31,9 +31,15 @@ def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_vali
 								sensitive_data=X_test[:, sensitive_ids[0]])
 
 	#calculate rankings
-	rankings = []
-	for ranking_function_i in range(len(ranking_functions)):
-		rankings.append(ranking_functions[ranking_function_i](X_train, y_train))
+	try:
+		rankings = []
+		for ranking_function_i in range(len(ranking_functions)):
+			rankings.append(ranking_functions[ranking_function_i](X_train, y_train))
+	except Exception as e:
+		my_result = {'error': e}
+		with open(log_file, 'ab') as f_log:
+			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+		return {'success': False}
 
 	def f_clf1(hps):
 		weights = []
@@ -160,24 +166,21 @@ def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_vali
 				success = True
 
 			my_result['success_test'] = success
-			f_log = open(log_file, 'ab')
-			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
-			f_log.close()
+			with open(log_file, 'ab') as f_log:
+				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 			return {'success': success}
 
 
 		if min_loss > trials.trials[-1]['result']['loss']:
 			min_loss = trials.trials[-1]['result']['loss']
-			f_log = open(log_file, 'ab')
-			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
-			f_log.close()
+			with open(log_file, 'ab') as f_log:
+				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 		i += 1
 
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time, 'Finished': True}
-	f_log = open(log_file, 'ab')
-	pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
-	f_log.close()
+	with open(log_file, 'ab') as f_log:
+		pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	return {'success': False}
 
 

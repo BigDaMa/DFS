@@ -308,7 +308,7 @@ while True:
 					print("%s. Exit code: %d" % (error, error.exitcode))
 				except Exception as error:
 					print("function raised %s" % error)
-					print(error.traceback)  # Python's traceback of remote process
+					#print(error.traceback)  # Python's traceback of remote process
 
 
 		# pickle everything and store it
@@ -317,7 +317,8 @@ while True:
 		one_big_object['dataset_id'] = key
 		one_big_object['constraint_set_list'] = trials.trials[-1]['result']['constraints']
 
-		pickle.dump(one_big_object, open('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/run_info.pickle', 'wb'))
+		with open('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/run_info.pickle', 'wb') as f_log:
+			pickle.dump(one_big_object, f_log)
 
 
 		run_counter += 1

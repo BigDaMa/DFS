@@ -141,55 +141,69 @@ oracle_distance = []
 for efolder in experiment_folders:
 	run_folders = glob.glob(efolder + "*/")
 	for rfolder in run_folders:
-		info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
+		try:
+			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
 
-		distance_of_this_run = []
-		for s in range(1, len(mappnames) + 1):
-			exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+			distance_of_this_run = []
+			for s in range(1, len(mappnames) + 1):
+				exp_results = []
+				try:
+					exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+				except:
+					pass
 
-			min_loss = np.inf
-			best_run = None
+				min_loss = np.inf
+				best_run = None
 
-			for min_r in range(len(exp_results)):
-				if 'loss' in exp_results[min_r] and exp_results[min_r]['loss'] < min_loss:
-					min_loss = exp_results[min_r]['loss']
-					best_run = min_r
+				for min_r in range(len(exp_results)):
+					if 'loss' in exp_results[min_r] and exp_results[min_r]['loss'] < min_loss:
+						min_loss = exp_results[min_r]['loss']
+						best_run = min_r
 
-			my_dist = distance_to_constraints_on_test(exp_results, best_run, info_dict)
-			strategy_distance[s].append(my_dist)
-			distance_of_this_run.append(my_dist)
-		oracle_distance.append(min(distance_of_this_run))
+				my_dist = distance_to_constraints_on_test(exp_results, best_run, info_dict)
+				strategy_distance[s].append(my_dist)
+				distance_of_this_run.append(my_dist)
+			oracle_distance.append(min(distance_of_this_run))
+		except:
+			pass
 
 
 run_count = 0
 for efolder in experiment_folders:
 	run_folders = glob.glob(efolder + "*/")
 	for rfolder in run_folders:
-		run_strategies_success = {}
-		run_strategies_times = {}
+		try:
+			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
+			run_strategies_success = {}
+			run_strategies_times = {}
 
-		min_time = np.inf
-		best_strategy = 0
-		for s in range(1, len(mappnames) + 1):
-			exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
-			if is_successfull(exp_results):
-				runtime = exp_results[-1]['final_time']
-				if runtime < min_time:
-					min_time = runtime
-					best_strategy = s
+			min_time = np.inf
+			best_strategy = 0
+			for s in range(1, len(mappnames) + 1):
+				exp_results = []
+				try:
+					exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+				except:
+					pass
+				if is_successfull(exp_results):
+					runtime = exp_results[-1]['final_time']
+					if runtime < min_time:
+						min_time = runtime
+						best_strategy = s
 
-				run_strategies_success[s] = True
-				run_strategies_times[s] = runtime
-			else:
-				run_strategies_success[s] = False
-		dataset['success_value'].append(run_strategies_success)
-		dataset['best_strategy'].append(best_strategy)
-		dataset['times_value'].append(run_strategies_times)
+					run_strategies_success[s] = True
+					run_strategies_times[s] = runtime
+				else:
+					run_strategies_success[s] = False
+			dataset['success_value'].append(run_strategies_success)
+			dataset['best_strategy'].append(best_strategy)
+			dataset['times_value'].append(run_strategies_times)
 
-		info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
-		dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
+			dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
 
-		run_count += 1
+			run_count += 1
+		except:
+			pass
 
 print(oracle_distance)
 
