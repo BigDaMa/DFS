@@ -371,14 +371,16 @@ latex_string = ''
 #for s in range(len(mappnames)):
 for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
 
-	latex_string += str(mappnames[s + 1]) + " & "
+	latex_string += str(mappnames[s + 1])
 
 	recall = np.sum(finished_test[s + 1]) / float(len(finished_test[s + 1]))
 
+	'''
 	if max_finished_test == str_float(recall):
 		latex_string += "$\\textbf{" + "{:.2f}".format(recall) + '}$'
 	else:
 		latex_string += "$" + "{:.2f}".format(recall) + '$'
+	'''
 
 
 	dist_val = str_float(np.mean(strategy_distance_validation[s + 1])) + str_float(np.std(strategy_distance_validation[s + 1]))
