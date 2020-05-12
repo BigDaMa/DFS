@@ -37,26 +37,6 @@ def is_pareto_efficient_simple(costs):
             is_efficient[i] = True  # And keep self
     return is_efficient
 
-'''
-Exhaustive Search & $x \pm y$ && x\\
-Forward Selection & $x \pm y$ && x\\
-Backward Selection & $x \pm y$ && x\\
-Forward Floating Selection & $x \pm y$ && x\\
-Backward Floating Selection & $x \pm y$ && x\\
-Recursive Feature Elimination & $x \pm y$ && x\\
-Hyperopt(KBest(Fisher Score)) & $x \pm y$ && x\\
-Hyperopt(KBest(ReliefF)) & $x \pm y$ && x\\
-Hyperopt(KBest(Mutual Information)) & $x \pm y$ && x\\
-Hyperopt(KBest(FCBF)) & $x \pm y$ && x\\
-Hyperopt(KBest(MCFS)) & $x \pm y$ && x\\
-Hyperopt(KBest(Variance)) & $x \pm y$ && x\\
-Hyperopt(KBest($\chi^2$)) & $x \pm y$ && x\\
-Ranking-free Hyperopt & $x \pm y$ && x\\
-Ranking-free Simulated Annealing & $x \pm y$ && x\\
-Ranking-free NSGA-II & $x \pm y$ && x\\ \midrule
-Meta-learned Strategy Choice & $x \pm y$ && x\\
-'''
-
 map_dataset2name = {}
 map_dataset2name['31'] = 'German Credit'
 map_dataset2name['802'] = 'Primary Biliary Cirrhosis'
@@ -118,17 +98,7 @@ names = ['accuracy',
 	 'rows',
 	 'columns']
 
-def print_constraints_2(features):
 
-
-	my_str = ''
-	for i in range(len(names)):
-		my_str += names[i] + ': ' + str(features[i]) + ' '
-	print(my_str)
-
-
-#logs_adult = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_adult.pickle', 'rb'))
-#logs_heart = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_heart.pickle', 'rb'))
 
 experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
 
@@ -308,7 +278,8 @@ print(fastest_representative_datasets)
 
 all_representatives = list(set(coverage_representative_datasets).union(fastest_representative_datasets))
 
-all_representatives = ['446', '42178', '934', '1240']
+#all_representatives = ['446', '42178', '934', '1240']
+all_representatives = list(map_dataset2name.keys())
 
 print(all_representatives)
 

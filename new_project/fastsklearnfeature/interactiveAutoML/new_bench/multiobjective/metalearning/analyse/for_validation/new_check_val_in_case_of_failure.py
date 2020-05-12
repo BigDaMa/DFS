@@ -27,7 +27,7 @@ import glob
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
 			 3:'TPE(FCBF)',
-			 4: 'TPE(Fisher Score)',
+			 4: 'TPE(Fisher)',
 			 5: 'TPE(MIM)',
 			 6: 'TPE(MCFS)',
 			 7: 'TPE(ReliefF)',
@@ -39,7 +39,7 @@ mappnames = {1:'TPE(Variance)',
 			 13: 'SBS(NR)',
 			 14: 'SFFS(NR)',
 			 15: 'SBFS(NR)',
-			 16: 'RFE(Logistic Regression)',
+			 16: 'RFE(LR)',
 			 17: 'Complete Set'
 			 }
 
@@ -343,7 +343,7 @@ np.sum(np.array(dataset['best_strategy']) == 1)
 min_average_search_time = np.inf
 max_fastest = -1
 max_coverage_validation = -1
-max_coverage_test = -1
+max_finished_test = -1
 min_distance_validation = np.inf
 min_distance_test = np.inf
 
@@ -353,27 +353,10 @@ def str_float(number):
 
 
 for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
-	recall = np.sum(strategy_recall_test[s]) / float(strategy_recall_test.shape[1])
+	recall = np.sum(finished_test[s + 1]) / float(len(finished_test[s + 1]))
 
-	mean_time = np.mean(strategy_time[s+1])
-	std_time = np.std(strategy_time[s+1])
-
-	avg_search_time = mean_time + std_time
-	if min_average_search_time > avg_search_time:
-		min_average_search_time = avg_search_time
-
-
-	fastest = np.sum(np.array(dataset['best_strategy']) == s) / float(len(dataset['best_strategy']))
-	if max_fastest < str_float(fastest):
-		max_fastest = str_float(fastest)
-
-	recall_validation = np.sum(strategy_recall_validation[s]) / float(strategy_recall_validation.shape[1])
-	if max_coverage_validation < str_float(recall_validation):
-		max_coverage_validation = str_float(recall_validation)
-
-	recall = np.sum(strategy_recall_test[s]) / float(strategy_recall_test.shape[1])
-	if max_coverage_test < str_float(recall):
-		max_coverage_test = str_float(recall)
+	if max_finished_test < str_float(recall):
+		max_finished_test = str_float(recall)
 
 	dist_val = str_float(np.mean(strategy_distance_validation[s + 1])) + str_float(np.std(strategy_distance_validation[s + 1]))
 	if min_distance_validation > dist_val:
@@ -387,20 +370,15 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 latex_string = ''
 #for s in range(len(mappnames)):
 for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
-	recall = np.sum(finished_test[s+1]) / float(len(finished_test[s+1]))
-	recall_validation = np.sum(finished_validation[s+1]) / float(len(finished_validation[s+1]))
 
-	mean_time = np.mean(strategy_time[s+1])
-	std_time = np.std(strategy_time[s+1])
+	latex_string += str(mappnames[s + 1]) + " & "
 
-	avg_search_time = mean_time + std_time
-	if avg_search_time == min_average_search_time:
-		latex_string += str(mappnames[s + 1]) + " & $ \\textbf{" + "{:.0f}".format(mean_time) + "} \pm \\textbf{" + "{:.0f}".format(
-			std_time) + '}'
+	recall = np.sum(finished_test[s + 1]) / float(len(finished_test[s + 1]))
+
+	if max_finished_test == str_float(recall):
+		latex_string += "$\\textbf{" + "{:.2f}".format(recall) + '}$'
 	else:
-		latex_string += str(mappnames[s+1]) + " & $" + "{:.0f}".format(mean_time) + " \pm " + "{:.0f}".format(std_time)
-
-	latex_string += "$ & $" + "{:.2f}".format(recall) + '$'
+		latex_string += "$" + "{:.2f}".format(recall) + '$'
 
 
 	dist_val = str_float(np.mean(strategy_distance_validation[s + 1])) + str_float(np.std(strategy_distance_validation[s + 1]))
@@ -422,31 +400,4 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 
 print("\n\n")
 
-
-'''
-all_runtimes = []
-for run in success_ids:
-	#if dataset['best_strategy'][run] > 0:
-	best_runtime = np.inf
-	for s in range(1, len(mappnames) + 1):
-		if dataset['success_value'][run][s] == True:
-			runtime = dataset['times_value'][run][s]
-			if runtime < best_runtime:
-				best_runtime = runtime
-	if best_runtime != np.inf:
-		all_runtimes.append(best_runtime)
-
-
-oracle_coverage = np.sum(np.array(dataset['best_strategy']) != 0) / float(len(dataset['best_strategy']))
-
-
-oracle_coverage_validation = np.sum(dataset['validation_satisfied']) / float(len(dataset['validation_satisfied']))
-
-latex_string += str('Oracle') + " & $" + "{:.0f}".format(np.mean(all_runtimes)) + " \pm " + "{:.0f}".format(np.std(all_runtimes)) + \
-                "$ & $" + "{:.2f}".format(oracle_coverage) + "$" \
-				" & $" + "{:.2f}".format(oracle_coverage_validation) + "$ & $" + "{:.2f}".format(oracle_coverage) + '$' \
-				+ " & $" + "{:.2f}".format(np.mean(oracle_distance_validation)) + " \pm " + "{:.2f}".format(np.std(oracle_distance_validation))+ '$' \
-				+ " & $" + "{:.2f}".format(np.mean(oracle_distance_test)) + " \pm " + "{:.2f}".format(np.std(oracle_distance_test))+ '$' \
-				+ ' \\\\ \n'
-'''
 print(latex_string)

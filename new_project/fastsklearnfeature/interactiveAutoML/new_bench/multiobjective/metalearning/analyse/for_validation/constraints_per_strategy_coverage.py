@@ -55,7 +55,7 @@ map_dataset2name['934'] ='Social Mobility'
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
 			 3:'TPE(FCBF)',
-			 4: 'TPE(Fisher Score)',
+			 4: 'TPE(Fisher)',
 			 5: 'TPE(MIM)',
 			 6: 'TPE(MCFS)',
 			 7: 'TPE(ReliefF)',
