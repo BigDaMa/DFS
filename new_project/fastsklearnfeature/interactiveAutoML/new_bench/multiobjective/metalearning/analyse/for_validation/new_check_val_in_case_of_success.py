@@ -39,7 +39,7 @@ mappnames = {1:'TPE(Variance)',
 			 13: 'SBS(NR)',
 			 14: 'SFFS(NR)',
 			 15: 'SBFS(NR)',
-			 16: 'RFE(LR)',
+			 16: 'RFE(Logistic Regression)',
 			 17: 'Complete Set'
 			 }
 
@@ -251,6 +251,7 @@ for efolder in experiment_folders:
 					run_strategies_times[s] = runtime
 				else:
 					run_strategies_success_test[s] = False
+					run_strategies_times[s] = runtime
 
 				run_strategies_success_validation[s] = is_successfull_validation(exp_results)
 				if run_strategies_success_validation[s]:
@@ -403,6 +404,7 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 		latex_string += " & $" + "{:.2f}".format(recall) + '$'
 
 
+	'''
 	dist_val = str_float(np.mean(strategy_distance_validation[s + 1])) + str_float(np.std(strategy_distance_validation[s + 1]))
 	if min_distance_validation == dist_val:
 		latex_string += " & $\\textbf{" + "{:.2f}".format(
@@ -418,7 +420,9 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 	else:
 		latex_string += "$ & $" + "{:.2f}".format(np.mean(strategy_distance_test[s + 1])) + " \pm " + "{:.2f}".format(np.std(strategy_distance_test[s + 1]))
 
-	latex_string +='$ \\\\ \n'
+	latex_string +='$'
+	'''
+	latex_string += '\\\\ \n'
 
 print("\n\n")
 

@@ -39,7 +39,7 @@ mappnames = {1:'TPE(Variance)',
 			 13: 'SBS(NR)',
 			 14: 'SFFS(NR)',
 			 15: 'SBFS(NR)',
-			 16: 'RFE(LR)',
+			 16: 'RFE(Logistic Regression)',
 			 17: 'Complete Set'
 			 }
 
@@ -172,9 +172,16 @@ def distance_to_constraints_on_validation(exp_results, best_run, info_dict):
 
 strategy_distance_test = {}
 strategy_distance_validation = {}
+
+finished_validation = {}
+finished_test = {}
+
 for s in range(1, len(mappnames) + 1):
 	strategy_distance_test[s] = []
 	strategy_distance_validation[s] = []
+
+	finished_validation[s] = []
+	finished_test[s] = []
 
 
 oracle_distance_validation = []
@@ -203,20 +210,21 @@ for efolder in experiment_folders:
 						best_run = min_r
 
 				my_dist = distance_to_constraints_on_test(exp_results, best_run, info_dict)
-				strategy_distance_test[s].append(my_dist)
-				distance_of_this_run_test.append(my_dist)
+				if not is_successfull_validation_and_test(exp_results):
+					strategy_distance_test[s].append(my_dist)
+					distance_of_this_run_test.append(my_dist)
+
+					finished_validation[s].append(len(exp_results) > 0 and 'Finished' in exp_results[-1] and exp_results[-1]['Finished'])
 
 				#now distance to validation
-				my_dist_validation = distance_to_constraints_on_validation(exp_results, best_run, info_dict)
-				strategy_distance_validation[s].append(my_dist_validation)
-				distance_of_this_run_validation.append(my_dist_validation)
+				if not is_successfull_validation(exp_results):
+					my_dist_validation = distance_to_constraints_on_validation(exp_results, best_run, info_dict)
+					strategy_distance_validation[s].append(my_dist_validation)
+					distance_of_this_run_validation.append(my_dist_validation)
 
+					finished_test[s].append(
+						len(exp_results) > 0 and 'Finished' in exp_results[-1] and exp_results[-1]['Finished'])
 
-
-			best_dist_id = np.argmin(np.array(distance_of_this_run_test))
-
-			oracle_distance_validation.append(distance_of_this_run_validation[best_dist_id])
-			oracle_distance_test.append(distance_of_this_run_test[best_dist_id])
 		except FileNotFoundError:
 			pass
 
@@ -251,6 +259,13 @@ for efolder in experiment_folders:
 					run_strategies_times[s] = runtime
 				else:
 					run_strategies_success_test[s] = False
+
+					for exp_run in exp_results:
+						if 'Finished' in exp_run and exp_run['Finished']:
+							run_strategies_times[s] = exp_run['final_time']
+							break
+					if not s in run_strategies_times:
+						run_strategies_times[s] = info_dict['constraint_set_list']['search_time']
 
 				run_strategies_success_validation[s] = is_successfull_validation(exp_results)
 				if run_strategies_success_validation[s]:
@@ -311,7 +326,7 @@ strategy_time = {}
 for s in range(1, len(mappnames) + 1):
 	strategy_time[s] = []
 	for run in success_ids:
-		if dataset['success_value'][run][s] == True:
+		if not dataset['success_value'][run][s] == True:
 			strategy_time[s].append(dataset['times_value'][run][s])
 
 
@@ -372,8 +387,8 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 latex_string = ''
 #for s in range(len(mappnames)):
 for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
-	recall = np.sum(strategy_recall_test[s]) / float(strategy_recall_test.shape[1])
-	recall_validation = np.sum(strategy_recall_validation[s]) / float(strategy_recall_validation.shape[1])
+	recall = np.sum(finished_test[s+1]) / float(len(finished_test[s+1]))
+	recall_validation = np.sum(finished_validation[s+1]) / float(len(finished_validation[s+1]))
 
 	mean_time = np.mean(strategy_time[s+1])
 	std_time = np.std(strategy_time[s+1])
@@ -385,22 +400,7 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 	else:
 		latex_string += str(mappnames[s+1]) + " & $" + "{:.0f}".format(mean_time) + " \pm " + "{:.0f}".format(std_time)
 
-
-	fastest = np.sum(np.array(dataset['best_strategy']) == s) / float(len(dataset['best_strategy']))
-	if max_fastest == str_float(fastest):
-		latex_string += "$ & $\\textbf{" + "{:.2f}".format(fastest) + '}'
-	else:
-		latex_string += "$ & $" + "{:.2f}".format(fastest)
-
-	if max_coverage_validation == str_float(recall_validation):
-		latex_string += "$ & $\\textbf{" + "{:.2f}".format(recall_validation) + '}$'
-	else:
-		latex_string += "$ & $" + "{:.2f}".format(recall_validation) + '$'
-
-	if max_coverage_test == str_float(recall):
-		latex_string += " & $\\textbf{" + "{:.2f}".format(recall) + '}$'
-	else:
-		latex_string += " & $" + "{:.2f}".format(recall) + '$'
+	latex_string += "$ & $" + "{:.2f}".format(recall) + '$'
 
 
 	dist_val = str_float(np.mean(strategy_distance_validation[s + 1])) + str_float(np.std(strategy_distance_validation[s + 1]))
@@ -423,7 +423,7 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 print("\n\n")
 
 
-
+'''
 all_runtimes = []
 for run in success_ids:
 	#if dataset['best_strategy'][run] > 0:
@@ -448,5 +448,5 @@ latex_string += str('Oracle') + " & $" + "{:.0f}".format(np.mean(all_runtimes)) 
 				+ " & $" + "{:.2f}".format(np.mean(oracle_distance_validation)) + " \pm " + "{:.2f}".format(np.std(oracle_distance_validation))+ '$' \
 				+ " & $" + "{:.2f}".format(np.mean(oracle_distance_test)) + " \pm " + "{:.2f}".format(np.std(oracle_distance_test))+ '$' \
 				+ ' \\\\ \n'
-
+'''
 print(latex_string)

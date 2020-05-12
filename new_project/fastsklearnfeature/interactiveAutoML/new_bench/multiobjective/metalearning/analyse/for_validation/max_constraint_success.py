@@ -22,6 +22,20 @@ from sklearn.model_selection import GroupKFold
 from sklearn.model_selection import RandomizedSearchCV
 import copy
 import glob
+import matplotlib.pyplot as plt
+
+def is_pareto_efficient_simple(costs):
+    """
+    Find the pareto-efficient points
+    :param costs: An (n_points, n_costs) array
+    :return: A (n_points, ) boolean array, indicating whether each point is Pareto efficient
+    """
+    is_efficient = np.ones(costs.shape[0], dtype = bool)
+    for i, c in enumerate(costs):
+        if is_efficient[i]:
+            is_efficient[is_efficient] = np.any(costs[is_efficient]<c, axis=1)  # Keep any point with a lower cost
+            is_efficient[i] = True  # And keep self
+    return is_efficient
 
 '''
 Exhaustive Search & $x \pm y$ && x\\
@@ -42,6 +56,31 @@ Ranking-free Simulated Annealing & $x \pm y$ && x\\
 Ranking-free NSGA-II & $x \pm y$ && x\\ \midrule
 Meta-learned Strategy Choice & $x \pm y$ && x\\
 '''
+
+map_dataset2name = {}
+map_dataset2name['31'] = 'German Credit'
+map_dataset2name['802'] = 'Primary Biliary Cirrhosis'
+map_dataset2name['1590'] = 'Adult'
+map_dataset2name['1461'] = 'Bank Marketing'
+map_dataset2name['42193'] = 'COMPAS'
+map_dataset2name['1480'] = 'Indian Liver Patient'
+#map_dataset2name['804'] = 'hutsof99_logis'
+map_dataset2name['42178'] = 'Telco Customer Churn'
+map_dataset2name['981'] = 'KDD Internet Usage'
+map_dataset2name['40536'] = 'Speed Dating'
+map_dataset2name['40945'] = 'Titanic'
+map_dataset2name['451'] = 'Irish Educational Transitions'
+#map_dataset2name['945'] = 'Kidney'
+map_dataset2name['446'] = 'Leptograpsus crabs'
+map_dataset2name['1017'] = 'Arrhythmia'
+map_dataset2name['957'] = 'Brazil Tourism'
+map_dataset2name['41430'] = 'Diabetic Mellitus'
+map_dataset2name['1240'] = 'AirlinesCodrnaAdult'
+map_dataset2name['1018'] = 'IPUMS Census'
+#map_dataset2name['55'] = 'Hepatitis'
+map_dataset2name['38'] = 'Thyroid Disease'
+map_dataset2name['1003'] = 'Primary Tumor'
+map_dataset2name['934'] ='Social Mobility'
 
 
 mappnames = {1:'TPE(Variance)',
@@ -88,6 +127,13 @@ def print_constraints_2(features):
 	print(my_str)
 
 
+#logs_adult = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_adult.pickle', 'rb'))
+#logs_heart = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_heart.pickle', 'rb'))
+
+
+
+#get all files from folder
+
 experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
 
 print(experiment_folders)
@@ -95,9 +141,15 @@ print(experiment_folders)
 
 dataset = {}
 dataset['best_strategy'] = []
+dataset['validation_satisfied'] = []
+
+
 dataset['success_value'] = []
+dataset['success_value_validation'] = []
 dataset['times_value'] = []
 dataset['max_search_time'] = []
+
+dataset['distance_to_test_constraint'] = []
 
 
 def load_pickle(fname):
@@ -110,104 +162,56 @@ def load_pickle(fname):
 				break
 	return data
 
-def is_successfull(exp_results):
+
+def is_successfull_validation_and_test(exp_results):
 	return len(exp_results) > 0 and 'success_test' in exp_results[-1] and exp_results[-1]['success_test'] == True #also on test satisfied
-	#return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
+
+def is_successfull_validation(exp_results):
+	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
 
-run_count = 0
+
+satisfied_fairness = []
+satisfied_accuracy = []
+
+map_data_2_constraints = {}
 for efolder in experiment_folders:
 	run_folders = glob.glob(efolder + "*/")
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
-			run_strategies_success = {}
-			run_strategies_times = {}
 
-			min_time = np.inf
-			best_strategy = 0
 			for s in range(1, len(mappnames) + 1):
 				exp_results = []
 				try:
 					exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
 				except:
 					pass
-				if is_successfull(exp_results):
-					runtime = exp_results[-1]['final_time']
-					if runtime < min_time:
-						min_time = runtime
-						best_strategy = s
 
-					run_strategies_success[s] = True
-					run_strategies_times[s] = runtime
-				else:
-					run_strategies_success[s] = False
-			dataset['success_value'].append(run_strategies_success)
-			dataset['best_strategy'].append(best_strategy)
-			dataset['times_value'].append(run_strategies_times)
+				if is_successfull_validation_and_test(exp_results):
+					min_fairness = info_dict['constraint_set_list']['fairness']
+					min_accuracy = info_dict['constraint_set_list']['accuracy']
+					min_robustness = info_dict['constraint_set_list']['robustness']
+					max_number_features = info_dict['constraint_set_list']['k']
 
-			dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
+					if not info_dict['dataset_id'] in map_data_2_constraints:
+						map_data_2_constraints[info_dict['dataset_id']] = {}
+						map_data_2_constraints[info_dict['dataset_id']]['fair'] = []
+						map_data_2_constraints[info_dict['dataset_id']]['acc'] = []
+						map_data_2_constraints[info_dict['dataset_id']]['robust'] = []
 
-			run_count += 1
-		except:
+					map_data_2_constraints[info_dict['dataset_id']]['acc'].append(min_accuracy)
+					map_data_2_constraints[info_dict['dataset_id']]['fair'].append(min_fairness)
+					map_data_2_constraints[info_dict['dataset_id']]['robust'].append(min_robustness)
+
+
+		except FileNotFoundError:
 			pass
 
 
-print(dataset['best_strategy'])
-
-success_ids = []
-for run in range(len(dataset['best_strategy'])):
-	if dataset['best_strategy'][run] > 0:
-		success_ids.append(run)
-		if len(success_ids) == 1000:
-			break
-
-success_ids = np.array(list(range(len(dataset['best_strategy']))))
-
-assert len(dataset['success_value']) == len(dataset['best_strategy'])
-
-joined_strategies = []
-
-
-my_latex = ''
-
-for rounds in range(10):
-	best_recall = 0
-	best_combo = []
-	best_name = ""
-	for s in range(1, len(mappnames) + 1):
-		new_joined_strategies = copy.deepcopy(joined_strategies)
-		new_joined_strategies.append(s)
-		current_recall = []
-		for run in success_ids:
-			#if dataset['best_strategy'][run] > 0:
-			found = False
-			for js in new_joined_strategies:
-				if dataset['success_value'][run][js]==True:
-					found = True
-					break
-			current_recall.append(found)
-
-		calc_recall = np.sum(current_recall) / float(len(current_recall))
-		my_string = ''
-		for js in new_joined_strategies:
-			my_string += mappnames[js] + ' + '
-		my_string += str(calc_recall)
-		print(my_string)
-
-		if best_recall < calc_recall:
-			best_recall = calc_recall
-			best_combo = new_joined_strategies
-			best_name = my_string
-	my_latex += str(len(best_combo)) + "& + " + mappnames[best_combo[-1]] + " & " + "{:.3f}".format(best_recall) + "\\\\ \n"
-	joined_strategies = best_combo
-	print("\n\n")
-
-
-print(my_latex)
-
-for s in range(1, len(mappnames) + 1):
-	with open('/tmp/' + mappnames[s] + '_success.txt', 'w+') as the_file:
-		for run in success_ids:
-			if dataset['success_value'][run][s] == True:
-				the_file.write(str(run) + '\n')
+for key, value in map_data_2_constraints.items():
+	print(map_dataset2name[key] +
+		  ": max satisfied acc constraint: " + str(max(value['acc'])) +
+		  " max satisfied fair constraint: " + str(max(value['fair'])) +
+		  " max satisfied robust constraint: " + str(max(value['robust']))
+		  )
