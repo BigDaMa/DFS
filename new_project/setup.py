@@ -36,7 +36,8 @@ setup(
                       "arff2pandas",
                       "hyperopt==0.2.3",
                       "skrebate",
-                      "autograd"
+                      "autograd",
+                      "pymoo"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
