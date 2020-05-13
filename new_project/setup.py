@@ -33,7 +33,8 @@ setup(
                       "openml",
                       "diffprivlib",
                       "pebble",
-                      "arff2pandas"
+                      "arff2pandas",
+                      "hyperopt==0.2.3"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
