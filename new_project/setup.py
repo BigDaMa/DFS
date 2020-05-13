@@ -34,7 +34,8 @@ setup(
                       "diffprivlib",
                       "pebble",
                       "arff2pandas",
-                      "hyperopt==0.2.3"
+                      "hyperopt==0.2.3",
+                      "skrebate"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
