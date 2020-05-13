@@ -1,27 +1,9 @@
 import pickle
-from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
-from sklearn.model_selection import cross_val_score
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import get_recall
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import time_score2
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import get_avg_runtime
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.time_measure import get_optimum_avg_runtime
-
-from sklearn.metrics import r2_score
 from sklearn.metrics import make_scorer
-from sklearn.dummy import DummyClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn import tree
-from sklearn.tree import export_graphviz
-from subprocess import call
-from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.model_selection import GroupKFold
-from sklearn.model_selection import RandomizedSearchCV
-import copy
 import glob
 from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
@@ -33,31 +15,6 @@ import copy
 from sklearn.pipeline import Pipeline
 import warnings
 warnings.filterwarnings("ignore")
-import pandas as pd
-from sklearn.pipeline import FeatureUnion
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.compose import ColumnTransformer
-
-from fastsklearnfeature.configuration.Config import Config
-from sklearn import preprocessing
-import random
-from sklearn.impute import SimpleImputer
-from arff2pandas import a2p
-
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import variance
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import model_score
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import chi2_score_wo
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import fcbf
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import my_mcfs
-from sklearn.model_selection import train_test_split
-from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import my_fisher_score
-
-from sklearn.calibration import CalibratedClassifierCV
-from imblearn.over_sampling import SMOTE
-from sklearn.preprocessing import Normalizer
-
 
 
 mappnames = {1:'TPE(Variance)',
@@ -94,19 +51,6 @@ names_features = ['accuracy',
      'cv time',
 	 'rows',
 	 'columns']
-
-def print_constraints_2(features):
-
-
-	my_str = ''
-	for i in range(len(names)):
-		my_str += names[i] + ': ' + str(features[i]) + ' '
-	print(my_str)
-
-
-#logs_adult = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_adult.pickle', 'rb'))
-#logs_heart = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_heart.pickle', 'rb'))
-
 
 
 #get all files from folder
@@ -212,10 +156,7 @@ for efolder in experiment_folders:
 
 #print(logs_regression['features'])
 
-my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset, number_strategiesplus1=len(mappnames)+1)
-my_recall_score = make_scorer(get_recall, logs=dataset)
-my_runtime_score = make_scorer(get_avg_runtime, logs=dataset)
-my_optimal_runtime_score = make_scorer(get_optimum_avg_runtime, logs=dataset, number_strategiesplus1=len(mappnames)+1)
+
 
 X_train = dataset['features']
 y_train = dataset['best_strategy']
@@ -238,7 +179,6 @@ print("training size: " + str(len(success_ids)))
 
 
 
-my_score = make_scorer(time_score2, greater_is_better=False, logs=dataset, number_strategiesplus1=len(mappnames)+1)
 
 
 #todo: balance by class

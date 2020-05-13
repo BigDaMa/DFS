@@ -251,7 +251,7 @@ for efolder in experiment_folders:
 					run_strategies_times[s] = runtime
 				else:
 					run_strategies_success_test[s] = False
-					run_strategies_times[s] = runtime
+					#run_strategies_times[s] = runtime
 
 				run_strategies_success_validation[s] = is_successfull_validation(exp_results)
 				if run_strategies_success_validation[s]:

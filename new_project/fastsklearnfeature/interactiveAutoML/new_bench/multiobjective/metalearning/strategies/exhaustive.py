@@ -103,11 +103,6 @@ def exhaustive(X_train, X_validation, X_train_val, X_test, y_train, y_validation
 	for f_i in range(X_train.shape[1]):
 		space['f_' + str(f_i)] = hp.randint('f_' + str(f_i), 2)
 
-	cv_fair = 0
-	cv_acc = 0
-	cv_robust = 0
-	cv_number_features = 1.0
-
 	number_of_evaluations = 0
 
 	max_k = max(int(max_number_features * X_train.shape[1]), 1)
@@ -139,7 +134,10 @@ def exhaustive(X_train, X_validation, X_train_val, X_test, y_train, y_validation
 			model.fit(X_train_val, pd.DataFrame(y_train_val))
 
 			test_acc = auc_scorer(model, X_test, pd.DataFrame(y_test))
-			test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
+
+			test_fair = 0.0
+			if type(sensitive_ids) != type(None):
+				test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
 			test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
 												  model=model.named_steps['clf'],
 												  feature_selector=model.named_steps['selection'],

@@ -255,6 +255,10 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 						try:
 							print(result)
 							results_heatmap [(min_accuracy, min_fairness)] = (result['time'], result['strategy_id'])
+
+							with open('/tmp/current_heat_map_fair_acc.pickle', 'wb+') as f_log:
+								pickle.dump(results_heatmap, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+
 							print('my heat map is here: ' + str(results_heatmap))
 							pool.stop()
 							pool.join(timeout=0)
