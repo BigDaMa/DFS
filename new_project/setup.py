@@ -22,7 +22,7 @@ setup(
     include_package_data=True,
     install_requires=["numpy",
                       "pandas",
-                      "scikit-learn",
+                      "scikit-learn==0.21.0",
                       "xgboost",
                       "matplotlib",
                       "numpy_indexed",
