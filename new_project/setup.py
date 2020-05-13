@@ -35,7 +35,8 @@ setup(
                       "pebble",
                       "arff2pandas",
                       "hyperopt==0.2.3",
-                      "skrebate"
+                      "skrebate",
+                      "autograd"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
