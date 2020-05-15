@@ -37,7 +37,8 @@ setup(
                       "hyperopt==0.2.3",
                       "skrebate",
                       "autograd",
-                      "pymoo"
+                      "pymoo",
+                      "plotly"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
