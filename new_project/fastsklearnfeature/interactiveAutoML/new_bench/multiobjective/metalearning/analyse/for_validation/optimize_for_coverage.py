@@ -11,6 +11,7 @@ from sklearn.metrics import recall_score
 
 from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import Normalizer
+from sklearn.model_selection import RandomizedSearchCV
 
 
 import numpy as np
@@ -460,6 +461,31 @@ strategy_folds_recall = np.zeros((len(mappnames), len(outer_cv_all))) # strategi
 
 print('strategy size: ' + str(strategy_folds_f1.shape))
 
+
+
+
+def my_test_score_function(y_true, y_pred):
+	success_values = []
+	for i in range(len(y_true)):
+		#first, get highest probability across strategies
+		best_s = -1
+		best_prob = -1
+		for s in range(len(y_pred)):
+			if y_pred[s][i][1] > best_prob:
+				best_prob = y_pred[s][i][1]
+				best_s = s
+		#check whether that strategy indeed succeeds
+		success_values.append(y_true[i][best_s])
+
+
+	coverage = np.sum(success_values) / float(len(success_values))
+
+	print('coverage: ' + str(coverage))
+
+	return coverage
+
+my_score = make_scorer(my_test_score_function, greater_is_better=True, needs_proba=True)
+
 dataset_id = 0
 for train_ids, test_ids in outer_cv_all:
 
@@ -474,47 +500,47 @@ for train_ids, test_ids in outer_cv_all:
 
 	predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
 
-	for my_strategy in range(strategy_success.shape[1]):
-
-		if True:#(my_strategy + 1) in choose_among_strategies:
-
-
-			new_train_ids = []
-			for tid in train_ids:
-				if tid in real_success_ids:
-					new_train_ids.append(tid)
-			train_ids = new_train_ids
+	new_train_ids = []
+	for tid in train_ids:
+		if tid in real_success_ids:
+			new_train_ids.append(tid)
+	train_ids = new_train_ids
 
 
-			'''
-			transformer = Normalizer().fit(X_data[train_ids][:, my_ids])
-			X_scaled = transformer.transform(X_data[train_ids][:, my_ids])
-			X_scaled = transformer.transform(X_data[test_ids][:, my_ids])
-			sm = SMOTE(random_state=42)
-			X_res, y_res = sm.fit_resample(X_scaled, strategy_success[train_ids, my_strategy])
-			'''
-			X_res = X_data[train_ids][:, my_ids]
-			y_res = strategy_success[train_ids, my_strategy]
 
-			rf_random = RandomForestClassifier(n_estimators=1000, class_weight='balanced')
-			rf_random.fit(X_res, y_res)
+	X_res = X_data[train_ids][:, my_ids]
+	y_res = strategy_success[train_ids, :]
 
-			#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
+	inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], None, groups=groups[train_ids])
+	rf = RandomForestClassifier()
+	rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=10,
+								   cv=inner_cv, verbose=2, random_state=42,
+								   n_jobs=-1, scoring=my_score, refit=True)
 
-			my_x_test = X_data[test_ids][:, my_ids]#X_scaled#X_data[test_ids][:, my_ids]
+	#rf_random = RandomForestClassifier(n_estimators=1000, class_weight='balanced')
+	rf_random.fit(X_res, y_res)
 
-			print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, my_x_test, strategy_success[test_ids, my_strategy])))
+	#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
 
-			my_predictions = rf_random.predict(my_x_test)
-			strategy_folds_f1[my_strategy, dataset_id] = f1_score(strategy_success[test_ids, my_strategy], my_predictions)
-			strategy_folds_precision[my_strategy, dataset_id] = precision_score(strategy_success[test_ids, my_strategy], my_predictions)
-			strategy_folds_recall[my_strategy, dataset_id] = recall_score(strategy_success[test_ids, my_strategy], my_predictions)
+	my_x_test = X_data[test_ids][:, my_ids]#X_scaled#X_data[test_ids][:, my_ids]
 
-			predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
+	proba_predictions = rf_random.predict_proba(my_x_test)
 
-			print(mappnames[my_strategy + 1] + ' prob : ' + str(np.mean(predictions_probabilities[:, my_strategy])))
-		else:
-			predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
+	'''
+	print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, my_x_test, strategy_success[test_ids, my_strategy])))
+
+	my_predictions = rf_random.predict(my_x_test)
+	strategy_folds_f1[my_strategy, dataset_id] = f1_score(strategy_success[test_ids, my_strategy], my_predictions)
+	strategy_folds_precision[my_strategy, dataset_id] = precision_score(strategy_success[test_ids, my_strategy], my_predictions)
+	strategy_folds_recall[my_strategy, dataset_id] = recall_score(strategy_success[test_ids, my_strategy], my_predictions)
+
+	predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
+	'''
+
+	for s in range(len(proba_predictions)):
+		predictions_probabilities[:, s] = proba_predictions[s][:, 1]
+
+
 
 	dataset_id += 1
 
