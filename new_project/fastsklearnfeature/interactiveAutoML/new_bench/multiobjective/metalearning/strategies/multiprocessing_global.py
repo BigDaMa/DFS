@@ -21,3 +21,5 @@ max_number_features=None #float 0.0-1.0
 
 
 my_dict = None
+
+log_file=None
