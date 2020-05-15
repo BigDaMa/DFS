@@ -3,7 +3,7 @@
 ## Using our system
 To run the experiments, first, you need to set the paths in a configuration file with the name of your machine. Examples can be found here: ~/new_project/fastsklearnfeature/configuration/resources
 
-We provide a small jupyter notebook as an example: [Example Notebook](../master/new_project/fastsklearnfeature/documentation/Example.ipynb)
+We provide a small jupyter notebook as an example: [Example Notebook](../master/new_project/fastsklearnfeature/interactiveAutoML/new_bench/multiobjective/metalearning/openml_data/notebook/Tutorial.ipynb)
 
 ## Setup 
 ```
