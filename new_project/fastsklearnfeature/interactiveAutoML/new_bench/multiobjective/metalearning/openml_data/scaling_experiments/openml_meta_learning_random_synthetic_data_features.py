@@ -52,6 +52,8 @@ from sklearn.impute import SimpleImputer
 from sklearn.datasets import make_classification
 import os
 
+how_many_samples = int(input('enter number of samples please: '))
+
 def my_function(config_id):
 	conf = mp_global.configurations[config_id]
 	result = conf['main_strategy'](mp_global.X_train,
@@ -71,7 +73,7 @@ def my_function(config_id):
 								   min_robustness=mp_global.min_robustness,
 								   max_number_features=mp_global.max_number_features,
 								   max_search_time=mp_global.max_search_time,
-								   log_file='/tmp/experiment_features' + str(number_samples) + '/run' + str(run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle')
+								   log_file='/tmp/experiment_features' + str(how_many_samples) + '/run' + str(run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle')
 	result['strategy_id'] = conf['strategy_id']
 	return result
 
@@ -219,8 +221,6 @@ except:
 
 	pickle.dump(configurations, open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations.pickle", 'wb'))
 
-
-how_many_samples = int(input('enter number of samples please: '))
 
 for number_features in [how_many_samples]:
 
