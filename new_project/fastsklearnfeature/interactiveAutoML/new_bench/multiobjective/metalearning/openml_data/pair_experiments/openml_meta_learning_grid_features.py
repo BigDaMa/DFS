@@ -32,7 +32,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
-
+import os
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
@@ -188,9 +188,8 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 			search_times = []
 			successes = []
 
+			conf = mp_global.configurations[config_id]
 			for run_i in range(number_runs):
-				conf = mp_global.configurations[config_id]
-
 				log_file = '/tmp/experiment' + str(current_run_time_id) + '_run_' + str(run_i) + '_strategy' + str(conf['strategy_id']) + '.pickle'
 
 				result = conf['main_strategy'](mp_global.X_train[run_i],
@@ -219,7 +218,9 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 				if result['success']:
 					exp_results = load_pickle(log_file)
 					search_times.append(exp_results[-1]['final_time'])
+					os.remove(log_file)
 				else:
+					os.remove(log_file)
 					break
 
 			if np.sum(successes) == number_runs:
@@ -228,7 +229,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 			else:
 				new_result['success'] = False
 
-
+			new_result['strategy_id'] = conf['strategy_id']
 			return new_result
 
 

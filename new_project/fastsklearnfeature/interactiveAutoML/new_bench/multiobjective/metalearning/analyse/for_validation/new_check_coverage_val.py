@@ -23,27 +23,6 @@ from sklearn.model_selection import RandomizedSearchCV
 import copy
 import glob
 
-'''
-Exhaustive Search & $x \pm y$ && x\\
-Forward Selection & $x \pm y$ && x\\
-Backward Selection & $x \pm y$ && x\\
-Forward Floating Selection & $x \pm y$ && x\\
-Backward Floating Selection & $x \pm y$ && x\\
-Recursive Feature Elimination & $x \pm y$ && x\\
-Hyperopt(KBest(Fisher Score)) & $x \pm y$ && x\\
-Hyperopt(KBest(ReliefF)) & $x \pm y$ && x\\
-Hyperopt(KBest(Mutual Information)) & $x \pm y$ && x\\
-Hyperopt(KBest(FCBF)) & $x \pm y$ && x\\
-Hyperopt(KBest(MCFS)) & $x \pm y$ && x\\
-Hyperopt(KBest(Variance)) & $x \pm y$ && x\\
-Hyperopt(KBest($\chi^2$)) & $x \pm y$ && x\\
-Ranking-free Hyperopt & $x \pm y$ && x\\
-Ranking-free Simulated Annealing & $x \pm y$ && x\\
-Ranking-free NSGA-II & $x \pm y$ && x\\ \midrule
-Meta-learned Strategy Choice & $x \pm y$ && x\\
-'''
-
-
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
 			 3:'TPE(FCBF)',
@@ -115,9 +94,11 @@ def is_successfull(exp_results):
 	#return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
 
+number_ml_scenarios = 1200
+
 run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -151,6 +132,10 @@ for efolder in experiment_folders:
 			run_count += 1
 		except:
 			pass
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 
 print(dataset['best_strategy'])

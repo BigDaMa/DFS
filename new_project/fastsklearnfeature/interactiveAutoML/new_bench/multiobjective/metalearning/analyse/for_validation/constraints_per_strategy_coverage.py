@@ -128,14 +128,14 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
-
+number_ml_scenarios = 1200
 
 
 map_constraint_values_per_strategy = {}
 
 run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -173,8 +173,14 @@ for efolder in experiment_folders:
 
 				if type(privacy) != type(None):
 					map_constraint_values_per_strategy[s]['privacy'].append(is_successfull_validation_and_test(exp_results))
+
+			run_count += 1
 		except FileNotFoundError:
 			pass
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 
 

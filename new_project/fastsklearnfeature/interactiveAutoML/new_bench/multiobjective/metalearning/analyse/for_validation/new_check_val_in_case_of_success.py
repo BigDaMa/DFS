@@ -177,10 +177,13 @@ for s in range(1, len(mappnames) + 1):
 	strategy_distance_validation[s] = []
 
 
+number_ml_scenarios = 1200
+
 oracle_distance_validation = []
 oracle_distance_test = []
+run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -217,13 +220,19 @@ for efolder in experiment_folders:
 
 			oracle_distance_validation.append(distance_of_this_run_validation[best_dist_id])
 			oracle_distance_test.append(distance_of_this_run_test[best_dist_id])
+
+			run_count += 1
 		except FileNotFoundError:
 			pass
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 
 run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -269,25 +278,14 @@ for efolder in experiment_folders:
 		except FileNotFoundError:
 			pass
 
-
-
-
-
-
-#print(dataset)
-
-print(np.sum(np.array(dataset['best_strategy']) == 0) / float(len(dataset['best_strategy'])))
-print(dataset['best_strategy'])
-print(len(dataset['best_strategy']))
-
-'''
-success_ids = []
-for run in range(len(dataset['best_strategy'])):
-	if dataset['best_strategy'][run] > 0:
-		success_ids.append(run)
-		if len(success_ids) == 1000:
+		if run_count == number_ml_scenarios:
 			break
-'''
+	if run_count == number_ml_scenarios:
+		break
+
+
+assert len(dataset['success_value']) == number_ml_scenarios
+
 success_ids = np.array(list(range(len(dataset['best_strategy']))))
 
 assert len(dataset['success_value']) == len(dataset['best_strategy'])

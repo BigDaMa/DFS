@@ -97,12 +97,11 @@ def is_successfull_validation(exp_results):
 
 
 
-
-
+number_ml_scenarios = 1200
 
 run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -148,6 +147,10 @@ for efolder in experiment_folders:
 			run_count += 1
 		except FileNotFoundError:
 			pass
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 
 
@@ -367,6 +370,18 @@ def get_success_for_fold_predictions(predictions, test_ids):
 	return all_success
 
 
+def get_success_for_fold_predictions_validation(predictions, test_ids):
+	all_success = []
+	for p_i in range(len(predictions)):
+		current_strategy = predictions[p_i]
+		current_id = success_ids[test_ids[p_i]]
+		if dataset['success_value_validation'][current_id][current_strategy] == True:
+			all_success.append(True)
+		else:
+			all_success.append(False)
+	return all_success
+
+
 def get_is_fastest_for_fold_predictions(predictions, test_ids):
 	all_success = []
 	for p_i in range(len(predictions)):
@@ -438,10 +453,14 @@ choose_among_strategies = [2,8,14]
 
 all_runtimes_in_cv_folds = []
 all_success_in_cv_folds = []
-all_fastest_in_cv_folds_dict = {}
+all_success_in_cv_folds_validation = []
 
-for topk in [1, 2, 3]:
-	all_fastest_in_cv_folds_dict[topk] = []
+
+all_successful_times = []
+all_fastest_strategies = []
+
+
+
 
 strategy_folds_f1 = np.zeros((len(mappnames), len(outer_cv_all))) # strategies x datasets
 strategy_folds_precision= np.zeros((len(mappnames), len(outer_cv_all))) # strategies x datasets
@@ -519,24 +538,43 @@ for train_ids, test_ids in outer_cv_all:
 	succcess_test_fold1 = get_success_for_fold_predictions(predictions, test_ids)
 	print("test coverage: " + str(np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))))
 
+
+	success_validation = get_success_for_fold_predictions_validation(predictions, test_ids)
+
+
+	successful_times = []
+	for run_i in range(len(succcess_test_fold1)):
+		if succcess_test_fold1[run_i]:
+			successful_times.append(runtimes_test_fold[run_i])
+
+	fastest_fold_here = []
+	for run_i in range(len(succcess_test_fold1)):
+		fastest_fold_here.append(np.array(dataset['best_strategy'])[test_ids][run_i] == predictions[run_i])
+
+	print("Fastest: " + str(np.sum(fastest_fold_here) / float(len(fastest_fold_here))))
+
+	all_successful_times.extend(successful_times)
 	all_runtimes_in_cv_folds.extend(runtimes_test_fold)
-	all_success_in_cv_folds.extend(get_success_for_fold_predictions(predictions, test_ids))
-
-	for topk in [1,2,3]:
-		all_fastest_in_cv_folds_dict[topk].extend(get_is_topk_fastest_for_fold_predictions(predictions, test_ids, topk))
-
-print('\n final mean time:  ' + str(np.mean(all_runtimes_in_cv_folds)) + ' std: ' + str(np.std(all_runtimes_in_cv_folds)))
-print('\n final coverage:  ' + str(np.sum(all_success_in_cv_folds) / float(len(all_success_in_cv_folds))))
-
-for topk in [1,2,3]:
-	print('\n final fastest topk=' + str(topk) + ": " + str(np.sum(all_fastest_in_cv_folds_dict[topk]) / float(len(success_ids))))
+	all_success_in_cv_folds.extend(succcess_test_fold1)
+	all_fastest_strategies.extend(fastest_fold_here)
+	all_success_in_cv_folds_validation.extend(success_validation)
 
 
-print("average f1 scores: " + str(np.mean(strategy_folds_f1, axis=1)))
-print("average precision scores: " + str(np.mean(strategy_folds_precision, axis=1)))
-print("average recall scores: " + str(np.mean(strategy_folds_recall, axis=1)))
 
-for my_strategy in np.array([11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
+
+
+
+print('\n final all mean time:  ' + str(np.mean(all_runtimes_in_cv_folds)) + ' std: ' + str(np.std(all_runtimes_in_cv_folds)))
+
+
+print('\n final test coverage:  ' + str(np.sum(all_success_in_cv_folds) / float(len(all_success_in_cv_folds))))
+print('\n final validation coverage:  ' + str(np.sum(all_success_in_cv_folds_validation) / float(len(all_success_in_cv_folds_validation))))
+print("\n final Fastest: " + str(np.sum(all_fastest_strategies) / float(len(all_fastest_strategies))))
+print('\n final successful mean time: ' + str(np.mean(all_successful_times)) + ' std: ' + str(np.std(all_successful_times)))
+
+
+
+for my_strategy in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
 	print(str(mappnames[my_strategy + 1]) + ' & $' + str(
 		"{:.2f}".format(np.mean(strategy_folds_precision, axis=1)[my_strategy])) + ' \\pm ' + str(
 		"{:.2f}".format(np.std(strategy_folds_precision, axis=1)[my_strategy])) + '$ & $' + str(

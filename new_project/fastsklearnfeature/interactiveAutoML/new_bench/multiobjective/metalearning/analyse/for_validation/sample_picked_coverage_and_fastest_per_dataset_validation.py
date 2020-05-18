@@ -66,7 +66,7 @@ map_dataset2name['934'] ='Social Mobility'
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
 			 3:'TPE(FCBF)',
-			 4: 'TPE(Fisher Score)',
+			 4: 'TPE(Fisher)',
 			 5: 'TPE(MIM)',
 			 6: 'TPE(MCFS)',
 			 7: 'TPE(ReliefF)',
@@ -137,10 +137,11 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
+number_ml_scenarios = 1200
 
 run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -185,6 +186,10 @@ for efolder in experiment_folders:
 			run_count += 1
 		except FileNotFoundError:
 			pass
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 joined_strategies = []
 
@@ -279,7 +284,8 @@ print(fastest_representative_datasets)
 all_representatives = list(set(coverage_representative_datasets).union(fastest_representative_datasets))
 
 #all_representatives = ['446', '42178', '934', '1240']
-all_representatives = list(map_dataset2name.keys())
+all_representatives = ['1590','42178','934','1240', '31']
+#all_representatives = list(map_dataset2name.keys())
 
 print(all_representatives)
 

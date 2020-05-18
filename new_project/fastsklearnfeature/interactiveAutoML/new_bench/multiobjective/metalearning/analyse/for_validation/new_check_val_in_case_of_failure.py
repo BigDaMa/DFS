@@ -184,10 +184,13 @@ for s in range(1, len(mappnames) + 1):
 	finished_test[s] = []
 
 
+number_ml_scenarios = 1200
+
+run_count = 0
 oracle_distance_validation = []
 oracle_distance_test = []
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -224,14 +227,19 @@ for efolder in experiment_folders:
 
 					finished_test[s].append(
 						len(exp_results) > 0 and 'Finished' in exp_results[-1] and exp_results[-1]['Finished'])
-
+			run_count += 1
 		except FileNotFoundError:
 			pass
+
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 
 run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -282,6 +290,10 @@ for efolder in experiment_folders:
 			run_count += 1
 		except FileNotFoundError:
 			pass
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 
 
