@@ -210,20 +210,10 @@ for c_i in range(len(mappnames)):
 
 
 strategy_success = np.zeros((X_data.shape[0], len(mappnames)))
-
 for c_i in range(len(mappnames)):
-	current_strategy = c_i + 1
-	for current_id in range(X_data.shape[0]):
-		if dataset['success_value'][current_id][current_strategy] == True:
-			strategy_success[i, c_i] = True
+	for run in range(X_data.shape[0]):
+		strategy_success[run, c_i] = dataset['success_value'][run][c_i+1]
 
-for c_i in range(len(mappnames)):
-	current_strategy = c_i + 1
-	for i in range(len(success_ids)):
-		current_id = success_ids[i]
-		if dataset['success_value'][current_id][current_strategy] == True:
-			strategy_success[i, c_i] = True
-			#print("hallo: " + str(i) + ": " + str(c_i))
 
 
 '''
@@ -500,6 +490,7 @@ for train_ids, test_ids in outer_cv_all:
 
 	predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
 
+
 	new_train_ids = []
 	for tid in train_ids:
 		if tid in real_success_ids:
@@ -508,12 +499,13 @@ for train_ids, test_ids in outer_cv_all:
 
 
 
+
 	X_res = X_data[train_ids][:, my_ids]
 	y_res = strategy_success[train_ids, :]
 
-	inner_cv = GroupKFold(n_splits=4).split(X_data[train_ids, :], None, groups=groups[train_ids])
+	inner_cv = GroupKFold(n_splits=10).split(X_data[train_ids, :], None, groups=groups[train_ids])
 	rf = RandomForestClassifier()
-	rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=10,
+	rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=20,
 								   cv=inner_cv, verbose=2, random_state=42,
 								   n_jobs=-1, scoring=my_score, refit=True)
 

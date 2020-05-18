@@ -209,20 +209,9 @@ for c_i in range(len(mappnames)):
 
 
 strategy_success = np.zeros((X_data.shape[0], len(mappnames)))
-
 for c_i in range(len(mappnames)):
-	current_strategy = c_i + 1
-	for current_id in range(X_data.shape[0]):
-		if dataset['success_value'][current_id][current_strategy] == True:
-			strategy_success[i, c_i] = True
-
-for c_i in range(len(mappnames)):
-	current_strategy = c_i + 1
-	for i in range(len(success_ids)):
-		current_id = success_ids[i]
-		if dataset['success_value'][current_id][current_strategy] == True:
-			strategy_success[i, c_i] = True
-			#print("hallo: " + str(i) + ": " + str(c_i))
+	for run in range(X_data.shape[0]):
+		strategy_success[run, c_i] = dataset['success_value'][run][c_i+1]
 
 
 '''
