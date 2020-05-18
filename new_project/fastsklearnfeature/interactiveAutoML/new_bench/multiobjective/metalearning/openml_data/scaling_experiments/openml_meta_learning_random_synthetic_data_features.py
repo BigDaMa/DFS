@@ -71,7 +71,7 @@ def my_function(config_id):
 								   min_robustness=mp_global.min_robustness,
 								   max_number_features=mp_global.max_number_features,
 								   max_search_time=mp_global.max_search_time,
-								   log_file='/tmp/experiment_observations' + str(number_samples) + '/run' + str(run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle')
+								   log_file='/tmp/experiment_features' + str(number_samples) + '/run' + str(run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle')
 	result['strategy_id'] = conf['strategy_id']
 	return result
 
@@ -224,12 +224,12 @@ how_many_samples = int(input('enter number of samples please: '))
 
 for number_features in [how_many_samples]:
 
-	os.mkdir('/tmp/experiment_observations' + str(number_features))
+	os.mkdir('/tmp/experiment_features' + str(number_features))
 
 	run_counter = 0
 	for config in configurations:
 
-		os.mkdir('/tmp/experiment_observations' + str(number_features) + '/run' + str(run_counter))
+		os.mkdir('/tmp/experiment_features' + str(number_features) + '/run' + str(run_counter))
 
 		X_train, X_val, X_train_val, X_test, y_train, y_val, y_train_val, y_test = get_synthetic_data(10000, number_features, config, test_samples=1000)
 
@@ -337,7 +337,7 @@ for number_features in [how_many_samples]:
 		one_big_object['number_instances'] = 10000
 		one_big_object['number_features'] = number_features
 
-		with open('/tmp/experiment_observations' + str(number_features) + '/run' + str(run_counter) + '/run_info.pickle','wb') as f_log:
+		with open('/tmp/experiment_features' + str(number_features) + '/run' + str(run_counter) + '/run_info.pickle','wb') as f_log:
 			pickle.dump(one_big_object, f_log)
 
 		run_counter += 1
