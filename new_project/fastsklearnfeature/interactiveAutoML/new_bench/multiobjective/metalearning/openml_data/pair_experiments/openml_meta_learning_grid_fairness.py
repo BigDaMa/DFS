@@ -92,7 +92,7 @@ mp_global.names = []
 mp_global.sensitive_ids = []
 mp_global.cv_splitter = []
 
-X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590', random_number=nruns)
+X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590')
 
 
 for nruns in range(number_runs):
