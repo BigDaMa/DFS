@@ -99,11 +99,11 @@ def is_successfull_validation(exp_results):
 
 
 
-
+number_ml_scenarios = 1200
 
 run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -149,7 +149,10 @@ for efolder in experiment_folders:
 			run_count += 1
 		except FileNotFoundError:
 			pass
-
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 
 
@@ -523,9 +526,9 @@ for train_ids, test_ids in outer_cv_all:
 	X_res = X_data[train_ids][:, my_ids]
 	y_res = strategy_success[train_ids, :]
 
-	inner_cv = GroupKFold(n_splits=8).split(X_data[train_ids, :], None, groups=groups[train_ids])
+	inner_cv = GroupKFold(n_splits=10).split(X_data[train_ids, :], None, groups=groups[train_ids])
 	rf = RandomForestClassifier()
-	rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=2,
+	rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=20,
 								   cv=inner_cv, verbose=2, random_state=42,
 								   n_jobs=-1, scoring=my_score, refit=True)
 

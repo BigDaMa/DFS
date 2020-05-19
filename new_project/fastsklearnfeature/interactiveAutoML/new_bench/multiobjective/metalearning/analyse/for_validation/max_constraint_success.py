@@ -169,14 +169,15 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
-
+number_ml_scenarios = 1200
+run_count = 0
 
 satisfied_fairness = []
 satisfied_accuracy = []
 
 map_data_2_constraints = {}
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -204,14 +205,24 @@ for efolder in experiment_folders:
 					map_data_2_constraints[info_dict['dataset_id']]['fair'].append(min_fairness)
 					map_data_2_constraints[info_dict['dataset_id']]['robust'].append(min_robustness)
 
-
+			run_count += 1
 		except FileNotFoundError:
 			pass
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
-
+latex_string = ''
 for key, value in map_data_2_constraints.items():
+	'''
 	print(map_dataset2name[key] +
 		  ": max satisfied acc constraint: " + str(max(value['acc'])) +
 		  " max satisfied fair constraint: " + str(max(value['fair'])) +
 		  " max satisfied robust constraint: " + str(max(value['robust']))
 		  )
+	'''
+
+	latex_string += map_dataset2name[key] + ' & ' + "{:.2f}".format(max(value['acc'])) + " & " + "{:.2f}".format(max(value['fair'])) + " & " + "{:.2f}".format(max(value['robust'])) + "\\\\ \n"
+
+print(latex_string)
