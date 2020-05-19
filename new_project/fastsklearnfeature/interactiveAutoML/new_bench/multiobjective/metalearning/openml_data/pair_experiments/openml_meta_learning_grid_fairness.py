@@ -74,7 +74,7 @@ k_value_list = []
 dataset_did_list = []
 dataset_sensitive_attribute_list = []
 
-number_runs = 3
+number_runs = 1
 
 cv_splitter = StratifiedKFold(5, random_state=42)
 
@@ -94,7 +94,7 @@ mp_global.cv_splitter = []
 
 for nruns in range(number_runs):
 	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(
-		dataset_key='1590', random_number=nruns)
+		dataset_key='1590', random_number=42 + nruns)
 
 	mp_global.X_train.append(X_train)
 	mp_global.X_validation.append(X_validation)
@@ -238,7 +238,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 
 
 
-		success_in_fairness = False
+		success_in_fairness = True
 		results = []
 		check_strategies = np.zeros(strategy_id)
 		with ProcessPool(max_workers=17) as pool:
