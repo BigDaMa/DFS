@@ -184,7 +184,7 @@ for rounds in range(10):
 			best_recall = calc_recall
 			best_combo = new_joined_strategies
 			best_name = my_string
-	my_latex += str(len(best_combo)) + "& + " + mappnames[best_combo[-1]] + " & " + "{:.3f}".format(best_recall) + "\\\\ \n"
+	my_latex += str(len(best_combo)) + "& + " + mappnames[best_combo[-1]] + " & " + "{:.2f}".format(best_recall) + "\\\\ \n"
 	joined_strategies = best_combo
 	print("\n\n")
 

@@ -319,7 +319,7 @@ print(strategy_time)
 
 np.sum(np.array(dataset['best_strategy']) == 1)
 
-
+print(best_strategy)
 
 
 ##get min_max values
@@ -385,7 +385,7 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 		latex_string += str(mappnames[s+1]) + " & $" + "{:.0f}".format(mean_time) + " \pm " + "{:.0f}".format(std_time)
 
 
-	fastest = np.sum(np.array(dataset['best_strategy']) == s) / float(len(dataset['best_strategy']))
+	fastest = np.sum(np.array(dataset['best_strategy']) == s+1) / float(len(dataset['best_strategy']))
 	if max_fastest == str_float(fastest):
 		latex_string += "$ & $\\textbf{" + "{:.2f}".format(fastest) + '}'
 	else:

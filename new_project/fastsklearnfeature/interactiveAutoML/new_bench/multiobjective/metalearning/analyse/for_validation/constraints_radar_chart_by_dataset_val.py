@@ -197,11 +197,10 @@ for efolder in experiment_folders:
 				if is_successfull_validation_and_test(exp_results):
 					if not info_dict['dataset_id'] in map_data_2_constraints:
 						map_data_2_constraints[info_dict['dataset_id']] = []
-					map_data_2_constraints[info_dict['dataset_id']].append((exp_results[best_run]['test_acc'],
-																			exp_results[best_run]['test_fair'],
-																			1.0 - exp_results[best_run][
-																				'cv_number_features'],
-																			exp_results[best_run]['test_robust']))
+					map_data_2_constraints[info_dict['dataset_id']].append((info_dict['constraint_set_list']['accuracy'],
+																			info_dict['constraint_set_list']['fairness'],
+																			1.0 - info_dict['constraint_set_list']['k'],
+																			info_dict['constraint_set_list']['robustness']))
 			run_count += 1
 		except FileNotFoundError:
 			pass
@@ -254,6 +253,6 @@ for key, value in map_data_2_constraints.items():
 	  showlegend=False
 	)
 
-	fig.write_html('/tmp/radar_chart_' + str(map_dataset2name[key]) +'.html', auto_open=False)
+	fig.write_html('/tmp/constraints_radar_chart_' + str(map_dataset2name[key]) +'.html', auto_open=False)
 
-	fig.write_image('/tmp/radar_chart_' + str(map_dataset2name[key]) +'.pdf')
+	fig.write_image('/tmp/constraints_radar_chart_' + str(map_dataset2name[key]) +'.pdf')

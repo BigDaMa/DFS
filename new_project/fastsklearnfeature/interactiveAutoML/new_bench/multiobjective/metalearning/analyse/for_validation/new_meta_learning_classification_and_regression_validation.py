@@ -23,19 +23,19 @@ warnings.filterwarnings("ignore")
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
 			 3:'TPE(FCBF)',
-			 4: 'TPE(Fisher Score)',
+			 4: 'TPE(Fisher)',
 			 5: 'TPE(MIM)',
 			 6: 'TPE(MCFS)',
 			 7: 'TPE(ReliefF)',
-			 8: 'TPE(no ranking)',
-             9: 'Simulated Annealing(no ranking)',
-			 10: 'NSGA-II(no ranking)',
-			 11: 'Exhaustive Search(no ranking)',
-			 12: 'Forward Selection(no ranking)',
-			 13: 'Backward Selection(no ranking)',
-			 14: 'Forward Floating Selection(no ranking)',
-			 15: 'Backward Floating Selection(no ranking)',
-			 16: 'RFE(Logistic Regression)',
+			 8: 'TPE(NR)',
+             9: 'SA(NR)',
+			 10: 'NSGA-II(NR)',
+			 11: 'ES(NR)',
+			 12: 'SFS(NR)',
+			 13: 'SBS(NR)',
+			 14: 'SFFS(NR)',
+			 15: 'SBFS(NR)',
+			 16: 'RFE(LR)',
 			 17: 'Complete Set'
 			 }
 
@@ -504,7 +504,7 @@ for train_ids, test_ids in outer_cv_all:
 			X_res = X_data[train_ids][:, my_ids]
 			y_res = strategy_success[train_ids, my_strategy]
 
-			rf_random = RandomForestClassifier(n_estimators=1000, class_weight='balanced')
+			rf_random = RandomForestClassifier(n_estimators=10000, class_weight='balanced')
 			rf_random.fit(X_res, y_res)
 
 			#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
