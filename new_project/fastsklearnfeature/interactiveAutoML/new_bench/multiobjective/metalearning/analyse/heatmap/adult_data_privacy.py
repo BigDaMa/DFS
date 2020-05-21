@@ -22,7 +22,7 @@ map_unique_to_name = {}
 
 for k,v in data.items():
 	accuracies.append(round(k[0], 2))
-	privacy.append(round(k[1], 2))
+	privacy.append(round(k[1], 3))
 	searchtime.append(round(v[0], 2))
 	strategy.append(v[1])
 
@@ -30,6 +30,7 @@ print(map_unique_to_name)
 
 df = pd.DataFrame({'Minimum Accuracy': accuracies, 'Privacy Epsilon': privacy, 'Search time': searchtime, 'Fastest Strategy': strategy})
 
+print(df)
 
 ax = sns.heatmap(df.pivot("Minimum Accuracy", "Privacy Epsilon", "Search time"))
 plt.show()

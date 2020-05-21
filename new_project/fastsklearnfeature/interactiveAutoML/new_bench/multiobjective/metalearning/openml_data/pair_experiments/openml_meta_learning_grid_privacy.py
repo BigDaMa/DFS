@@ -272,8 +272,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 				except Exception as error:
 					print("function raised %s" % error)
 					print(error.traceback)  # Python's traceback of remote process
-		if success_in_privacy == False:
-			break
+
 print('my heat map is here: ' + str(results_heatmap))
 
 
