@@ -174,7 +174,7 @@ number_ml_scenarios = 1200
 run_count = 0
 map_data_2_constraints = {}
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -253,6 +253,6 @@ for key, value in map_data_2_constraints.items():
 	  showlegend=False
 	)
 
-	fig.write_html('/tmp/constraints_radar_chart_' + str(map_dataset2name[key]) +'.html', auto_open=False)
+	#fig.write_html('/tmp/constraints_radar_chart_' + str(map_dataset2name[key]) +'.html', auto_open=False)
 
 	fig.write_image('/tmp/constraints_radar_chart_' + str(map_dataset2name[key]) +'.pdf')

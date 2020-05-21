@@ -86,19 +86,19 @@ map_dataset2name['934'] ='Social Mobility'
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE(chi)',
 			 3:'TPE(FCBF)',
-			 4: 'TPE(Fisher Score)',
-			 5: 'TPE(Mutual Information)',
+			 4: 'TPE(Fisher)',
+			 5: 'TPE(MIM)',
 			 6: 'TPE(MCFS)',
 			 7: 'TPE(ReliefF)',
-			 8: 'TPE(no ranking)',
-             9: 'Simulated Annealing(no ranking)',
-			 10: 'NSGA-II(no ranking)',
-			 11: 'Exhaustive Search(no ranking)',
-			 12: 'Forward Selection(no ranking)',
-			 13: 'Backward Selection(no ranking)',
-			 14: 'Forward Floating Selection(no ranking)',
-			 15: 'Backward Floating Selection(no ranking)',
-			 16: 'RFE(Logistic Regression)',
+			 8: 'TPE(NR)',
+             9: 'SA(NR)',
+			 10: 'NSGA-II(NR)',
+			 11: 'ES(NR)',
+			 12: 'SFS(NR)',
+			 13: 'SBS(NR)',
+			 14: 'SFFS(NR)',
+			 15: 'SBFS(NR)',
+			 16: 'RFE(LR)',
 			 17: 'Complete'
 			 }
 
@@ -158,10 +158,10 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
-
+number_ml_scenarios = 1200
 run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
@@ -206,7 +206,10 @@ for efolder in experiment_folders:
 			run_count += 1
 		except FileNotFoundError:
 			pass
-
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 assert len(dataset['success_value']) == len(dataset['best_strategy'])
 

@@ -347,7 +347,7 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 		min_average_search_time = avg_search_time
 
 
-	fastest = np.sum(np.array(dataset['best_strategy']) == s) / float(len(dataset['best_strategy']))
+	fastest = np.sum(np.array(dataset['best_strategy']) == s+1) / float(len(dataset['best_strategy']))
 	if max_fastest < str_float(fastest):
 		max_fastest = str_float(fastest)
 

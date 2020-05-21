@@ -1,7 +1,6 @@
 import pickle
 import numpy as np
 
-
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
 			 3:'TPE(FCBF)',
@@ -28,7 +27,7 @@ mappnames = {1:'TPE(Variance)',
 
 map_rows2strategy_mean_time = {}
 
-for number_observations in [100, 1000, 10000, 100000, 1000000]:
+for number_features in [100, 1000, 10000, 100000]:
 
 	dataset = {}
 	dataset['best_strategy'] = []
@@ -72,7 +71,7 @@ for number_observations in [100, 1000, 10000, 100000, 1000000]:
 
 	run_count = 0
 	for rfolder_i in range(20):
-		rfolder = '/home/felix/phd/versions_dfs/scaling/experiment_observations' + str(number_observations) + '/run' + str(rfolder_i) + '/'
+		rfolder = '/home/felix/phd/versions_dfs/scaling/experiment_features' + str(number_features) + '/run' + str(rfolder_i) + '/'
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
 			run_strategies_success_test = {}
@@ -127,14 +126,14 @@ for number_observations in [100, 1000, 10000, 100000, 1000000]:
 
 		strategy_time[s-1] = np.mean(current_time)
 
-	map_rows2strategy_mean_time[number_observations] = strategy_time
+	map_rows2strategy_mean_time[number_features] = strategy_time
 
 
 my_latex = ""
 for s in np.array([2,10,9,4,5,12,16,13,7]) - 1:
 	my_latex += '\\addplot+ coordinates{'
-	for number_observations in [100, 1000, 10000, 100000, 1000000]:
-		my_latex += '(' + str(number_observations) + ',' + str(map_rows2strategy_mean_time[number_observations][s]) + ') '
+	for number_features in [100, 1000, 10000, 100000]:
+		my_latex += '(' + str(number_features) + ',' + str(map_rows2strategy_mean_time[number_features][s]) + ') '
 	my_latex += "};\n\\addlegendentry{"+ str(mappnames[s+1]) +"}\n\n"
 
 print(my_latex)

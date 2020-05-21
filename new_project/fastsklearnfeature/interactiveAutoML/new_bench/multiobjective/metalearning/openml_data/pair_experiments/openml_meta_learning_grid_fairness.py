@@ -284,4 +284,3 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 print('my heat map is here: ' + str(results_heatmap))
 
 
-
