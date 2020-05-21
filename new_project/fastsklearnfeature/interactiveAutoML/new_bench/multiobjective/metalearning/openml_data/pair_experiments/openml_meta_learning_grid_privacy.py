@@ -114,7 +114,7 @@ u_acc = 0.90
 
 results_heatmap = {}
 for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
-	for privacy in [10, 7, 3, 1, 0.7, 0.3, 0.1]:
+	for privacy in [0.7, 0.3, 0.1, 0.07, 0.03, 0.01]:
 		i += 1
 
 		min_robustness = 0.0
@@ -125,9 +125,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 		# Execute each search strategy with a given time limit (in parallel)
 		# maybe run multiple times to smooth stochasticity
 
-		model = LogisticRegression(class_weight='balanced')
-		if type(privacy) != type(None):
-			model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
+		model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
 		mp_global.clf = model
 
 		#define rankings

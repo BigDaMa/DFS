@@ -114,7 +114,7 @@ u_acc = 0.90
 
 results_heatmap = {}
 for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
-	for max_number_features in [0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05]:
+	for max_number_features in [0.1, 0.09, 0.08, 0.07, 0.06, 0.05, 0.04, 0.03, 0.02, 0.01]:
 		i += 1
 
 		min_robustness = 0.0
