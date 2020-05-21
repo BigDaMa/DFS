@@ -22,7 +22,7 @@ mappnames = {1:'TPE(Variance)',
 
 
 
-
+[2,12,9,16,3,10,5,13,4,7]
 
 
 map_rows2strategy_mean_time = {}
@@ -130,7 +130,8 @@ for number_features in [100, 1000, 10000, 100000]:
 
 
 my_latex = ""
-for s in np.array([2,10,9,4,5,12,16,13,7]) - 1:
+for s in np.array([2,12,9,16,3,10,5,13,4,7]) - 1:
+#for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
 	my_latex += '\\addplot+ coordinates{'
 	for number_features in [100, 1000, 10000, 100000]:
 		my_latex += '(' + str(number_features) + ',' + str(map_rows2strategy_mean_time[number_features][s]) + ') '

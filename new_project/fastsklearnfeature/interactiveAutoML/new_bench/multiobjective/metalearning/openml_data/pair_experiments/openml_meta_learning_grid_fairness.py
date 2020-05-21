@@ -238,7 +238,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 
 
 
-		success_in_fairness = True
+		success_in_fairness = False
 		results = []
 		check_strategies = np.zeros(strategy_id)
 		with ProcessPool(max_workers=17) as pool:

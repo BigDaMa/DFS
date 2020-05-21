@@ -74,7 +74,7 @@ k_value_list = []
 dataset_did_list = []
 dataset_sensitive_attribute_list = []
 
-number_runs = 2
+number_runs = 1
 
 cv_splitter = StratifiedKFold(5, random_state=42)
 
@@ -93,7 +93,7 @@ mp_global.sensitive_ids = []
 mp_global.cv_splitter = []
 
 for nruns in range(number_runs):
-	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590', random_number=nruns)
+	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590', random_number=42 + nruns)
 
 	mp_global.X_train.append(X_train)
 	mp_global.X_validation.append(X_validation)
@@ -109,8 +109,8 @@ for nruns in range(number_runs):
 
 runs_per_dataset = 0
 i = 1
-l_acc = 0.7
-u_acc = 0.91
+l_acc = 0.69
+u_acc = 0.90
 l_safety = 0.5
 u_safety = 1.0
 
@@ -120,7 +120,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 		i += 1
 
 		min_fairness = 0.0
-		max_search_time = 20 * 60
+		max_search_time = 30 * 60
 		max_number_features = 1.0
 		privacy = None
 
@@ -235,6 +235,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 			return new_result
 
 
+		success_in_safety = False
 		results = []
 		check_strategies = np.zeros(strategy_id)
 		with ProcessPool(max_workers=17) as pool:
@@ -260,6 +261,7 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 								pickle.dump(results_heatmap, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 							print('my heat map is here: ' + str(results_heatmap))
+							success_in_safety = True
 							pool.stop()
 							pool.join(timeout=0)
 							break
@@ -274,6 +276,8 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 				except Exception as error:
 					print("function raised %s" % error)
 					print(error.traceback)  # Python's traceback of remote process
+		if success_in_safety == False:
+			break
 print('my heat map is here: ' + str(results_heatmap))
 
 
