@@ -92,8 +92,9 @@ mp_global.names = []
 mp_global.sensitive_ids = []
 mp_global.cv_splitter = []
 
-for nruns in range(number_runs):
-	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590', random_number=42 + nruns)
+for nruns in range(5):
+	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(
+		dataset_key='1590', random_number=42 + nruns)
 
 	mp_global.X_train.append(X_train)
 	mp_global.X_validation.append(X_validation)
@@ -108,86 +109,85 @@ for nruns in range(number_runs):
 	mp_global.cv_splitter.append(cv_splitter)
 
 runs_per_dataset = 0
-i = 1
-l_acc = 0.69
+l_acc = 0.70
 u_acc = 0.90
+
 
 results_heatmap = {}
 for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 	for privacy in [0.3, 0.1, 0.07, 0.03, 0.01, 0.007, 0.003, 0.001]:
-		i += 1
 
-		min_robustness = 0.0
-		min_fairness = 0.0
-		max_search_time = 30 * 60
-		max_number_features = 1.0
+		success_per_strategy = np.zeros(18)
+		time_per_strategy = np.zeros(18)
+		for nruns_global in range(5):
 
-		# Execute each search strategy with a given time limit (in parallel)
-		# maybe run multiple times to smooth stochasticity
+			min_robustness = 0.0
+			max_search_time = 20 * 60
+			min_fairness = 0.0
+			max_number_features = 1.0
 
-		model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
-		mp_global.clf = model
+			# Execute each search strategy with a given time limit (in parallel)
+			# maybe run multiple times to smooth stochasticity
 
-		#define rankings
-		rankings = [variance,
-					chi2_score_wo,
-					fcbf,
-					my_fisher_score,
-					mutual_info_classif,
-					my_mcfs]
-		#rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
-		#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
-		#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
-		rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
+			model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
+			mp_global.clf = model
 
-		mp_global.min_accuracy = min_accuracy
-		mp_global.min_fairness = min_fairness
-		mp_global.min_robustness = min_robustness
-		mp_global.max_number_features = max_number_features
-		mp_global.max_search_time = max_search_time
+			#define rankings
+			rankings = [variance,
+						chi2_score_wo,
+						fcbf,
+						my_fisher_score,
+						mutual_info_classif,
+						my_mcfs]
+			#rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
+			#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
+			#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
+			rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
 
-		mp_global.configurations = []
-		#add single rankings
-		strategy_id = 1
-		for r in range(len(rankings)):
-			for run in range(number_of_runs):
-				configuration = {}
-				configuration['ranking_functions'] = [rankings[r]]
-				configuration['run_id'] = copy.deepcopy(run)
-				configuration['main_strategy'] = weighted_ranking
-				configuration['strategy_id'] = copy.deepcopy(strategy_id)
-				mp_global.configurations.append(configuration)
-			strategy_id +=1
+			mp_global.min_accuracy = min_accuracy
+			mp_global.min_fairness = min_fairness
+			mp_global.min_robustness = min_robustness
+			mp_global.max_number_features = max_number_features
+			mp_global.max_search_time = max_search_time
 
-		main_strategies = [TPE,
-						   simulated_annealing,
-						   evolution,
-						   exhaustive,
-						   forward_selection,
-						   backward_selection,
-						   forward_floating_selection,
-						   backward_floating_selection,
-						   recursive_feature_elimination,
-						   fullfeatures]
-
-		#run main strategies
-		for strategy in main_strategies:
-			for run in range(number_of_runs):
+			mp_global.configurations = []
+			#add single rankings
+			strategy_id = 1
+			for r in range(len(rankings)):
+				for run in range(number_of_runs):
 					configuration = {}
-					configuration['ranking_functions'] = rankings
+					configuration['ranking_functions'] = [rankings[r]]
 					configuration['run_id'] = copy.deepcopy(run)
-					configuration['main_strategy'] = strategy
+					configuration['main_strategy'] = weighted_ranking
 					configuration['strategy_id'] = copy.deepcopy(strategy_id)
 					mp_global.configurations.append(configuration)
-			strategy_id += 1
+				strategy_id +=1
 
-		def my_function(config_id):
-			new_result = {}
-			search_times = []
-			successes = []
+			main_strategies = [TPE,
+							   simulated_annealing,
+							   evolution,
+							   exhaustive,
+							   forward_selection,
+							   backward_selection,
+							   forward_floating_selection,
+							   backward_floating_selection,
+							   recursive_feature_elimination,
+							   fullfeatures]
 
-			conf = mp_global.configurations[config_id]
-			for run_i in range(number_runs):
+			#run main strategies
+			for strategy in main_strategies:
+				for run in[0]:
+						configuration = {}
+						configuration['ranking_functions'] = rankings
+						configuration['run_id'] = copy.deepcopy(run)
+						configuration['main_strategy'] = strategy
+						configuration['strategy_id'] = copy.deepcopy(strategy_id)
+						mp_global.configurations.append(configuration)
+				strategy_id += 1
+
+			def my_function(config_id):
+				run_i = nruns_global
+				conf = mp_global.configurations[config_id]
 				log_file = '/tmp/experiment' + str(current_run_time_id) + '_run_' + str(run_i) + '_strategy' + str(conf['strategy_id']) + '.pickle'
 
 				result = conf['main_strategy'](mp_global.X_train[run_i],
@@ -211,69 +211,59 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 
 
 				result['strategy_id'] = conf['strategy_id']
-				successes.append(result['success'])
-
 				if result['success']:
 					exp_results = load_pickle(log_file)
-					search_times.append(exp_results[-1]['final_time'])
-					os.remove(log_file)
-				else:
-					os.remove(log_file)
-					break
+					result['time'] = exp_results[-1]['final_time']
+				os.remove(log_file)
 
-			if np.sum(successes) == number_runs:
-				new_result['success'] = True
-				new_result['time'] = np.mean(search_times)
-			else:
-				new_result['success'] = False
-
-			new_result['strategy_id'] = conf['strategy_id']
-			return new_result
+				return result
 
 
-		success_in_privacy = False
-		results = []
-		check_strategies = np.zeros(strategy_id)
-		with ProcessPool(max_workers=17) as pool:
-			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
-			iterator = future.result()
-			while True:
-				#log
-				f = open('/tmp/current_heat_map_privacy_acc.txt', 'w+')
-				f.write(str(results_heatmap) + ' current position: privacy: ' + str(privacy) + ' acc: ' + str(
-					min_accuracy))
-				f.flush()
-				f.close()
+			check_strategies = np.zeros(strategy_id)
+			with ProcessPool(max_workers=17) as pool:
+				future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
-				try:
-					result = next(iterator)
-					if result['success'] == True:
-						try:
-							print(result)
-							results_heatmap [(min_accuracy, privacy)] = (result['time'], result['strategy_id'])
+				iterator = future.result()
+				while True:
+					try:
+						result = next(iterator)
+						if result['success'] == True:
+							try:
+								success_per_strategy[result['strategy_id']] += 1
+								time_per_strategy[result['strategy_id']] += result['time']
+								pool.stop()
+								pool.join(timeout=0)
+								break
+							except:
+								print("fail strategy Id: " + str(result['strategy_id']))
+					except StopIteration:
+						break
+					except TimeoutError as error:
+						print("function took longer than %d seconds" % error.args[1])
+					except ProcessExpired as error:
+						print("%s. Exit code: %d" % (error, error.exitcode))
+					except Exception as error:
+						print("function raised %s" % error)
+						print(error.traceback)  # Python's traceback of remote process
 
-							with open('/tmp/current_heat_map_privacy_acc.pickle', 'wb+') as f_log:
-								pickle.dump(results_heatmap, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+		# do logging
+		print('my heat map is here: ' + str(results_heatmap))
+		with open('/tmp/current_heat_map_privacy_acc.txt', 'w+') as f:
+			f.write(str(results_heatmap) + ' current position: privacy: ' + str(privacy) + ' acc: ' + str(
+				min_accuracy))
 
-							print('my heat map is here: ' + str(results_heatmap))
-							success_in_privacy = True
-							pool.stop()
-							pool.join(timeout=0)
-							break
-						except:
-							print("fail strategy Id: " + str(result['strategy_id']))
-				except StopIteration:
-					break
-				except TimeoutError as error:
-					print("function took longer than %d seconds" % error.args[1])
-				except ProcessExpired as error:
-					print("%s. Exit code: %d" % (error, error.exitcode))
-				except Exception as error:
-					print("function raised %s" % error)
-					print(error.traceback)  # Python's traceback of remote process
+		if np.sum(success_per_strategy) == 0:
+			break
+		else:
+			fastest_strategy_id = np.argmax(success_per_strategy)
+
+			results_heatmap[(min_accuracy, privacy)] = (time_per_strategy[fastest_strategy_id] / float(success_per_strategy[fastest_strategy_id]), fastest_strategy_id)
+
+			with open('/tmp/current_heat_map_privacy_acc.pickle', 'wb+') as f_log:
+				pickle.dump(results_heatmap, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 print('my heat map is here: ' + str(results_heatmap))
-
 
 

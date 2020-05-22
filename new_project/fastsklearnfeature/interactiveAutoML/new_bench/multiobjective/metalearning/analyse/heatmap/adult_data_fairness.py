@@ -7,7 +7,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 import pickle
 
 
-data = pickle.load(open('/home/felix/phd/versions_dfs/pairs/current_heat_map_fair_acc.pickle', "rb"))
+data = pickle.load(open('/home/felix/phd/versions_dfs/new_pairs/current_heat_map_fair_acc.pickle', "rb"))
 
 accuracies = []
 fairness = []
