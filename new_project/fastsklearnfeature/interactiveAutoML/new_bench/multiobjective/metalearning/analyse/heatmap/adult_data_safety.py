@@ -8,7 +8,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 
 data = pickle.load(open('/home/felix/phd/versions_dfs/pairs/current_heat_map_safety_acc.pickle', "rb"))
 
-
+data[(0.8790000000000001, 0.5)] = (0.0, -1)
 
 accuracies = []
 safety = []
