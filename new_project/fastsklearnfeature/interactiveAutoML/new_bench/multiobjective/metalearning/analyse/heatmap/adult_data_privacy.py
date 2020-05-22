@@ -6,7 +6,7 @@ import pickle
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.heatmap.heatmap_util import pivot2latex
 
 
-data = pickle.load(open('/home/felix/phd/versions_dfs/pairs/current_heat_map_privacy_acc.pickle', "rb"))
+data = pickle.load(open('/home/felix/phd/versions_dfs/new_pairs/current_heat_map_privacy_acc.pickle', "rb"))
 
 accuracies = []
 privacy = []

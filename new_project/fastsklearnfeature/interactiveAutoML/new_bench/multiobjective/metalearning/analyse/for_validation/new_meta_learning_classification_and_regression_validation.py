@@ -9,10 +9,6 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
-from imblearn.over_sampling import SMOTE
-from sklearn.preprocessing import Normalizer
-
-
 import numpy as np
 import copy
 from sklearn.pipeline import Pipeline
@@ -468,6 +464,20 @@ strategy_folds_recall = np.zeros((len(mappnames), len(outer_cv_all))) # strategi
 
 print('strategy size: ' + str(strategy_folds_f1.shape))
 
+
+#save models
+for my_strategy in range(strategy_success.shape[1]):
+	rf_random = RandomForestClassifier(n_estimators=4000, class_weight='balanced')
+	rf_random.fit(X_data, strategy_success[:, my_strategy])
+
+	with open('/tmp/model_strategy' + str(my_strategy) + '.pickle', 'wb+') as f_log:
+		pickle.dump(rf_random, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+
+print("\nmodels done :)\n\n")
+
+
+
+
 dataset_id = 0
 for train_ids, test_ids in outer_cv_all:
 
@@ -504,7 +514,7 @@ for train_ids, test_ids in outer_cv_all:
 			X_res = X_data[train_ids][:, my_ids]
 			y_res = strategy_success[train_ids, my_strategy]
 
-			rf_random = RandomForestClassifier(n_estimators=10000, class_weight='balanced')
+			rf_random = RandomForestClassifier(n_estimators=4000, class_weight='balanced')
 			rf_random.fit(X_res, y_res)
 
 			#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
