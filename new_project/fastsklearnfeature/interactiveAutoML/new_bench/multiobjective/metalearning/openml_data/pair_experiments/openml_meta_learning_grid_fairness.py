@@ -109,7 +109,7 @@ for nruns in range(5):
 	mp_global.cv_splitter.append(cv_splitter)
 
 runs_per_dataset = 0
-l_acc = 0.69
+l_acc = 0.70
 u_acc = 0.90
 l_fair = 0.80
 u_fair = 0.91
