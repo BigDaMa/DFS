@@ -3,6 +3,7 @@ import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 import pandas as pd
 import pickle
+import copy
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.heatmap.heatmap_util import pivot2latex
 
@@ -16,8 +17,12 @@ strategy= []
 searchtime = []
 
 
+data_dict = copy.deepcopy(data)
 
-
+for k,v in data.items():
+	if k[1] < 0.75:
+		del data_dict[k]
+data = data_dict
 
 
 for k,v in data.items():

@@ -36,6 +36,9 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 
 import matplotlib
 import matplotlib.pyplot as plt
+from eli5 import show_prediction
+from IPython.display import display
+import copy
 
 class QueryOptimizer(BaseSelection):
 	def __init__(self):
@@ -59,6 +62,11 @@ class QueryOptimizer(BaseSelection):
 					 17: 'Complete Set'
 					 }
 
+		self.models = []
+		for my_strategy in range(len(self.mappnames)):
+			model = pickle.load(open('/tmp/model_strategy' + str(my_strategy) + '.pickle', "rb"))
+			self.models.append(copy.deepcopy(model))
+
 		super(QueryOptimizer, self).__init__(None)
 
 
@@ -70,6 +78,8 @@ class QueryOptimizer(BaseSelection):
 			  						privacy,
 			  						max_complexity,
 			  						max_search_time):
+
+		start_time = time.time()
 
 		selection_strategies = {}
 		rankings = {}
@@ -84,7 +94,7 @@ class QueryOptimizer(BaseSelection):
 
 		for my_strategy in range(1,8):
 			selection_strategies[my_strategy] = weighted_ranking
-			rankings[my_strategy] = ranking_list[my_strategy - 1]
+			rankings[my_strategy] = [ranking_list[my_strategy - 1]]
 
 		main_strategies = [TPE,
 						   simulated_annealing,
@@ -162,18 +172,26 @@ class QueryOptimizer(BaseSelection):
 		feature_list.append(X_train.shape[0])  # number rows
 		feature_list.append(X_train.shape[1])  # number columns
 
-		features = np.array(feature_list).reshape(1, -1)
+		self.features = np.array(feature_list).reshape(1, -1)
 
 		self.predicted_probabilities = np.zeros(len(self.mappnames))
 
+		self.best_model = None
+		best_score = -1
 		for my_strategy in range(len(self.mappnames)):
-			model = pickle.load(open('/tmp/model_strategy' + str(my_strategy) + '.pickle', "rb"))
-			self.predicted_probabilities[my_strategy] = model.predict_proba(features)[:, 1]
+			self.predicted_probabilities[my_strategy] = self.models[my_strategy].predict_proba(self.features)[:, 1]
+			if self.predicted_probabilities[my_strategy] > best_score:
+				best_score = self.predicted_probabilities[my_strategy]
+				self.best_model = self.models[my_strategy]
 
 		best_id = np.argmax(self.predicted_probabilities)
 
 		self.selection_function = selection_strategies[best_id+1]
 		self.ranking_functions = rankings[best_id+1]
+
+		print("Within " + str(time.time() - start_time) + " seconds, the Optimizer chose to run " + str(self.mappnames[best_id+1]))
+
+
 
 	def get_plan(self,
 			  X_train,
@@ -201,6 +219,7 @@ class QueryOptimizer(BaseSelection):
 										 max_complexity,
 										 max_search_time)
 
+
 		labels = []
 		for my_strategy in range(len(self.mappnames)):
 			labels.append(self.mappnames[my_strategy + 1])
@@ -209,7 +228,7 @@ class QueryOptimizer(BaseSelection):
 		plt.rcdefaults()
 		fig, ax = plt.subplots()
 
-		ids = np.argsort(probas)
+		ids = np.argsort(probas * -1)
 
 		# Example data
 		y_pos = np.arange(len(labels))
@@ -217,9 +236,28 @@ class QueryOptimizer(BaseSelection):
 		ax.set_yticks(y_pos)
 		ax.set_yticklabels(np.array(labels)[ids])
 		ax.invert_yaxis()  # labels read top-to-bottom
-		ax.set_xlabel('Probabilities')
-		ax.set_title('Strategies')
+		ax.set_xlabel('How likely is a strategy satisfying the specified query?')
 		plt.show()
+
+	def explain_prediction(self):
+		names_features = ['min_accuracy',
+						'min_fairness',
+						'max_complexity_rel',
+						'max_complexity_abs',
+						'min_safety',
+						'min_privacy',
+						'may_search_time',
+						'accuracy_distance_to_landmark',
+						'fairness_distance_to_landmark',
+						'complexity_distance_to_landmark_rel',
+						'complexity_distance_to_landmark_abs',
+						'safety_distance_to_landmark',
+						'landmark_computation_time',
+						'rows',
+						'columns']
+
+
+		display(show_prediction(self.best_model, self.features[0], feature_names=names_features, show_feature_values=True))
 
 
 	def query(self,
@@ -229,7 +267,7 @@ class QueryOptimizer(BaseSelection):
 			  y_train,
 			  y_validation,
 			  y_test,
-			  classifierm=LogisticRegression(class_weight='balanced'),
+			  classifier=LogisticRegression(class_weight='balanced'),
 			  min_accuracy=0.5,
 			  sensitive_ids=None,
 			  min_fairness=0.0,
@@ -247,14 +285,14 @@ class QueryOptimizer(BaseSelection):
 									min_privacy,
 									max_complexity,
 									max_search_time)
-		return super().query(self,
+		return super().query(
 			  X_train,
 			  X_validation,
 			  X_test,
 			  y_train,
 			  y_validation,
 			  y_test,
-			  classifier=classifierm,
+			  classifier=classifier,
 			  min_accuracy=min_accuracy,
 			  sensitive_ids=sensitive_ids,
 			  min_fairness=min_fairness,
