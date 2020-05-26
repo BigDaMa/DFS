@@ -36,8 +36,13 @@ cd Complexity-Driven-Feature-Construction/new_project
 python -m pip install .
 ```
 
-## Experiments
+## Additional Evaluations
+In addition to the charts provided in the paper, we provide additional evaluations:
 
+1) [Dataset-specific Results](../master/additional_charts/Dataset-specific%20DFS%20Results.pdf): We report the coverage and the fraction of ML scenarios that a strategy finished the fastest across all 16 feature selection strategies and all 20 datasets.
+2) [Pareto-Optimal Results for the Test Set](../master/additional_charts/radar_charts_test_scores): We provide for all 20 datasets all pareto-optimal solution that declarative feature selection found in evaluating 1200 different constraint sets.
+Here, are the pareto-optimal solutions for the Adult dataset:
+<img src="https://user-images.githubusercontent.com/5217389/82898629-f0423d00-9f59-11ea-9205-bb45367ac487.png" align="left" width="300" >
 
 
 
