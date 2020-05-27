@@ -31,8 +31,8 @@ python -m pip install .
 cd ..
 
 
-git clone https://github.com/BigDaMa/Complexity-Driven-Feature-Construction.git
-cd Complexity-Driven-Feature-Construction/new_project
+git clone https://github.com/BigDaMa/DFS.git
+cd DFS/new_project
 python -m pip install .
 ```
 
