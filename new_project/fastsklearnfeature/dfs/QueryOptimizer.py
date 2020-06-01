@@ -124,8 +124,7 @@ class QueryOptimizer(BaseSelection):
 		X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42,
 															stratify=y_train)
 
-		fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True,
-									  sensitive_data=X_train_tiny[:, sensitive_ids[0]])
+
 
 		cv_k = 1.0
 		model = LogisticRegression(class_weight='balanced')
@@ -139,12 +138,22 @@ class QueryOptimizer(BaseSelection):
 
 		small_start_time = time.time()
 
+		scoring_dict = {'AUC': auc_scorer, 'Robustness': robust_scorer}
+
+		if type(sensitive_ids) != type(None):
+			fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True,
+										  sensitive_data=X_train_tiny[:, sensitive_ids[0]])
+			scoring_dict['Fairness'] = fair_train_tiny
+
 		cv = GridSearchCV(model, param_grid={'C': [1.0]},
-						  scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer},
+						  scoring=scoring_dict,
 						  refit=False, cv=cv_splitter)
 		cv.fit(X_train_tiny, pd.DataFrame(y_train_tiny))
 		cv_acc = cv.cv_results_['mean_test_AUC'][0]
-		cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+
+		cv_fair = 0.0
+		if type(sensitive_ids) != type(None):
+			cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
 		cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
 		cv_time = time.time() - small_start_time
@@ -239,14 +248,14 @@ class QueryOptimizer(BaseSelection):
 		ax.set_xlabel('How likely is a strategy satisfying the specified query?')
 		plt.show()
 
-	def explain_prediction(self):
+	def explain_plan_choice(self):
 		names_features = ['min_accuracy',
 						'min_fairness',
 						'max_complexity_rel',
 						'max_complexity_abs',
 						'min_safety',
 						'min_privacy',
-						'may_search_time',
+						'max_search_time',
 						'accuracy_distance_to_landmark',
 						'fairness_distance_to_landmark',
 						'complexity_distance_to_landmark_rel',
@@ -258,6 +267,61 @@ class QueryOptimizer(BaseSelection):
 
 
 		display(show_prediction(self.best_model, self.features[0], feature_names=names_features, show_feature_values=True))
+
+
+	def how_to_improve_the_success_likelihood(self):
+
+		fig, ax = plt.subplots()
+
+		#check which constraints are set
+		if self.features[0,0] > 0.0:
+			#modify the feature vector incrementally
+			min_thresholds = []
+			success_probabilities = []
+			for step in range(10):
+				new_features = copy.deepcopy(self.features)
+				new_features[0,0] = new_features[0,0] - step * 0.01
+				new_features[0,7] = new_features[0,7] + step * 0.01
+
+				min_thresholds.append(step)
+
+				best_score = -1
+				for my_strategy in range(len(self.mappnames)):
+					self.predicted_probabilities[my_strategy] = self.models[my_strategy].predict_proba(new_features)[:, 1]
+					if self.predicted_probabilities[my_strategy] > best_score:
+						best_score = self.predicted_probabilities[my_strategy]
+				success_probabilities.append(best_score)
+
+			ax.plot(min_thresholds, success_probabilities, label='Minimum Accuracy')
+
+		if self.features[0,1] > 0.0:
+			#modify the feature vector incrementally
+			min_thresholds = []
+			success_probabilities = []
+			for step in range(10):
+				new_features = copy.deepcopy(self.features)
+				new_features[0,1] = new_features[0,1] - step * 0.01
+				new_features[0,8] = new_features[0,8] + step * 0.01
+
+				min_thresholds.append(step)
+
+				best_score = -1
+				for my_strategy in range(len(self.mappnames)):
+					self.predicted_probabilities[my_strategy] = self.models[my_strategy].predict_proba(new_features)[:, 1]
+					if self.predicted_probabilities[my_strategy] > best_score:
+						best_score = self.predicted_probabilities[my_strategy]
+				success_probabilities.append(best_score)
+
+			ax.plot(min_thresholds, success_probabilities, label='Minimum Fairness')
+
+		handles, labels = ax.get_legend_handles_labels()
+		ax.legend(handles[::-1], labels[::-1])
+
+		ax.set_xlabel('Percentage points to reduce the respective threshold')
+		ax.set_ylabel('DFS success likelihood')
+		plt.show()
+
+
 
 
 	def query(self,

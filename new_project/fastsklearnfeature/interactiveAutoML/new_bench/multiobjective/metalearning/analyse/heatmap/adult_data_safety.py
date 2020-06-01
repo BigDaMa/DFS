@@ -17,12 +17,14 @@ strategy= []
 searchtime = []
 
 
+'''
 data_dict = copy.deepcopy(data)
 
 for k,v in data.items():
 	if k[1] < 0.75:
 		del data_dict[k]
 data = data_dict
+'''
 
 
 for k,v in data.items():

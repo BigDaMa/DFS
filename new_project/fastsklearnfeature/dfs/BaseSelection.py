@@ -192,7 +192,7 @@ class BaseSelection(object):
 		test_robust = exp_results[best_run]['test_robust']
 		test_number_features = exp_results[best_run]['cv_number_features']
 
-		categories = ['accuracy', 'fairness', 'simplicity', 'safety']
+		categories = ['Accuracy', 'Fairness', 'Simplicity', 'Safety']
 
 
 
