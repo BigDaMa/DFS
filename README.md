@@ -6,7 +6,7 @@ From our extensive experimental results across 16 feature selection strategies, 
 ## Using our system
 To run the experiments, first, you need to set the paths in a configuration file with the name of your machine. Examples can be found here: ~/new_project/fastsklearnfeature/configuration/resources
 
-We provide a small jupyter notebook as an example: [Example Notebook](https://nbviewer.jupyter.org/github/BigDaMa/DFS/blob/master/new_project/fastsklearnfeature/interactiveAutoML/new_bench/multiobjective/metalearning/openml_data/notebook/Tutorial-Adult.ipynb)
+We provide a small jupyter notebook as an example: [open in nbviewer](https://nbviewer.jupyter.org/github/BigDaMa/DFS/blob/master/new_project/fastsklearnfeature/interactiveAutoML/new_bench/multiobjective/metalearning/openml_data/notebook/Tutorial-Adult.ipynb) / [open in Github](../master/new_project/fastsklearnfeature/interactiveAutoML/new_bench/multiobjective/metalearning/openml_data/notebook/Tutorial-Adult.ipynb)
 
 ![Selection_999(155)](https://user-images.githubusercontent.com/5217389/82896838-e965fb00-9f56-11ea-817d-b7f8fd5f1216.png)
 
