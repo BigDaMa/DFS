@@ -1,6 +1,6 @@
 from sklearn.model_selection import GridSearchCV
 from fastsklearnfeature.fastfeature_utils.candidate2pipeline import generate_pipeline
-from fastsklearnfeature.fastfeature_utils.candidate2pipeline import generate_smote_pipeline
+#from fastsklearnfeature.fastfeature_utils.candidate2pipeline import generate_smote_pipeline
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import copy
 import numpy as np

@@ -1,4 +1,5 @@
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
+
 from typing import List, Dict, Set
 import time
 from fastsklearnfeature.candidates.RawFeature import RawFeature
@@ -477,6 +478,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
                             filtered_features.append(check_f)
                 return filtered_features
 
+            '''
             combinations_to_be_applied: List[CandidateFeature] = []
             for p in partition:
                 lists_for_each_element: List[List[CandidateFeature]] = [[], []]
@@ -492,6 +494,7 @@ class ComplexityDrivenFeatureConstruction(CachedEvaluationFramework):
 
                 combinations_to_be_applied = self.generate_merge_for_combination(all_evaluated_features, lists_for_each_element[0], lists_for_each_element[1])
             current_layer.extend(combinations_to_be_applied)
+            '''
 
 
 

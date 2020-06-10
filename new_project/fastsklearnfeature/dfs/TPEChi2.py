@@ -1,4 +1,4 @@
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.notebook.api.BaseSelection import BaseSelection
+from fastsklearnfeature.dfs.BaseSelection import BaseSelection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import chi2_score_wo
 

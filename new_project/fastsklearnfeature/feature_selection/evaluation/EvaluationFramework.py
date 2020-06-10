@@ -18,7 +18,7 @@ from fastsklearnfeature.configuration.Config import Config
 from sklearn.pipeline import FeatureUnion
 from fastsklearnfeature.candidate_generation.feature_space.explorekit_transformations import get_transformation_for_feature_space
 import warnings
-from fastsklearnfeature.instance_selection.instance_selection_cnn import sample_data_by_cnn
+#from fastsklearnfeature.instance_selection.instance_selection_cnn import sample_data_by_cnn
 import copy
 from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 import tqdm
@@ -194,7 +194,7 @@ class EvaluationFramework:
             self.train_X_all = copy.deepcopy(self.dataset.splitted_values['train'])
             self.train_y_all = copy.deepcopy(self.dataset.splitted_target['train'])
 
-            self.dataset.splitted_values['train'], self.dataset.splitted_target['train'] = sample_data_by_cnn(self.dataset.splitted_values['train'], self.dataset.splitted_target['train'])
+            #self.dataset.splitted_values['train'], self.dataset.splitted_target['train'] = sample_data_by_cnn(self.dataset.splitted_values['train'], self.dataset.splitted_target['train'])
             print("training:" + str(len(self.dataset.splitted_target['train'])))
         else:
             self.train_X_all = self.dataset.splitted_values['train']
@@ -216,6 +216,8 @@ class EvaluationFramework:
 
             current_target = label_encoder.transform(current_target)
 
+            self.test_target = None
+            self.train_y_all_target = None
             if Config.get_default('score.test', 'False') == 'True':
                 self.test_target = label_encoder.transform(self.dataset.splitted_target['test'])
                 self.train_y_all_target = label_encoder.transform(self.train_y_all)

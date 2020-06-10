@@ -44,6 +44,8 @@ class ConstructionTransformer(BaseEstimator, TransformerMixin):
                     if not isinstance(r.transformation, MinusTransformation):
                         numeric_representations.append(r)
 
+        self.numeric_features = numeric_representations
+
         all_features = CandidateFeature(IdentityTransformation(-1), numeric_representations)
         all_standardized = CandidateFeature(MinMaxScalingTransformation(), [all_features])
 

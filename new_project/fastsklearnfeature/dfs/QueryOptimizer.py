@@ -1,4 +1,4 @@
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.notebook.api.BaseSelection import BaseSelection
+from fastsklearnfeature.dfs.BaseSelection import BaseSelection
 from sklearn.linear_model import LogisticRegression
 import numpy as np
 from sklearn.metrics import make_scorer
@@ -34,7 +34,6 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
 
-import matplotlib
 import matplotlib.pyplot as plt
 from eli5 import show_prediction
 from IPython.display import display
@@ -64,7 +63,7 @@ class QueryOptimizer(BaseSelection):
 
 		self.models = []
 		for my_strategy in range(len(self.mappnames)):
-			model = pickle.load(open('/tmp/model_strategy' + str(my_strategy) + '.pickle', "rb"))
+			model = pickle.load(open('./google_drive_models/models/model_strategy' + str(my_strategy) + '.pickle', "rb"))
 			self.models.append(copy.deepcopy(model))
 
 		super(QueryOptimizer, self).__init__(None)

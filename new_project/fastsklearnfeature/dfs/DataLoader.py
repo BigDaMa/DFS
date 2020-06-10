@@ -13,6 +13,40 @@ from sklearn import preprocessing
 import random
 from sklearn.impute import SimpleImputer
 from arff2pandas import a2p
+import urllib.request
+import shutil
+import zipfile
+import os
+import requests
+
+def download_file_from_google_drive(id, destination):
+    def get_confirm_token(response):
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                return value
+
+        return None
+
+    def save_response_content(response, destination):
+        CHUNK_SIZE = 32768
+
+        with open(destination, "wb") as f:
+            for chunk in response.iter_content(CHUNK_SIZE):
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+
+    URL = "https://docs.google.com/uc?export=download"
+
+    session = requests.Session()
+
+    response = session.get(URL, params = { 'id' : id }, stream = True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = { 'id' : id, 'confirm' : token }
+        response = session.get(URL, params = params, stream = True)
+
+    save_response_content(response, destination)
 
 class DataLoader(object):
 	
@@ -95,8 +129,24 @@ class DataLoader(object):
 		if type(dataset_key) == type(None):
 			key = list(self.map_dataset.keys())[random.randint(0, len(self.map_dataset) - 1)]
 
+		data_path = './google_drive_data'
+		if not os.path.isdir(data_path):
+			print("Downloading Datasets ...")
+			with urllib.request.urlopen('https://drive.google.com/u/0/uc?id=1Pg_n8lUGxkBmyiKIuc3LPPQm-wpWBq5u&export=download') as response, open('DFS_datasets.zip', 'wb') as out_file:
+				shutil.copyfileobj(response, out_file)
+
+			with zipfile.ZipFile('DFS_datasets.zip') as zf:
+				zf.extractall('google_drive_data')
+			os.remove('DFS_datasets.zip')
+
+			print("Downloading Query Optimizer Models ...")
+			download_file_from_google_drive("10_NwKY9IONU46biKW6Q8J2aCvohBkDB1", 'DFS_models.zip')
+			with zipfile.ZipFile('DFS_models.zip') as zf:
+				zf.extractall('google_drive_models')
+			os.remove('DFS_models.zip')
+
 		value = self.map_dataset[key]
-		with open(Config.get('data_path') + "/downloaded_arff/" + str(key) + ".arff") as f:
+		with open(data_path + "/downloaded_arff/" + str(key) + ".arff") as f:
 			df = a2p.load(f)
 
 			number_instances.append(df.shape[0])

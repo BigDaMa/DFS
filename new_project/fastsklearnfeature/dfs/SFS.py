@@ -1,4 +1,4 @@
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.notebook.api.BaseSelection import BaseSelection
+from fastsklearnfeature.dfs.BaseSelection import BaseSelection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.forward_floating_selection import forward_selection
 
 class SFS(BaseSelection):

@@ -1,8 +1,6 @@
 from sklearn.linear_model import LogisticRegression
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.notebook.api.SimulatedAnnealing import SimulatedAnnealing
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.notebook.api.TPEChi2 import TPEChi2
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.notebook.api.SFS import SFS
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.notebook.api.DataLoader import DataLoader
+from fastsklearnfeature.dfs.SimulatedAnnealing import SimulatedAnnealing
+from fastsklearnfeature.dfs import DataLoader
 import numpy as np
 
 dl = DataLoader()
