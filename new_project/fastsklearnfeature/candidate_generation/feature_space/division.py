@@ -55,3 +55,14 @@ def get_transformation_for_division(train_X_all, raw_features):
     unary_transformations.extend(OneHotGenerator(train_X_all, raw_features).produce())
 
     return unary_transformations, binary_transformations
+
+
+def get_onehot_and_imputation(train_X_all, raw_features):
+    unary_transformations: List[UnaryTransformation] = []
+    binary_transformations: List[Transformation] = []
+
+    unary_transformations.append(ImputationTransformation('mean'))
+
+    unary_transformations.extend(OneHotGenerator(train_X_all, raw_features).produce())
+
+    return unary_transformations, binary_transformations
