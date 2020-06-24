@@ -16,6 +16,10 @@ from fastsklearnfeature.interactiveAutoML.autosklearn.SFFS_construction import p
 from fastsklearnfeature.interactiveAutoML.autosklearn.SFFS_extend import parallel_extend
 from fastsklearnfeature.candidate_generation.feature_space.division import get_onehot_and_imputation
 from fastsklearnfeature.interactiveAutoML.autosklearn.SFFS_back import parallel_back
+from fastsklearnfeature.interactiveAutoML.autosklearn.SFFS_RFE import parallel_rfe
+from fastsklearnfeature.interactiveAutoML.autosklearn.SFFS_size import parallel_size
+from fastsklearnfeature.interactiveAutoML.autosklearn.SFFS_run import parallel_run
+
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -24,9 +28,13 @@ warnings.filterwarnings("ignore")
 auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
 
+log_it = {}
 
-#for data_id in [179, 1464, 37, 50, 334, 3, 1480, 15]: #3 fails
-for data_id in [1480]: #3 fails
+#for data_id in [31, 179, 1464, 37, 50, 334, 3, 1480, 15]: #3 fails
+for data_id in [31]: #3 fails
+
+    log_it[data_id] = {}
+
     dataset = openml.datasets.get_dataset(data_id)
     #dataset = openml.datasets.get_dataset(31)
     #dataset = openml.datasets.get_dataset(179)
@@ -56,8 +64,9 @@ for data_id in [1480]: #3 fails
 
 
 
+    start_construction = time.time()
 
-    t = ConstructionTransformer(c_max=4, epsilon=-np.inf, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=2, feature_names=attribute_names, feature_is_categorical=categorical_indicator,parameter_grid={'penalty': ['l2'], 'C': [1], 'solver': ['lbfgs'], 'class_weight': ['balanced'], 'max_iter': [10], 'multi_class':['auto']})
+    t = ConstructionTransformer(c_max=3, epsilon=-np.inf, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=2, feature_names=attribute_names, feature_is_categorical=categorical_indicator,parameter_grid={'penalty': ['l2'], 'C': [1], 'solver': ['lbfgs'], 'class_weight': ['balanced'], 'max_iter': [10], 'multi_class':['auto']})
     #t = ConstructionTransformer(c_max=3, epsilon=0, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=10, feature_names=attribute_names, feature_is_categorical=categorical_indicator)
 
     #t = ConstructionTransformer(c_max=3, epsilon=0, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=5, feature_names=attribute_names, feature_is_categorical=categorical_indicator)
@@ -65,6 +74,8 @@ for data_id in [1480]: #3 fails
     #t = ConstructionTransformer(c_max=3, epsilon=0, scoring=auc, n_jobs=4, model=LogisticRegression(), cv=5)
     #t.fit(X_train[0:500], y_train[0:500])
     t.fit(X_train, y_train)
+
+    log_it[data_id]['construction_time'] = time.time() - start_construction
 
 
     #print(t.numeric_features)
@@ -75,8 +86,17 @@ for data_id in [1480]: #3 fails
 
     #X_train, X_test = parallel_construct(X_train, y_train,X_test=X_test, y_test=y_test, floating=True, construction_floating=True, max_number_features=10, feature_generator=t, folds=5, number_cvs=1)
 
-    X_train, X_test = parallel_back(X_train, y_train, X_test=X_test, y_test=y_test, floating=True, max_number_features=50, feature_generator=t, folds=5, number_cvs=1)
+    #X_train, X_test = parallel_back(X_train, y_train, X_test=X_test, y_test=y_test, floating=True, max_number_features=50, feature_generator=t, folds=5, number_cvs=1)
 
+    X_train, X_test = parallel_rfe(X_train, y_train, X_test=X_test, y_test=y_test, floating=True,max_number_features=2000, feature_generator=t, folds=5, number_cvs=1)
+
+    #X_train, X_test = parallel_size(X_train, y_train, X_test=X_test, y_test=y_test, floating=True, max_number_features=2000, feature_generator=t, folds=5, number_cvs=1)
+
+    #log_it[data_id]['hpo_time'], log_it[data_id]['test_auc'] = parallel_run(X_train, y_train, X_test=X_test, y_test=y_test, feature_generator=t, folds=5, number_cvs=1)
+
+    print(log_it)
+
+    '''
 
     roc_auc_scorer = autosklearn.metrics.make_scorer(
             name="roc_auc",
@@ -108,6 +128,8 @@ for data_id in [1480]: #3 fails
     #first try simple SFFS to check whether we get really nice accuracy
     #if we get really nice accuracy, we can start to think how to optimize
     #optimistic execution
+    
+    '''
 
 
     '''

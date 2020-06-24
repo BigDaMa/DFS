@@ -12,7 +12,11 @@ from fastsklearnfeature.transformations.MinMaxScalingTransformation import MinMa
 from fastsklearnfeature.transformations.MinusTransformation import MinusTransformation
 from fastsklearnfeature.candidate_generation.feature_space.division import get_transformation_for_division
 from fastsklearnfeature.transformations.MyImputationTransformation import ImputationTransformation
+from fastsklearnfeature.transformations.HigherOrderCommutativeTransformation import HigherOrderCommutativeTransformation
 import pickle
+import numpy as np
+import sympy
+from sympy import S
 
 class ConstructionTransformer(BaseEstimator, TransformerMixin):
 
@@ -55,8 +59,16 @@ class ConstructionTransformer(BaseEstimator, TransformerMixin):
         for r in fe.all_representations:
             if 'score' in r.runtime_properties:
                 if not 'object' in str(r.properties['type']):
-                    if not isinstance(r.transformation, MinusTransformation):
-                        if not isinstance(r.transformation, MinMaxScalingTransformation):
+                    if not isinstance(r.transformation, MinMaxScalingTransformation):
+                        #if not (isinstance(r.transformation, HigherOrderCommutativeTransformation) and r.transformation.method == np.nansum):
+                        if isinstance(r.sympy_representation, sympy.Mul):
+                            found = False
+                            for e in r.sympy_representation._args:
+                                if e == S.NegativeOne:
+                                    found = True
+                            if found == False:
+                                numeric_representations.append(r)
+                        else:
                             numeric_representations.append(r)
 
         self.numeric_features = numeric_representations

@@ -26,7 +26,7 @@ auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=
 
 
 def get_model(c):
-	return ('clf', LogisticRegression(class_weight='balanced', C=c))
+	return ('clf', LogisticRegression(class_weight='balanced', C=c, solver='sag'))
 	#return ('clf', RandomForestClassifier(class_weight='balanced', n_estimators=c))
 '''
 def get_params():
@@ -37,10 +37,27 @@ def get_params():
 
 pARAMS = [1.0]
 
-def execute_feature_combo1(feature_combo,feature_combo_id=0, params = pARAMS):
+def run_fold(cv):
+	mask = mp_globalsfs.mask
+	c = mp_globalsfs.parameter
+	pipeline = Pipeline([
+		('imputation', SimpleImputer()),
+		('selection', MaskSelection(mask)),
+		get_model(c)
+	])
+
+	X_train, y_train, X_test, y_test = mp_globalsfs.data_per_fold[cv]
+	pipeline.fit(X_train, pd.DataFrame(y_train))
+
+	return auc_scorer(pipeline, X_test, y_test)
+
+
+def execute_feature_combo1(feature_combo,feature_combo_id=0, params=pARAMS):
 	mask = np.zeros(mp_globalsfs.data_per_fold[0][0].shape[1], dtype=bool)
 	for fc in feature_combo:
 		mask[fc] = True
+
+	mp_globalsfs.mask = mask
 
 	hyperparameter_search_scores = []
 	for c in params:
@@ -50,12 +67,12 @@ def execute_feature_combo1(feature_combo,feature_combo_id=0, params = pARAMS):
 			get_model(c)
 		])
 
-		cv_scores = []
-		for cv in range(len(mp_globalsfs.data_per_fold)):
-			X_train, y_train, X_test, y_test = mp_globalsfs.data_per_fold[cv]
-			pipeline.fit(X_train, pd.DataFrame(y_train))
+		mp_globalsfs.parameter = c
 
-			cv_scores.append(auc_scorer(pipeline, X_test, y_test))
+		cv_scores = []
+		with Pool(processes=multiprocessing.cpu_count()) as p:
+			cv_scores = list(tqdm.tqdm(p.imap(run_fold, range(len(mp_globalsfs.data_per_fold))), total=len(mp_globalsfs.data_per_fold)))
+
 		hyperparameter_search_scores.append(np.mean(cv_scores))
 
 	return (feature_combo_id, np.max(hyperparameter_search_scores), params[np.argmax(hyperparameter_search_scores)])
@@ -81,10 +98,23 @@ def get_test_auc(feature_combo, X_train_transformed, y_train, X_test_transformed
 
 	pipeline.fit(X_train_transformed, y_train)
 
-	# save model
-	pickle.dump(pipeline, open("/tmp/pipeline.p", "wb"))
-
 	return auc_scorer(pipeline, X_test_transformed, y_test)
+
+def get_test_auc_and_coeff(feature_combo, X_train_transformed, y_train, X_test_transformed, y_test, hyperparam):
+
+	mask = np.zeros(mp_globalsfs.data_per_fold[0][0].shape[1], dtype=bool)
+	for fc in feature_combo:
+		mask[fc] = True
+
+	pipeline = Pipeline([
+		('imputation', SimpleImputer()),
+		('selection', MaskSelection(mask)),
+		get_model(hyperparam)
+	])
+
+	pipeline.fit(X_train_transformed, y_train)
+
+	return auc_scorer(pipeline, X_test_transformed, y_test), pipeline.named_steps['clf'].coef_[0]
 
 
 
@@ -95,7 +125,10 @@ def f2str(feature_combo, featurenames):
 	my_str = my_str[:-2]
 	return my_str
 
-def parallel_back(X_train, y_train, X_test=None, y_test=None, floating=True, max_number_features=10, feature_generator=None, folds=3, number_cvs=1):
+def parallel_rfe(X_train, y_train, X_test=None, y_test=None, floating=True, max_number_features=10, feature_generator=None, folds=3, number_cvs=1):
+
+	save_features_and_results = []
+
 	base_featurenames = []
 	for myf in feature_generator.numeric_features:
 		base_featurenames.append(str(myf))
@@ -135,23 +168,30 @@ def parallel_back(X_train, y_train, X_test=None, y_test=None, floating=True, max
 
 			mp_globalsfs.data_per_fold.append((X_train_fold, y_train_fold, X_test_fold, y_test_fold))
 
-
-	best_score = -1
-	best_feature_combination = None
-
-
-	history = {}
-
 	current_feature_set = list(range(len(feature_generator.numeric_features)))
-	_, score, my_param = execute_feature_combo1(current_feature_set, feature_combo_id=0,
-												params=[0.001, 0.01, 0.1, 1, 10, 100, 1000])
-	test_auc = get_test_auc(current_feature_set, X_train_transformed, y_train, X_test_transformed, y_test, my_param)
-	print('all features cv auc: ' + str(score) + ' test auc: ' + str(test_auc))
+	for cc in range(max_number_features):
 
-	pARAMS = [my_param]
+		_, score, my_param = execute_feature_combo1(current_feature_set, feature_combo_id=0,
+													params=[0.001, 0.01, 0.1, 1, 10, 100, 1000])
+		test_auc, coefficients = get_test_auc_and_coeff(current_feature_set, X_train_transformed, y_train, X_test_transformed, y_test, my_param)
+		print('feature number: ' + str(len(current_feature_set)) + ' cv score:' + str(score) + ' test auc: ' + str(test_auc))
 
-	best_score = score
-	best_feature_combination = current_feature_set
+		save_features_and_results.append((current_feature_set, test_auc, coefficients))
+		pickle.dump(save_features_and_results, open("/tmp/features_info.p", "wb"))
+
+		new_feature_set = copy.deepcopy(current_feature_set)
+		for i in range(len(current_feature_set)-1, -1, -1):
+			if coefficients[i] == 0:
+				del new_feature_set[i]
+
+		if len(new_feature_set) == len(current_feature_set):
+			#remove weakest feature
+			squared_coefficents = coefficients ** 2
+			weakest_id = np.argmin(squared_coefficents)
+			del new_feature_set[weakest_id]
+		current_feature_set = new_feature_set
+
+
 
 
 	'''
