@@ -18,7 +18,7 @@ import numpy as np
 import sympy
 from sympy import S
 
-class ConstructionTransformer(BaseEstimator, TransformerMixin):
+class ConstructionTransformer(TransformerMixin, BaseEstimator):
 
     def __init__(self,
                  c_max=2,
@@ -85,8 +85,8 @@ class ConstructionTransformer(BaseEstimator, TransformerMixin):
         all_features = CandidateFeature(IdentityTransformation(-1), numeric_representations)
 
 
-        all_imputation = CandidateFeature(ImputationTransformation(), [all_features])
-        all_standardized = CandidateFeature(MinMaxScalingTransformation(), [all_imputation])
+        #all_imputation = CandidateFeature(ImputationTransformation(), [all_features])
+        all_standardized = CandidateFeature(MinMaxScalingTransformation(), [all_features])
 
 
         #all_standardized = CandidateFeature(MinMaxScalingTransformation(), [all_features])
@@ -98,6 +98,11 @@ class ConstructionTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         return self.pipeline_.transform(X)
+
+
+    def fit_transform(self, X, y=None):
+        self.fit(X, y)
+        return self.transform(X)
 
 
 

@@ -13,6 +13,9 @@ class LogTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransformat
     def transform(self, X):
         return np.log(X)
 
+    def fit(self, X, y=None):
+        return self
+
     def is_applicable(self, feature_combination: List[CandidateFeature]):
         if not super(LogTransformation, self).is_applicable(feature_combination):
             return False

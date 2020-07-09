@@ -31,7 +31,7 @@ class ConcatenationFunction(sympy.Function):
 
 
 class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
-    def __init__(self, number_parent_features):
+    def __init__(self, number_parent_features=1):
         #self.minmaxscaler = MinMaxScaler()
         Transformation.__init__(self, 'identity',
                  number_parent_features, output_dimensions=number_parent_features,
@@ -40,6 +40,9 @@ class IdentityTransformation(BaseEstimator, TransformerMixin, Transformation):
 
     def transform(self, X):
         return X
+
+    def fit(self, X, y=None):
+        return self
 
     '''
     def fit(self, X, y=None):

@@ -7,3 +7,6 @@ class NumericFunctionTransformation(NumericUnaryTransformation):
 
     def transform(self, data):
         return self.math_function(data)
+
+    def fit(self, X, y=None):
+        return self

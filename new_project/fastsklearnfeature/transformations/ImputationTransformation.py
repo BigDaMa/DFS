@@ -5,6 +5,7 @@ from fastsklearnfeature.candidates.CandidateFeature import CandidateFeature
 from fastsklearnfeature.candidates.RawFeature import RawFeature
 from typing import List
 import sympy
+import pickle
 
 class impute(sympy.Function):
     @classmethod
@@ -33,7 +34,12 @@ class ImputationTransformation(BaseEstimator, TransformerMixin, Transformation):
                                 parent_feature_repetition_is_allowed=False)
 
     def fit(self, X, y=None):
-        self.imputer.fit(X)
+        try:
+            self.imputer.fit(X)
+        except:
+            with open('/tmp/data.pickle', 'wb') as f:
+                pickle.dump(X, f, pickle.HIGHEST_PROTOCOL)
+
         return self
 
     def transform(self, X):

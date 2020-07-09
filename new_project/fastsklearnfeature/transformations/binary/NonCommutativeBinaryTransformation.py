@@ -15,6 +15,9 @@ class NonCommutativeBinaryTransformation(BaseEstimator, TransformerMixin, Binary
     def transform(self, X):
         return np.reshape(self.method(X[:,0], X[:,1]), (len(X), 1))
 
+    def fit(self, X, y=None):
+        return self
+
     def is_applicable(self, feature_combination: List[CandidateFeature]):
         #the aggregated column has to be numeric
         for i in range(len(feature_combination)):

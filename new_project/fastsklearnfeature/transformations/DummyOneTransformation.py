@@ -10,3 +10,6 @@ class DummyOneTransformation(BaseEstimator, TransformerMixin, Transformation):
 
     def transform(self, X):
         return np.ones((len(X), 1))
+
+    def fit(self, X, y=None):
+        return self

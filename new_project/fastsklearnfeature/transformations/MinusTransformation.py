@@ -14,6 +14,9 @@ class MinusTransformation(BaseEstimator, TransformerMixin, NumericUnaryTransform
     def transform(self, X):
         return -1 * X
 
+    def fit(self, X, y=None):
+        return self
+
     def is_applicable(self, feature_combination: List[CandidateFeature]):
         if not super(MinusTransformation, self).is_applicable(feature_combination):
             return False
