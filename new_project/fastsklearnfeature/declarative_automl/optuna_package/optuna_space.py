@@ -132,7 +132,7 @@ def objective(trial):
         return -np.inf
 
 study = optuna.create_study(direction='maximize')
-study.optimize(objective, n_trials=1000, n_jobs=2)
+study.optimize(objective, n_trials=1000, n_jobs=8)
 
 print(study.best_trial)
 
