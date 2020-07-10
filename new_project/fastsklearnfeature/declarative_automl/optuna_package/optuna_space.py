@@ -1,16 +1,7 @@
 import optuna
-from hyperopt import hp
-from hpsklearn import HyperoptEstimator
-from hpsklearn.components import any_classifier
-from hpsklearn.components import any_preprocessing
-from hyperopt import tpe
 from sklearn.pipeline import Pipeline
-
-import hyperopt.pyll.stochastic
-
 import pickle
 import time
-from hyperopt import fmin, tpe, hp, STATUS_OK
 import sklearn.model_selection
 import sklearn.datasets
 import sklearn.metrics
@@ -19,7 +10,6 @@ from sklearn.metrics import roc_auc_score
 import openml
 from sklearn.model_selection import cross_val_score
 import numpy as np
-from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 import matplotlib.pyplot as plt
 import os
 from sklearn.compose import ColumnTransformer
