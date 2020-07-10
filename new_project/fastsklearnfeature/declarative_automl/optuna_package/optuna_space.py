@@ -30,6 +30,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.One
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import PassiveAggressiveClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from func_timeout import func_timeout, FunctionTimedOut, func_set_timeout
 
 def get_all_classes(my_module, addNone=False):
     clsmembers = inspect.getmembers(my_module, inspect.ismodule)
@@ -65,6 +66,7 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y
 
 print(preprocessor_list)
 
+@func_set_timeout(10*60)
 def objective(trial):
     start_total = time.time()
 
