@@ -20,6 +20,10 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers import *
 import fastsklearnfeature.declarative_automl.optuna_package.classifiers as optuna_classifiers
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing import *
 import fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing as optuna_preprocessor
+from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling import *
+import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling as optuna_scaler
+
+
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import categorical
 from fastsklearnfeature.declarative_automl.optuna_package.IdentityOptuna import IdentityOptuna
 from sklearn.utils.class_weight import compute_sample_weight
@@ -49,7 +53,9 @@ def get_all_classes(my_module, addNone=False):
 
 classifier_list = get_all_classes(optuna_classifiers)
 preprocessor_list = get_all_classes(optuna_preprocessor, addNone=True)
-scaling_list = get_all_classes(optuna_preprocessor, addNone=True)
+scaling_list = get_all_classes(optuna_scaler, addNone=True)
+
+print(scaling_list)
 
 
 auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
