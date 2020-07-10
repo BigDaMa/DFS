@@ -121,8 +121,11 @@ def objective1(trial, return_dict):
     except Exception as e:
         print(p)
         print(str(e))
-        trial.set_user_attr('total_time', time.time() - start_total)
-        return_dict['value'] = -np.inf
+        try:
+            trial.set_user_attr('total_time', time.time() - start_total)
+            return_dict['value'] = -np.inf
+        except:
+            pass
 
 
 def objective(trial):
@@ -132,11 +135,11 @@ def objective(trial):
     p = threading.Thread(target=objective1, name="Foo", args=(trial, return_dict))
     p.start()
 
-    p.join(60*10)
+    p.join(10*60)
     return return_dict['value']
 
 study = optuna.create_study(direction='maximize')
-study.optimize(objective, n_trials=100, n_jobs=8)
+study.optimize(objective, n_trials=1000, n_jobs=8)
 
 print(study.best_trial)
 
