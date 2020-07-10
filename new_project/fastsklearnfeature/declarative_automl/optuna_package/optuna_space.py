@@ -31,6 +31,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import PassiveAggressiveClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from func_timeout import func_timeout, FunctionTimedOut, func_set_timeout
+import threading
 
 def get_all_classes(my_module, addNone=False):
     clsmembers = inspect.getmembers(my_module, inspect.ismodule)
@@ -66,8 +67,8 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y
 
 print(preprocessor_list)
 
-@func_set_timeout(10*60)
-def objective(trial):
+
+def objective1(trial, return_dict):
     start_total = time.time()
 
     preprocessor = categorical(trial, 'preprocessor', preprocessor_list)
@@ -116,12 +117,22 @@ def objective(trial):
 
         trial.set_user_attr('total_time', time.time() - start_total)
 
-        return np.mean(scores)
+        return_dict['value'] = np.mean(scores)
     except Exception as e:
         print(p)
         print(str(e))
         trial.set_user_attr('total_time', time.time() - start_total)
-        return -np.inf
+        return_dict['value'] = -np.inf
+
+
+def objective(trial):
+    return_dict = {}
+    # Start foo as a process
+    p = threading.Thread(target=objective1, name="Foo", args=(trial, return_dict))
+    p.start()
+
+    p.join(60*10)
+    return return_dict['value']
 
 study = optuna.create_study(direction='maximize')
 study.optimize(objective, n_trials=1000, n_jobs=8)
@@ -129,3 +140,5 @@ study.optimize(objective, n_trials=1000, n_jobs=8)
 print(study.best_trial)
 
 pickle.dump(study, open("/tmp/optuna_study.p", "wb"))
+
+
