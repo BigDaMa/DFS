@@ -127,6 +127,7 @@ def objective1(trial, return_dict):
 
 def objective(trial):
     return_dict = {}
+    return_dict['value'] = -np.inf
     # Start foo as a process
     p = threading.Thread(target=objective1, name="Foo", args=(trial, return_dict))
     p.start()
@@ -135,7 +136,7 @@ def objective(trial):
     return return_dict['value']
 
 study = optuna.create_study(direction='maximize')
-study.optimize(objective, n_trials=1000, n_jobs=8)
+study.optimize(objective, n_trials=100, n_jobs=8)
 
 print(study.best_trial)
 
