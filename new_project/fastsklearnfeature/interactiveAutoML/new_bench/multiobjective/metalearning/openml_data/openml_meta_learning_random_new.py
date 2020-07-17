@@ -250,6 +250,7 @@ while True:
 			# Execute each search strategy with a given time limit (in parallel)
 			# maybe run multiple times to smooth stochasticity
 
+			model = None
 			if most_uncertain_f['model_choice'][0] == 'Logistic Regression':
 				model = LogisticRegression(class_weight='balanced')
 				if most_uncertain_f['privacy_choice'][0]:
