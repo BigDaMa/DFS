@@ -1,8 +1,9 @@
 from sklearn.ensemble import RandomTreesEmbedding
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class RandomTreesEmbeddingOptuna(RandomTreesEmbedding):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'RandomTreesEmbedding_'
+        self.name = id_name('RandomTreesEmbedding_')
 
         self.n_estimators = trial.suggest_int("n_estimators", 10, 100)
         self.max_depth = trial.suggest_int("max_depth", 2, 10)

@@ -1,10 +1,11 @@
 from sklearn.experimental import enable_hist_gradient_boosting
 from sklearn.ensemble import HistGradientBoostingClassifier
 import numpy as np
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class HistGradientBoostingClassifierOptuna(HistGradientBoostingClassifier):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'HistGradientBoostingClassifier_'
+        self.name = id_name('HistGradientBoostingClassifier_')
         self.loss = "auto"
         self.learning_rate = trial.suggest_loguniform(self.name + "learning_rate", 0.01, 1)
         self.min_samples_leaf = trial.suggest_int(self.name + "min_samples_leaf", 1, 200, log=True)

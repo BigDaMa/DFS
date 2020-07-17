@@ -3,6 +3,7 @@ from sklearn.feature_selection.from_model import _get_feature_importances
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectPercentile
 import sklearn
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 def model_score(X, y=None, estimator=None):
     estimator.fit(X,y)
@@ -17,7 +18,7 @@ def bindFunction1(estimator):
 
 class SelectPercentileOptuna(SelectPercentile):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'SelectPercentile'
+        self.name = id_name('SelectPercentile')
 
         self.percentile = trial.suggest_int(self.name + "percentile", 1, 99)
 

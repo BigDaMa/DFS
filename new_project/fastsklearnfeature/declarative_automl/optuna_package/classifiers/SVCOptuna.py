@@ -1,8 +1,9 @@
 from sklearn.svm import LinearSVC
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class SVCOptuna(LinearSVC):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'SVC_'
+        self.name = id_name('SVC_')
         self.C = trial.suggest_loguniform(self.name + "C", 0.03125, 32768)
         self.kernel = trial.suggest_categorical(self.name + "kernel", ["rbf", "poly", "sigmoid"])
         self.degree = trial.suggest_int(self.name + "degree", 2, 5, log=False)

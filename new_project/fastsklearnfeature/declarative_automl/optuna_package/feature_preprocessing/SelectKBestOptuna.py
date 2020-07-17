@@ -3,6 +3,7 @@ from sklearn.feature_selection.from_model import _get_feature_importances
 from sklearn.ensemble import ExtraTreesClassifier
 import sklearn
 import numpy as np
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 def model_score(X, y=None, estimator=None):
     estimator.fit(X,y)
@@ -21,7 +22,7 @@ def bindFunction1(estimator):
 
 class SelectKBestOpt(SelectKBest):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'SelectKBest'
+        self.name = id_name('SelectKBest')
 
         self.k = trial.suggest_int(self.name + "k", 1, 2000, log=False)
         score_func = trial.suggest_categorical(self.name + 'score_func', ['chi2', 'f_classif', 'mutual_info', 'ExtraTreesClassifier', 'LinearSVC', 'variance'])

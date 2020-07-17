@@ -1,8 +1,9 @@
 from sklearn.decomposition import KernelPCA
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class KernelPCAOptuna(KernelPCA):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'KernelPCA_'
+        self.name = id_name('KernelPCA_')
 
         self.n_components = trial.suggest_int(self.name + "n_components", min([10, X.shape[1]]), X.shape[1], log=False)
         self.kernel = trial.suggest_categorical(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine'])

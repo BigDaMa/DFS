@@ -1,9 +1,10 @@
 from sklearn.ensemble import ExtraTreesClassifier
 import numpy as np
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class ExtraTreesClassifierOptuna(ExtraTreesClassifier):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'ExtraTreesClassifier_'
+        self.name = id_name('ExtraTreesClassifier_')
         self.criterion = trial.suggest_categorical(self.name + "criterion", ["gini", "entropy"])
         self.max_features = trial.suggest_uniform(self.name + "max_features", 0., 1.)
         self.max_depth = None

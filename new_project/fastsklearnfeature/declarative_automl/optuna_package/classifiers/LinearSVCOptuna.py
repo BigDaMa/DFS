@@ -1,8 +1,9 @@
 from sklearn.svm import LinearSVC
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class LinearSVCOptuna(LinearSVC):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'LinearSVC_'
+        self.name = id_name('LinearSVC_')
         self.penalty = trial.suggest_categorical(self.name + "penalty", ["l1", "l2"])
         self.loss = trial.suggest_categorical(self.name + "loss", ["hinge", "squared_hinge"])
         self.dual = False

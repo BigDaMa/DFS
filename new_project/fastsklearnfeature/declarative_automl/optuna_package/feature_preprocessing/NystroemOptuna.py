@@ -1,8 +1,9 @@
 from sklearn.kernel_approximation import Nystroem
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class NystroemOptuna(Nystroem):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'Nystroem_'
+        self.name = id_name('Nystroem_')
 
         possible_kernels = ['poly', 'rbf', 'sigmoid', 'cosine', 'chi2']
         self.kernel = trial.suggest_categorical(self.name + 'kernel', possible_kernels)

@@ -1,9 +1,10 @@
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
+from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class RandomForestClassifierOptuna(RandomForestClassifier):
     def init_hyperparameters(self, trial, X, y):
-        self.name = 'RandomForestClassifier_'
+        self.name = id_name('RandomForestClassifier_')
         self.criterion = trial.suggest_categorical(self.name + "criterion", ["gini", "entropy"])
         self.max_features = trial.suggest_uniform(self.name + "max_features", 0., 1.)
         self.max_depth = None
