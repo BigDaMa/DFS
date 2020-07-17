@@ -31,7 +31,7 @@ setup(
                       "sympy",
                       "tqdm",
                       "openml",
-                      "diffprivlib",
+                      "diffprivlib==0.2.0",
                       "pebble",
                       "arff2pandas",
                       "hyperopt==0.2.3",

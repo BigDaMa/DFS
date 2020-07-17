@@ -188,8 +188,7 @@ while True:
 							[
 								'Logistic Regression',
 								'Gaussian Naive Bayes',
-								'Decision Tree',
-								'SVM'
+								#'Decision Tree','SVM'
 							]),
 			 'k': hp.choice('k_choice',
 							[
