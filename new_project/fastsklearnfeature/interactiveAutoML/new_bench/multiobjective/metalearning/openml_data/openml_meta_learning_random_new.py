@@ -184,7 +184,7 @@ while True:
 
 
 	space = {
-			 'model':hp.choice('k_choice',
+			 'model':hp.choice('model_choice',
 							[
 								'Logistic Regression',
 								'Gaussian Naive Bayes',
@@ -250,19 +250,19 @@ while True:
 			# Execute each search strategy with a given time limit (in parallel)
 			# maybe run multiple times to smooth stochasticity
 
-			if most_uncertain_f['model'][0] == 'Logistic Regression':
+			if most_uncertain_f['model_choice'][0] == 'Logistic Regression':
 				model = LogisticRegression(class_weight='balanced')
 				if most_uncertain_f['privacy_choice'][0]:
 					model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
-			elif most_uncertain_f['model'][0] == 'Gaussian Naive Bayes':
+			elif most_uncertain_f['model_choice'][0] == 'Gaussian Naive Bayes':
 				model = GaussianNB()
 				if most_uncertain_f['privacy_choice'][0]:
 					model = models.GaussianNB(epsilon=most_uncertain_f['privacy_specified'][0])
-			elif most_uncertain_f['model'][0] == 'Decision Tree':
+			elif most_uncertain_f['model_choice'][0] == 'Decision Tree':
 				model = DecisionTreeClassifier(class_weight='balanced')
 				if most_uncertain_f['privacy_choice'][0]:
 					model = PrivateDecisionTree(epsilon=most_uncertain_f['privacy_specified'][0])
-			elif most_uncertain_f['model'][0] == 'SVM':
+			elif most_uncertain_f['model_choice'][0] == 'SVM':
 				model = SVC(kernel='linear', class_weight='balanced')
 				if most_uncertain_f['privacy_choice'][0]:
 					model = PrivateSVM(epsilon=most_uncertain_f['privacy_specified'][0])
