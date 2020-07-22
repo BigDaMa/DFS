@@ -4,6 +4,7 @@ from art.classifiers import XGBoostClassifier, LightGBMClassifier, SklearnClassi
 from art.attacks import FastGradientMethod
 from sklearn.model_selection import GridSearchCV
 import copy
+from art.attacks.evasion import HopSkipJump
 
 def robust_score(y_true, y_pred, eps=0.1, X=None, y=None, model=None, feature_selector=None, scorer=None):
 	all_ids = range(X.shape[0])
@@ -28,7 +29,7 @@ def robust_score(y_true, y_pred, eps=0.1, X=None, y=None, model=None, feature_se
 	best_model.fit(X_train, y_train)
 
 	classifier = SklearnClassifier(model=best_model)
-	attack = FastGradientMethod(classifier, eps=eps, batch_size=1)
+	attack = HopSkipJump(classifier=classifier, max_iter=1, max_eval=10, init_eval=10, init_size=1)
 
 	X_test_adv = attack.generate(X_test)
 
@@ -43,7 +44,7 @@ def robust_score_test(eps=0.1, X_test=None, y_test=None, model=None, feature_sel
 	best_model = copy.deepcopy(model)
 
 	classifier = SklearnClassifier(model=best_model)
-	attack = FastGradientMethod(classifier, eps=eps, batch_size=1)
+	attack = HopSkipJump(classifier=classifier, max_iter=1, max_eval=10, init_eval=10, init_size=1)
 
 	X_test_adv = attack.generate(X_test_filtered)
 

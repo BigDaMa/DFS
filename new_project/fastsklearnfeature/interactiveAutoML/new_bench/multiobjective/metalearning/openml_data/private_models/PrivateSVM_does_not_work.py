@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.Smooth_Random_Trees import DP_Random_Forest
 from sklearn.base import BaseEstimator, ClassifierMixin
 import numpy as np
-
+import copy
 import numpy as np
 #from statistics import stdev
 # from pylab import norm
@@ -77,6 +77,7 @@ def svm_objective_train(data, labels,  epsilon, Lambda, h):
     fpriv = minimize(obj_func, x0, method='Nelder-Mead').x#empirical risk minimization using scipy.optimize minimize function
     return fpriv
 
+import pandas as pd
 
 class PrivateSVM(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
 
@@ -87,33 +88,66 @@ class PrivateSVM(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
         self.method = method
 
     def fit(self, X, y, sample_weight=None):
+
+        # Determine output settings
+        n_samples, self.n_features_ = X.shape
+
+        new_y = copy.deepcopy(y)
+        if isinstance(y, pd.DataFrame):
+            new_y = copy.deepcopy(new_y.values)
+
+        self.classes_ = []
+        self.n_classes_ = []
+
+        self.n_outputs_ = new_y.shape[1]
+
+        self.classes_ = np.unique(new_y)
+
         if self.method == 'obj':
-            self.fpriv = svm_objective_train(X, y, self.epsilon, self.Lambda, self.h)
+            self.fpriv = svm_objective_train(X, new_y, self.epsilon, self.Lambda, self.h)
         else:
-            self.fpriv = svm_output_train(X, y, self.epsilon, self.Lambda, self.h)
+            self.fpriv = svm_output_train(X, new_y, self.epsilon, self.Lambda, self.h)
         return self
 
     def predict(self, X):
-        return np.dot(X, self.fpriv)
+        indices = (np.dot(X, self.fpriv) > 0).astype(np.int)
+        return np.asarray(self.classes_[indices], dtype=np.intp)
 
 
 ''' A toy example of how to call the class '''
 if __name__ == '__main__':
     from sklearn.datasets import load_breast_cancer
+    from sklearn.datasets import load_wine
     from sklearn.preprocessing import scale
     from sklearn.metrics import f1_score
-    diabetes = load_breast_cancer()
+    diabetes = load_wine()
 
     X = diabetes.data
-    y = diabetes.target
+    y = diabetes.target >0
 
     #X = scale(X)
 
     print(y)
 
-    model = PrivateSVM(epsilon=0.01, method='output')
-    model.fit(X,y)
+    model = PrivateSVM(epsilon=10000)
+    model.fit(X, pd.DataFrame(y))
     predictions = model.predict(X)
 
-    print(f1_score(y, predictions > 0))
+    print(predictions)
+    print(predictions.shape)
+
+    print(f1_score(y, predictions))
+
+
+    import numpy as np
+    from art.classifiers import SklearnClassifier
+
+    import copy
+    from art.attacks.evasion import HopSkipJump
+
+    classifier = SklearnClassifier(model=model)
+    attack = HopSkipJump(classifier=classifier, max_iter=1, max_eval=100)
+
+    X_test_adv = attack.generate(X)
+
 

@@ -20,10 +20,8 @@ def map_hyper2vals(hyper):
 	return new_vals
 
 
-def fullfeatures(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file=None):
+def fullfeatures(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)):
 	start_time = time.time()
-
-	auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
 	fair_validation = None
 	fair_test = None
@@ -44,7 +42,7 @@ def fullfeatures(X_train, X_validation, X_train_val, X_test, y_train, y_validati
 		pipeline.fit(X_train, y_train)
 
 		validation_number_features = 1.0
-		validation_acc = auc_scorer(pipeline, X_validation, pd.DataFrame(y_validation))
+		validation_acc = accuracy_scorer(pipeline, X_validation, pd.DataFrame(y_validation))
 
 		validation_fair = 0.0
 		if type(sensitive_ids) != type(None):
@@ -53,7 +51,7 @@ def fullfeatures(X_train, X_validation, X_train_val, X_test, y_train, y_validati
 		validation_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_validation, y_test=y_validation,
 													model=pipeline.named_steps['clf'],
 													feature_selector=pipeline.named_steps['selection'],
-													scorer=auc_scorer)
+													scorer=accuracy_scorer)
 
 		loss = 0.0
 		if min_fairness > 0.0 and validation_fair < min_fairness:
@@ -95,7 +93,7 @@ def fullfeatures(X_train, X_validation, X_train_val, X_test, y_train, y_validati
 	model = result['model']
 	model.fit(X_train_val, pd.DataFrame(y_train_val))
 
-	test_acc = auc_scorer(model, X_test, pd.DataFrame(y_test))
+	test_acc = accuracy_scorer(model, X_test, pd.DataFrame(y_test))
 
 	test_fair = 0.0
 	if type(sensitive_ids) != type(None):
@@ -103,7 +101,7 @@ def fullfeatures(X_train, X_validation, X_train_val, X_test, y_train, y_validati
 	test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
 										  model=model.named_steps['clf'],
 										  feature_selector=model.named_steps['selection'],
-										  scorer=auc_scorer)
+										  scorer=accuracy_scorer)
 
 	my_result['test_fair'] = test_fair
 	my_result['test_acc'] = test_acc

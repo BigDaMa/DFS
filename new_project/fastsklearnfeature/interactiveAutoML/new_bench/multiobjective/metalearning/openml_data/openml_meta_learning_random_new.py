@@ -33,6 +33,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measur
 from skrebate import ReliefF
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.multiprocessing_global as mp_global
 import diffprivlib.models as models
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.PrivateGaussianNB import PrivateGaussianNB
 from sklearn.model_selection import GridSearchCV
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.fullfeatures import fullfeatures
@@ -47,11 +48,12 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models import PrivateDecisionTree
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models import PrivateSVM
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.PrivateDecisionTree import PrivateDecisionTree
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.PrivateSVM_does_not_work import PrivateSVM
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 import os
+from sklearn.metrics import f1_score
 
 
 def my_function(config_id):
@@ -74,7 +76,9 @@ def my_function(config_id):
 								   max_number_features=mp_global.max_number_features,
 								   max_search_time=mp_global.max_search_time,
 								   log_file='/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(
-									   run_counter) + '/strategy' + str(conf['strategy_id']) + '/run' + str(runs_per_scenario) + '.pickle')
+									   run_counter) + '/strategy' + str(conf['strategy_id']) + '/run' + str(runs_per_scenario) + '.pickle',
+								   accuracy_scorer = mp_global.accuracy_scorer
+								   )
 	result['strategy_id'] = conf['strategy_id']
 	return result
 
@@ -120,6 +124,7 @@ while True:
 	mp_global.names = names
 	mp_global.sensitive_ids = sensitive_ids
 	mp_global.cv_splitter = cv_splitter
+	mp_global.accuracy_scorer = make_scorer(f1_score)
 
 
 	def objective(hps):
@@ -188,7 +193,8 @@ while True:
 							[
 								'Logistic Regression',
 								'Gaussian Naive Bayes',
-								#'Decision Tree','SVM'
+								'Decision Tree',
+								#'SVM'
 							]),
 			 'k': hp.choice('k_choice',
 							[
@@ -250,23 +256,21 @@ while True:
 			# maybe run multiple times to smooth stochasticity
 
 			model = None
-			if most_uncertain_f['model_choice'][0] == 'Logistic Regression':
+			if most_uncertain_f['model_choice'][0] == 0:
 				model = LogisticRegression(class_weight='balanced')
 				if most_uncertain_f['privacy_choice'][0]:
 					model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
-			elif most_uncertain_f['model_choice'][0] == 'Gaussian Naive Bayes':
+			elif most_uncertain_f['model_choice'][0] == 1:
 				model = GaussianNB()
 				if most_uncertain_f['privacy_choice'][0]:
 					model = models.GaussianNB(epsilon=most_uncertain_f['privacy_specified'][0])
-			elif most_uncertain_f['model_choice'][0] == 'Decision Tree':
+			elif most_uncertain_f['model_choice'][0] == 2:
 				model = DecisionTreeClassifier(class_weight='balanced')
 				if most_uncertain_f['privacy_choice'][0]:
 					model = PrivateDecisionTree(epsilon=most_uncertain_f['privacy_specified'][0])
-			elif most_uncertain_f['model_choice'][0] == 'SVM':
-				model = SVC(kernel='linear', class_weight='balanced')
-				if most_uncertain_f['privacy_choice'][0]:
-					model = PrivateSVM(epsilon=most_uncertain_f['privacy_specified'][0])
 
+
+			print(model)
 
 			mp_global.clf = model
 			#define rankings
@@ -280,6 +284,8 @@ while True:
 			#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
 			#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
 			rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
+
+			rankings = []
 
 			mp_global.min_accuracy = min_accuracy
 			mp_global.min_fairness = min_fairness
@@ -311,6 +317,8 @@ while True:
 							   recursive_feature_elimination,
 							   fullfeatures]
 
+			main_strategies = [TPE]
+
 			#run main strategies
 			for strategy in main_strategies:
 				for run in range(number_of_runs):
@@ -323,7 +331,8 @@ while True:
 				strategy_id += 1
 
 
-			with ProcessPool(max_workers=17) as pool:
+			'''
+			with ProcessPool(max_workers=2) as pool:
 				future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 				iterator = future.result()
@@ -338,7 +347,10 @@ while True:
 						print("%s. Exit code: %d" % (error, error.exitcode))
 					except Exception as error:
 						print("function raised %s" % error)
-						#print(error.traceback)  # Python's traceback of remote process
+						print(error.traceback)  # Python's traceback of remote process
+			'''
+			for iii in range(len(mp_global.configurations)):
+				my_function(iii)
 
 
 		# pickle everything and store it
