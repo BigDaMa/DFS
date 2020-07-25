@@ -27,6 +27,6 @@ y_test_pred = model.predict(X_test)
 print('r2 score on original data: ' + str(r2_score(y_true=y_test, y_pred=y_test_pred)))
 print('r2 score on corrupted data: ' + str(r2_score(y_true=y_test, y_pred=y_test_attacked)))
 
-norm_type = -np.inf
+norm_type = np.inf
 perts_norm = la.norm((X_test_attacked - X_test).reshape(X_test.shape[0], -1), ord=norm_type, axis=1)
-print('maximum absolute difference:' + str(np.sum(perts_norm)))
+print('maximum absolute difference:' + str(perts_norm))
