@@ -148,7 +148,7 @@ with open(Config.get('data_path') + "/downloaded_arff/" + "42132.arff") as f:
 	df = df.drop(columns=['description@STRING'])
 	df = df.drop(columns=['location@STRING'])
 
-	df.rename(columns={'race@{ASIAN,BLACK,HISPANIC,NATIVE AMERICAN,OTHER,WHITE}': 'race@{BLACKLIVESMATTER, OTHER}'}, inplace=True)
+	df.rename(columns={'race@{ASIAN,BLACK,HISPANIC,NATIVE AMERICAN,OTHER,WHITE}': 'race@{BLACKLIVESMATTER,OTHER}'}, inplace=True)
 	df.rename(columns={'violation_type@{Citation,ESERO,SERO,Warning}': 'class@{Other,Warning}'},
 			  inplace=True)
 
@@ -164,7 +164,7 @@ with open(Config.get('data_path') + "/downloaded_arff/" + "42132.arff") as f:
 		else:
 			return 'Other'
 
-	df['race@{BLACKLIVESMATTER, OTHER}'] = df['race@{BLACKLIVESMATTER, OTHER}'].apply(maprace)
+	df['race@{BLACKLIVESMATTER,OTHER}'] = df['race@{BLACKLIVESMATTER,OTHER}'].apply(maprace)
 	df['class@{Other,Warning}'] = df['class@{Other,Warning}'].apply(mapviolation)
 
 
