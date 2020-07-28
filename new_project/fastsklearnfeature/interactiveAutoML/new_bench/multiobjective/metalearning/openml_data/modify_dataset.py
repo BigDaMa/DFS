@@ -47,6 +47,7 @@ from sklearn import preprocessing
 import openml
 import random
 from sklearn.impute import SimpleImputer
+from fastsklearnfeature.configuration.Config import Config
 
 
 data_ids = [
@@ -132,14 +133,48 @@ def get_sensitive_attribute_id(df, sensitive_attribute_name):
 		if str(df.columns[i]) == sensitive_attribute_name:
 			return i
 
-with open("/home/felix/phd/meta_learn/downloaded_arff/42178.arff") as f:
+with open(Config.get('data_path') + "/downloaded_arff/" + "42132.arff") as f:
 	df = a2p.load(f)
 	print(df.columns)
-	df['TotalCharges@REAL'] = pd.to_numeric(df['TotalCharges@STRING'], errors='coerce')
-	df = df.drop(columns=['TotalCharges@STRING'])
 
-	with open('/home/felix/phd/meta_learn/downloaded_arff/42178_new.arff', 'w') as ff:
+	print(df.head())
+
+
+	#df['TotalCharges@REAL'] = pd.to_numeric(df['TotalCharges@STRING'], errors='coerce')
+	df = df.drop(columns=['geolocation@STRING'])
+	df = df.drop(columns=['seqid@STRING'])
+	df = df.drop(columns=['date_of_stop@STRING'])
+	df = df.drop(columns=['time_of_stop@STRING'])
+	df = df.drop(columns=['description@STRING'])
+	df = df.drop(columns=['location@STRING'])
+
+	df.rename(columns={'race@{ASIAN,BLACK,HISPANIC,NATIVE AMERICAN,OTHER,WHITE}': 'race@{BLACKLIVESMATTER, OTHER}'}, inplace=True)
+	df.rename(columns={'violation_type@{Citation,ESERO,SERO,Warning}': 'class@{Other,Warning}'},
+			  inplace=True)
+
+	def maprace(v):
+		if v == 'BLACK':
+			return 'BLACKLIVESMATTER'
+		else:
+			return 'OTHER'
+
+	def mapviolation(v):
+		if v == 'Warning':
+			return 'Warning'
+		else:
+			return 'Other'
+
+	df['race@{BLACKLIVESMATTER, OTHER}'] = df['race@{BLACKLIVESMATTER, OTHER}'].apply(maprace)
+	df['class@{Other,Warning}'] = df['class@{Other,Warning}'].apply(mapviolation)
+
+
+
+	for i in range(len(df.columns)):
+		print(df.columns[i] + ": " + str(len(df[df.columns[i]].unique())))
+
+	with open(Config.get('data_path') + "/downloaded_arff/" + '42132_new.arff', 'w') as ff:
 		a2p.dump(df, ff)
+
 
 
 
