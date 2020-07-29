@@ -328,8 +328,6 @@ while True:
 			#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
 			rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
 
-			rankings = []
-
 			mp_global.min_accuracy = min_accuracy
 			mp_global.min_fairness = min_fairness
 			mp_global.min_robustness = min_robustness
