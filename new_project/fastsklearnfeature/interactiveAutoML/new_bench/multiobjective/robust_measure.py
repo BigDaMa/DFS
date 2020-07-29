@@ -5,16 +5,19 @@ from art.attacks import FastGradientMethod
 from sklearn.model_selection import GridSearchCV
 import copy
 from art.attacks.evasion import HopSkipJump
+import pandas as pd
 
 def robust_score(y_true, y_pred, eps=0.1, X=None, y=None, model=None, feature_selector=None, scorer=None):
 	all_ids = range(X.shape[0])
 	test_ids = y_true.index.values
 	train_ids = list(set(all_ids)-set(test_ids))
 
-	X_train = X[train_ids,:]
+
 	y_train = y[train_ids]
-	X_test = X[test_ids,:]
 	y_test = y[test_ids]
+
+	X_train = X[train_ids,:]
+	X_test = X[test_ids,:]
 
 	if type(feature_selector) != type(None):
 		X_train = feature_selector.fit_transform(X_train)
@@ -29,7 +32,7 @@ def robust_score(y_true, y_pred, eps=0.1, X=None, y=None, model=None, feature_se
 	best_model.fit(X_train, y_train)
 
 	classifier = SklearnClassifier(model=best_model)
-	attack = HopSkipJump(classifier=classifier, max_iter=1, max_eval=10, init_eval=10, init_size=1)
+	attack = HopSkipJump(classifier=classifier, max_iter=1, max_eval=10, init_eval=5, init_size=1)
 
 	X_test_adv = attack.generate(X_test)
 
@@ -44,7 +47,7 @@ def robust_score_test(eps=0.1, X_test=None, y_test=None, model=None, feature_sel
 	best_model = copy.deepcopy(model)
 
 	classifier = SklearnClassifier(model=best_model)
-	attack = HopSkipJump(classifier=classifier, max_iter=1, max_eval=10, init_eval=10, init_size=1)
+	attack = HopSkipJump(classifier=classifier, max_iter=1, max_eval=10, init_eval=5, init_size=1)
 
 	X_test_adv = attack.generate(X_test_filtered)
 

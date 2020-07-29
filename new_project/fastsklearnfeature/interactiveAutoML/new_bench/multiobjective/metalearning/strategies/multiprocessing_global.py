@@ -25,3 +25,5 @@ my_dict = None
 log_file=None
 
 accuracy_scorer = None
+
+avoid_robustness = None
