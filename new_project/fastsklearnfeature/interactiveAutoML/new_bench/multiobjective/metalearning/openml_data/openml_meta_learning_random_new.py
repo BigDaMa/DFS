@@ -57,6 +57,7 @@ from pebble import ProcessPool, ProcessExpired
 import os
 from sklearn.metrics import f1_score
 from sklearn.metrics import r2_score
+import pathlib
 
 
 def my_function(config_id):
@@ -94,15 +95,13 @@ number_of_runs = 1
 
 
 
-os.mkdir('/tmp/experiment' + str(current_run_time_id))
-
 run_counter = 0
 while True:
 
 	#create folder to store files:
-	os.mkdir('/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(run_counter))
 	for strategy_id_i in range(17):
-		os.mkdir('/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(run_counter) + '/strategy' + str(strategy_id_i))
+		path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(run_counter) + '/strategy' + str(strategy_id_i))
+		path.mkdir(parents=True, exist_ok=True)
 
 	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation()
 	#X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id, is_regression = get_fair_data1_validation_openml()
