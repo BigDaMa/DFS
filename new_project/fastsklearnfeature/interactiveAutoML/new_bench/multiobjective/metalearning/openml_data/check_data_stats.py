@@ -89,27 +89,23 @@ map_dataset['31'] = 'foreign_worker@{yes,no}'
 map_dataset['802'] = 'sex@{female,male}'
 map_dataset['1590'] = 'sex@{Female,Male}'
 map_dataset['1461'] = 'AGE@{True,False}'
-map_dataset['42193'] ='race_Caucasian@{0,1}'
+map_dataset['42193'] = 'race_Caucasian@{0,1}'
 map_dataset['1480'] = 'V2@{Female,Male}'
-map_dataset['804'] = 'Gender@{0,1}'
 map_dataset['42178'] = 'gender@STRING'
 map_dataset['981'] = 'Gender@{Female,Male}'
 map_dataset['40536'] = 'samerace@{0,1}'
 map_dataset['40945'] = 'sex@{female,male}'
 map_dataset['451'] = 'Sex@{female,male}'
-map_dataset['945'] = 'sex@{female,male}'
-map_dataset['446'] = 'sex@{Female,Male}'
 map_dataset['1017'] = 'sex@{0,1}'
 map_dataset['957'] = 'Sex@{0,1,4}'
 map_dataset['41430'] = 'SEX@{True,False}'
 map_dataset['1240'] = 'sex@{Female,Male}'
 map_dataset['1018'] = 'sex@{Female,Male}'
-map_dataset['55'] = 'SEX@{male,female}'
-map_dataset['802'] = 'sex@{female,male}'
 map_dataset['38'] = 'sex@{F,M}'
-map_dataset['40713'] = 'SEX@{True,False}'
 map_dataset['1003'] = 'sex@{male,female}'
 map_dataset['934'] = 'race@{black,white}'
+map_dataset['42565'] = 'gender@{g1,g2}' #students
+map_dataset['42132'] = 'race@{BLACKLIVESMATTER,OTHER}'#traffic
 
 
 
@@ -132,14 +128,19 @@ def get_sensitive_attribute_id(df, sensitive_attribute_name):
 		if str(df.columns[i]) == sensitive_attribute_name:
 			return i
 
+random_number=42
+
 for key, value in map_dataset.items():
-	with open("/home/felix/phd/meta_learn/downloaded_arff/" + str(key) + ".arff") as f:
+	with open(Config.get('data_path') + "/downloaded_arff/" + str(key) + ".arff") as f:
 		df = a2p.load(f)
 
 		print("dataset: " + str(key))
 
-		number_instances.append(df.shape[0])
-		number_attributes.append(df.shape[1])
+
+		name_dataset = openml.datasets.get_dataset(dataset_id=int(key), download_data=False).name
+
+		number_instances = df.shape[0]
+		number_attributes = df.shape[1]
 
 		y = copy.deepcopy(df[get_class_attribute_name(df)])
 		X = df.drop(columns=[get_class_attribute_name(df)])
@@ -154,6 +155,8 @@ for key, value in map_dataset.items():
 
 		sensitive_attribute_id = get_sensitive_attribute_id(X, value)
 
+		print(sensitive_attribute_id)
+
 		X_datat = X.values
 		for x_i in range(X_datat.shape[0]):
 			for y_i in range(X_datat.shape[1]):
@@ -163,8 +166,11 @@ for key, value in map_dataset.items():
 					else:
 						X_datat[x_i][y_i] = np.nan
 
-		X_train, X_test, y_train, y_test = train_test_split(X_datat, y.values.astype('str'), test_size=0.5,
-																random_state=42, stratify=y.values.astype('str'))
+		X_temp, X_test, y_temp, y_test = train_test_split(X_datat, y.values.astype('str'), test_size=0.2,
+														  random_state=random_number, stratify=y.values.astype('str'))
+
+		X_train, X_validation, y_train, y_validation = train_test_split(X_temp, y_temp, test_size=0.25,
+																		random_state=random_number, stratify=y_temp)
 
 		cat_sensitive_attribute_id = -1
 		for c_i in range(len(categorical_features)):
@@ -186,13 +192,32 @@ for key, value in map_dataset.items():
 		pipeline = FeatureUnion(my_transformers)
 		pipeline.fit(X_train)
 		X_train = pipeline.transform(X_train)
+		X_validation = pipeline.transform(X_validation)
 		X_test = pipeline.transform(X_test)
 
-		number_features.append(X_train.shape[1])
+		number_features = X_train.shape[1]
+
+		print(name_dataset + ": instances = " + str(number_instances) + " attributes = " + str(number_attributes) + " features = " + str(number_features))
+
+		all_columns = []
+		for ci in range(len(X.columns)):
+			all_columns.append(str(X.columns[ci]).split('@')[0])
+		X.columns = all_columns
 
 		names = ct.get_feature_names()
 		for c in continuous_columns:
 			names.append(str(X.columns[c]))
+
+		for n_i in range(len(names)):
+			if names[n_i].startswith('onehot__x'):
+				tokens = names[n_i].split('_')
+				category = ''
+				for ti in range(3, len(tokens)):
+					category += '_' + tokens[ti]
+				cat_id = int(names[n_i].split('_')[2].split('x')[1])
+				names[n_i] = str(X.columns[categorical_features[cat_id]]) + category
+
+		print(names)
 
 		sensitive_ids = []
 		all_names = ct.get_feature_names()
@@ -203,40 +228,12 @@ for key, value in map_dataset.items():
 		le = preprocessing.LabelEncoder()
 		le.fit(y_train)
 		y_train = le.fit_transform(y_train)
+		y_validation = le.transform(y_validation)
 		y_test = le.transform(y_test)
 
+		X_train_val = np.vstack((X_train, X_validation))
+		y_train_val = np.append(y_train, y_validation)
 
-import numpy as np
-import matplotlib.pyplot as plt
 
-n, bins, patches = plt.hist(number_instances, 50, density=True, facecolor='g', alpha=0.75)
-plt.title('Instances')
-plt.grid(True)
-plt.show()
-print("istances: " + str(number_instances))
-
-n, bins, patches = plt.hist(number_attributes, 50, density=True, facecolor='g', alpha=0.75)
-plt.title('Attributes')
-plt.grid(True)
-plt.show()
-print("attributes: " + str(number_attributes))
-
-n, bins, patches = plt.hist(number_features, 50, density=True, facecolor='g', alpha=0.75)
-plt.title('Features')
-plt.grid(True)
-plt.show()
-print("featurs: " + str(number_features))
-
-'''
-with open("/home/felix/phd/meta_learn/downloaded_arff/40713.arff") as f:
-	df = a2p.load(f)
-	print(df.columns)
-	#df['V1@NUMERIC']
-	df['SEX@{True,False}'] = df['sex@{0,1,2}'] == '1'
-	df = df.drop(columns=['sex@{0,1,2}'])
-
-	with open('/home/felix/phd/meta_learn/downloaded_arff/40713_new.arff', 'w') as ff:
-		a2p.dump(df, ff)
-'''
 
 
