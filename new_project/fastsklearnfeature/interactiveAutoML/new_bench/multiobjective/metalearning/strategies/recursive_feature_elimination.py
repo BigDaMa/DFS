@@ -13,6 +13,21 @@ from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate
 from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 from sklearn.feature_selection.from_model import _get_feature_importances
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
+from eli5.permutation_importance import get_score_importances
+
+def my_feature_importance(my_pipeline, accuracy_scorer, X, y):
+
+	try:
+		return _get_feature_importances(my_pipeline.named_steps['clf'])
+	except:
+		def score(X, y):
+			return accuracy_scorer(my_pipeline, X, y)
+
+		base_score, score_decreases = get_score_importances(score, X, y, n_iter=5)
+		feature_importances = np.mean(score_decreases, axis=0)
+
+		return feature_importances
+
 
 def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)):
 	min_loss = np.inf
@@ -69,6 +84,8 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 		cv_acc = result['cv_acc']
 		cv_robust = result['cv_robust']
 		cv_number_features = result['cv_number_features']
+
+		print(cv_acc)
 
 		my_result = result
 		my_result['number_evaluations'] = number_of_evaluations
@@ -129,7 +146,7 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 		if len(combo_result) > 0:
 			return combo_result
 
-		worst_id = np.argmin(_get_feature_importances(my_result['model'].named_steps['clf']))
+		worst_id = np.argmin(my_feature_importance(my_result['model'], accuracy_scorer, X_train, y_train))
 
 		current_feature_set.remove(current_feature_set[worst_id])
 

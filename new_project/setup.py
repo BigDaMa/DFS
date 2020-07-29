@@ -38,7 +38,9 @@ setup(
                       "skrebate",
                       "autograd",
                       "pymoo",
-                      "plotly"
+                      "plotly",
+                      "immutabledict",
+                      "eli5"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
