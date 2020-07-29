@@ -99,7 +99,7 @@ run_counter = 0
 while True:
 
 	#create folder to store files:
-	for strategy_id_i in range(17):
+	for strategy_id_i in range(20):
 		path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(run_counter) + '/strategy' + str(strategy_id_i))
 		path.mkdir(parents=True, exist_ok=True)
 
