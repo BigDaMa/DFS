@@ -2,12 +2,14 @@ import copy
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 
 import pickle
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
 import warnings
 warnings.filterwarnings("ignore")
 import pandas as pd
@@ -33,7 +35,6 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measur
 from skrebate import ReliefF
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.multiprocessing_global as mp_global
 import diffprivlib.models as models
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.PrivateGaussianNB import PrivateGaussianNB
 from sklearn.model_selection import GridSearchCV
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.fullfeatures import fullfeatures
@@ -48,12 +49,14 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation_openml
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.PrivateDecisionTree import PrivateDecisionTree
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.PrivateSVM_does_not_work import PrivateSVM
+
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 import os
 from sklearn.metrics import f1_score
+from sklearn.metrics import r2_score
 
 
 def my_function(config_id):
@@ -77,7 +80,8 @@ def my_function(config_id):
 								   max_search_time=mp_global.max_search_time,
 								   log_file='/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(
 									   run_counter) + '/strategy' + str(conf['strategy_id']) + '/run' + str(runs_per_scenario) + '.pickle',
-								   accuracy_scorer = mp_global.accuracy_scorer
+								   accuracy_scorer=mp_global.accuracy_scorer,
+								   avoid_robustness=mp_global.avoid_robustness
 								   )
 	result['strategy_id'] = conf['strategy_id']
 	return result
@@ -88,9 +92,8 @@ time_limit = 60 * 60 * 3
 number_of_runs = 1
 
 
-cv_splitter = StratifiedKFold(5, random_state=42)
 
-auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
+
 
 os.mkdir('/tmp/experiment' + str(current_run_time_id))
 
@@ -103,15 +106,24 @@ while True:
 		os.mkdir('/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(run_counter) + '/strategy' + str(strategy_id_i))
 
 	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation()
+	#X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id, is_regression = get_fair_data1_validation_openml()
+	is_regression = False
 
 	#run on tiny sample
 	if X_train.shape[0] > 100:
-		X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42, stratify=y_train)
+		if is_regression:
+			X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42)
+		else:
+			X_train_tiny, _, y_train_tiny, _ = train_test_split(X_train, y_train, train_size=100, random_state=42, stratify=y_train)
 	else:
 		X_train_tiny = X_train
 		y_train_tiny = y_train
 
-	fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train_tiny[:, sensitive_ids[0]])
+
+	print(X_train.shape)
+
+	if type(sensitive_ids) != type(None):
+		fair_train_tiny = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_train_tiny[:, sensitive_ids[0]])
 
 	mp_global.X_train = X_train
 	mp_global.X_validation = X_validation
@@ -123,8 +135,14 @@ while True:
 	mp_global.y_test = y_test
 	mp_global.names = names
 	mp_global.sensitive_ids = sensitive_ids
-	mp_global.cv_splitter = cv_splitter
-	mp_global.accuracy_scorer = make_scorer(f1_score)
+
+	if is_regression:
+		mp_global.cv_splitter = KFold(5, random_state=42)
+		mp_global.accuracy_scorer = make_scorer(r2_score)
+	else:
+		mp_global.cv_splitter = StratifiedKFold(5, random_state=42)
+		mp_global.accuracy_scorer = make_scorer(f1_score)
+	mp_global.avoid_robustness = False
 
 
 	def objective(hps):
@@ -133,23 +151,50 @@ while True:
 		try:
 			cv_k = 1.0
 			cv_privacy = hps['privacy']
-			model = LogisticRegression(class_weight='balanced')
+
+			model = None
+			if hps['model'] == 'Logistic Regression':
+				model = LogisticRegression(class_weight='balanced')
+				if type(cv_privacy) != type(None):
+					model = models.LogisticRegression(epsilon=cv_privacy, class_weight='balanced')
+			elif hps['model'] == 'Gaussian Naive Bayes':
+				model = GaussianNB()
+				if type(cv_privacy) != type(None):
+					model = models.GaussianNB(epsilon=cv_privacy)
+			elif hps['model'] == 'Decision Tree':
+				model = DecisionTreeClassifier(class_weight='balanced')
+				if type(cv_privacy) != type(None):
+					model = PrivateDecisionTree(epsilon=cv_privacy)
+
+
 			if type(cv_privacy) == type(None):
 				cv_privacy = X_train_tiny.shape[0]
-			else:
-				model = models.LogisticRegression(epsilon=cv_privacy, class_weight='balanced')
+
+			#model = LinearRegression()
 
 			robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train_tiny, y=y_train_tiny, model=model,
-										feature_selector=None, scorer=auc_scorer)
+										feature_selector=None, scorer=mp_global.accuracy_scorer)
 
 
 			small_start_time = time.time()
 
-			cv = GridSearchCV(model, param_grid={'C': [1.0]}, scoring={'AUC': auc_scorer, 'Fairness': fair_train_tiny, 'Robustness': robust_scorer}, refit=False, cv=cv_splitter)
+			scoring = {'AUC': mp_global.accuracy_scorer}
+			if not mp_global.avoid_robustness:
+				scoring['Robustness'] = robust_scorer
+			if type(sensitive_ids) != type(None):
+				scoring['Fairness'] = fair_train_tiny
+
+			cv = GridSearchCV(model, param_grid={}, scoring=scoring, refit=False, cv=mp_global.cv_splitter)
 			cv.fit(X_train_tiny, pd.DataFrame(y_train_tiny))
 			cv_acc = cv.cv_results_['mean_test_AUC'][0]
-			cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
-			cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
+
+			cv_fair = 0.0
+			if type(sensitive_ids) != type(None):
+				cv_fair = 1.0 - cv.cv_results_['mean_test_Fairness'][0]
+
+			cv_robust = 0.0
+			if not mp_global.avoid_robustness:
+				cv_robust = 1.0 - cv.cv_results_['mean_test_Robustness'][0]
 
 			cv_time = time.time() - small_start_time
 
@@ -181,6 +226,8 @@ while True:
 
 			#predict the best model and calculate uncertainty
 
+			print(features)
+
 			loss = 0
 			return {'loss': loss, 'status': STATUS_OK, 'features': features, 'search_time': hps['search_time'], 'constraints': hps }
 		except:
@@ -193,15 +240,14 @@ while True:
 							[
 								'Logistic Regression',
 								'Gaussian Naive Bayes',
-								'Decision Tree',
-								#'SVM'
+								'Decision Tree'
 							]),
 			 'k': hp.choice('k_choice',
 							[
 								(1.0),
 								(hp.uniform('k_specified', 0, 1))
 							]),
-			 'accuracy': hp.uniform('accuracy_specified', 0.5, 1),
+			 'accuracy': hp.uniform('accuracy_specified', 0, 1),
 			 'fairness': hp.choice('fairness_choice',
 							[
 								(0.0),
@@ -269,7 +315,6 @@ while True:
 				if most_uncertain_f['privacy_choice'][0]:
 					model = PrivateDecisionTree(epsilon=most_uncertain_f['privacy_specified'][0])
 
-
 			print(model)
 
 			mp_global.clf = model
@@ -317,9 +362,8 @@ while True:
 							   recursive_feature_elimination,
 							   fullfeatures]
 
-			main_strategies = [TPE]
-
 			#run main strategies
+
 			for strategy in main_strategies:
 				for run in range(number_of_runs):
 						configuration = {}
@@ -331,8 +375,9 @@ while True:
 				strategy_id += 1
 
 
-			'''
-			with ProcessPool(max_workers=2) as pool:
+
+
+			with ProcessPool(max_workers=17) as pool:
 				future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 				iterator = future.result()
@@ -351,6 +396,7 @@ while True:
 			'''
 			for iii in range(len(mp_global.configurations)):
 				my_function(iii)
+			'''
 
 
 		# pickle everything and store it
@@ -359,9 +405,8 @@ while True:
 		one_big_object['dataset_id'] = key
 		one_big_object['constraint_set_list'] = trials.trials[-1]['result']['constraints']
 
-		with open('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/run_info.pickle', 'wb') as f_log:
+		with open('/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(run_counter) + '/run_info.pickle', 'wb') as f_log:
 			pickle.dump(one_big_object, f_log)
-
 
 		run_counter += 1
 
