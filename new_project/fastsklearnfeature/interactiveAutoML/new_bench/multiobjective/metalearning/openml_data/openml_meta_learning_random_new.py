@@ -80,8 +80,7 @@ def my_function(config_id):
 								   max_search_time=mp_global.max_search_time,
 								   log_file='/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(
 									   run_counter) + '/strategy' + str(conf['strategy_id']) + '/run' + str(runs_per_scenario) + '.pickle',
-								   accuracy_scorer=mp_global.accuracy_scorer,
-								   avoid_robustness=mp_global.avoid_robustness
+								   accuracy_scorer=mp_global.accuracy_scorer
 								   )
 	result['strategy_id'] = conf['strategy_id']
 	return result
