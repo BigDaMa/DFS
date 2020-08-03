@@ -146,9 +146,12 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 		if len(combo_result) > 0:
 			return combo_result
 
-		worst_id = np.argmin(my_feature_importance(my_result['model'], accuracy_scorer, X_train, y_train))
+		if len(current_feature_set) > 1:
+			worst_id = np.argmin(my_feature_importance(my_result['model'], accuracy_scorer, X_train, y_train))
+			current_feature_set.remove(current_feature_set[worst_id])
+		else:
+			current_feature_set = []
 
-		current_feature_set.remove(current_feature_set[worst_id])
 
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 				 'Finished': True}
