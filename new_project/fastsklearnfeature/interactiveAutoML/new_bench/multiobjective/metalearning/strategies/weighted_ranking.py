@@ -35,8 +35,8 @@ def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_vali
 			rankings.append(ranking_functions[ranking_function_i](X_train, y_train))
 	except Exception as e:
 		my_result = {'error': e}
-		with open(log_file, 'ab') as f_log:
-			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+		#with open(log_file, 'ab') as f_log:
+		#	pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 		return {'success': False}
 
 	def f_clf1(hps):
