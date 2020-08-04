@@ -79,8 +79,8 @@ def my_function(config_id):
 								   min_robustness=mp_global.min_robustness,
 								   max_number_features=mp_global.max_number_features,
 								   max_search_time=mp_global.max_search_time,
-								   log_file='/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(
-									   run_counter) + '/strategy' + str(conf['strategy_id']) + '/run' + str(runs_per_scenario) + '.pickle',
+								   log_file='/tmp/experiment' + str(current_run_time_id) + '/run' + str(
+									   run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle',
 								   accuracy_scorer=mp_global.accuracy_scorer
 								   )
 	result['strategy_id'] = conf['strategy_id']
@@ -99,9 +99,8 @@ run_counter = 0
 while True:
 
 	#create folder to store files:
-	for strategy_id_i in range(20):
-		path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(run_counter) + '/strategy' + str(strategy_id_i))
-		path.mkdir(parents=True, exist_ok=True)
+	path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
+	path.mkdir(parents=True, exist_ok=True)
 
 	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation()
 	#X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id, is_regression = get_fair_data1_validation_openml()
@@ -167,8 +166,6 @@ while True:
 
 			if type(cv_privacy) == type(None):
 				cv_privacy = X_train_tiny.shape[0]
-
-			#model = LinearRegression()
 
 			robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train_tiny, y=y_train_tiny, model=model,
 										feature_selector=None, scorer=mp_global.accuracy_scorer)
@@ -245,11 +242,11 @@ while True:
 								(1.0),
 								(hp.uniform('k_specified', 0, 1))
 							]),
-			 'accuracy': hp.uniform('accuracy_specified', 0, 1),
+			 'accuracy': hp.uniform('accuracy_specified', 0.5, 1),
 			 'fairness': hp.choice('fairness_choice',
 							[
 								(0.0),
-								(hp.uniform('fairness_specified', 0, 1))
+								(hp.uniform('fairness_specified', 0.8, 1))
 							]),
 			 'privacy': hp.choice('privacy_choice',
 							[
@@ -259,10 +256,9 @@ while True:
 			 'robustness': hp.choice('robustness_choice',
 							[
 								(0.0),
-								(hp.uniform('robustness_specified', 0, 1))
+								(hp.uniform('robustness_specified', 0.8, 1))
 							]),
-		     'search_time': hp.uniform('search_time_specified', 10, time_limit
-									   ), # in seconds
+		     'search_time': hp.uniform('search_time_specified', 10, time_limit), # in seconds
 			}
 
 	trials = Trials()
@@ -275,124 +271,122 @@ while True:
 			break
 
 
-		for runs_per_scenario in range(5):
-
-			#break, once convergence tolerance is reached and generate new dataset
-			last_trial = trials.trials[-1]
-			most_uncertain_f = last_trial['misc']['vals']
-			#print(most_uncertain_f)
+		#break, once convergence tolerance is reached and generate new dataset
+		last_trial = trials.trials[-1]
+		most_uncertain_f = last_trial['misc']['vals']
+		#print(most_uncertain_f)
 
 
-			min_accuracy = most_uncertain_f['accuracy_specified'][0]
-			min_fairness = 0.0
-			if most_uncertain_f['fairness_choice'][0]:
-				min_fairness = most_uncertain_f['fairness_specified'][0]
-			min_robustness = 0.0
-			if most_uncertain_f['robustness_choice'][0]:
-				min_robustness = most_uncertain_f['robustness_specified'][0]
-			max_number_features = 1.0
-			if most_uncertain_f['k_choice'][0]:
-				max_number_features = most_uncertain_f['k_specified'][0]
+		min_accuracy = most_uncertain_f['accuracy_specified'][0]
+		min_fairness = 0.0
+		if most_uncertain_f['fairness_choice'][0]:
+			min_fairness = most_uncertain_f['fairness_specified'][0]
+		min_robustness = 0.0
+		if most_uncertain_f['robustness_choice'][0]:
+			min_robustness = most_uncertain_f['robustness_specified'][0]
+		max_number_features = 1.0
+		if most_uncertain_f['k_choice'][0]:
+			max_number_features = most_uncertain_f['k_specified'][0]
 
-			max_search_time = most_uncertain_f['search_time_specified'][0]
+		max_search_time = most_uncertain_f['search_time_specified'][0]
 
-			# Execute each search strategy with a given time limit (in parallel)
-			# maybe run multiple times to smooth stochasticity
+		# Execute each search strategy with a given time limit (in parallel)
+		# maybe run multiple times to smooth stochasticity
 
-			model = None
-			if most_uncertain_f['model_choice'][0] == 0:
-				model = LogisticRegression(class_weight='balanced')
-				if most_uncertain_f['privacy_choice'][0]:
-					model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
-			elif most_uncertain_f['model_choice'][0] == 1:
-				model = GaussianNB()
-				if most_uncertain_f['privacy_choice'][0]:
-					model = models.GaussianNB(epsilon=most_uncertain_f['privacy_specified'][0])
-			elif most_uncertain_f['model_choice'][0] == 2:
-				model = DecisionTreeClassifier(class_weight='balanced')
-				if most_uncertain_f['privacy_choice'][0]:
-					model = PrivateDecisionTree(epsilon=most_uncertain_f['privacy_specified'][0])
+		model = None
+		if most_uncertain_f['model_choice'][0] == 0:
+			model = LogisticRegression(class_weight='balanced')
+			if most_uncertain_f['privacy_choice'][0]:
+				model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
+		elif most_uncertain_f['model_choice'][0] == 1:
+			model = GaussianNB()
+			if most_uncertain_f['privacy_choice'][0]:
+				model = models.GaussianNB(epsilon=most_uncertain_f['privacy_specified'][0])
+		elif most_uncertain_f['model_choice'][0] == 2:
+			model = DecisionTreeClassifier(class_weight='balanced')
+			if most_uncertain_f['privacy_choice'][0]:
+				model = PrivateDecisionTree(epsilon=most_uncertain_f['privacy_specified'][0])
 
-			print(model)
+		print(model)
 
-			mp_global.clf = model
-			#define rankings
-			rankings = [variance,
-						chi2_score_wo,
-						fcbf,
-						my_fisher_score,
-						mutual_info_classif,
-						my_mcfs]
-			#rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
-			#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
-			#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
-			rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
+		mp_global.clf = model
+		#define rankings
+		rankings = [variance,
+					chi2_score_wo,
+					fcbf,
+					my_fisher_score,
+					mutual_info_classif,
+					my_mcfs]
+		#rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
+		#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
+		#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
+		rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
 
-			mp_global.min_accuracy = min_accuracy
-			mp_global.min_fairness = min_fairness
-			mp_global.min_robustness = min_robustness
-			mp_global.max_number_features = max_number_features
-			mp_global.max_search_time = max_search_time
+		mp_global.min_accuracy = min_accuracy
+		mp_global.min_fairness = min_fairness
+		mp_global.min_robustness = min_robustness
+		mp_global.max_number_features = max_number_features
+		mp_global.max_search_time = max_search_time
 
-			mp_global.configurations = []
-			#add single rankings
-			strategy_id = 1
-			for r in range(len(rankings)):
-				for run in range(number_of_runs):
+		mp_global.configurations = []
+		#add single rankings
+		strategy_id = 1
+		for r in range(len(rankings)):
+			for run in range(number_of_runs):
+				configuration = {}
+				configuration['ranking_functions'] = copy.deepcopy([rankings[r]])
+				configuration['run_id'] = copy.deepcopy(run)
+				configuration['main_strategy'] = copy.deepcopy(weighted_ranking)
+				configuration['strategy_id'] = copy.deepcopy(strategy_id)
+				mp_global.configurations.append(configuration)
+			strategy_id +=1
+
+		main_strategies = [TPE,
+						   simulated_annealing,
+						   evolution,
+						   exhaustive,
+						   forward_selection,
+						   backward_selection,
+						   forward_floating_selection,
+						   backward_floating_selection,
+						   recursive_feature_elimination,
+						   fullfeatures]
+
+		#run main strategies
+
+		for strategy in main_strategies:
+			for run in range(number_of_runs):
 					configuration = {}
-					configuration['ranking_functions'] = copy.deepcopy([rankings[r]])
+					configuration['ranking_functions'] = []
 					configuration['run_id'] = copy.deepcopy(run)
-					configuration['main_strategy'] = copy.deepcopy(weighted_ranking)
+					configuration['main_strategy'] = copy.deepcopy(strategy)
 					configuration['strategy_id'] = copy.deepcopy(strategy_id)
 					mp_global.configurations.append(configuration)
-				strategy_id +=1
-
-			main_strategies = [TPE,
-							   simulated_annealing,
-							   evolution,
-							   exhaustive,
-							   forward_selection,
-							   backward_selection,
-							   forward_floating_selection,
-							   backward_floating_selection,
-							   recursive_feature_elimination,
-							   fullfeatures]
-
-			#run main strategies
-
-			for strategy in main_strategies:
-				for run in range(number_of_runs):
-						configuration = {}
-						configuration['ranking_functions'] = []
-						configuration['run_id'] = copy.deepcopy(run)
-						configuration['main_strategy'] = copy.deepcopy(strategy)
-						configuration['strategy_id'] = copy.deepcopy(strategy_id)
-						mp_global.configurations.append(configuration)
-				strategy_id += 1
+			strategy_id += 1
 
 
 
+		#6
+		with ProcessPool(max_workers=17) as pool:
+			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
-			with ProcessPool(max_workers=6) as pool:
-				future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
-
-				iterator = future.result()
-				while True:
-					try:
-						result = next(iterator)
-					except StopIteration:
-						break
-					except TimeoutError as error:
-						print("function took longer than %d seconds" % error.args[1])
-					except ProcessExpired as error:
-						print("%s. Exit code: %d" % (error, error.exitcode))
-					except Exception as error:
-						print("function raised %s" % error)
-						print(error.traceback)  # Python's traceback of remote process
-			'''
-			for iii in range(len(mp_global.configurations)):
-				my_function(iii)
-			'''
+			iterator = future.result()
+			while True:
+				try:
+					result = next(iterator)
+				except StopIteration:
+					break
+				except TimeoutError as error:
+					print("function took longer than %d seconds" % error.args[1])
+				except ProcessExpired as error:
+					print("%s. Exit code: %d" % (error, error.exitcode))
+				except Exception as error:
+					print("function raised %s" % error)
+					print(error.traceback)  # Python's traceback of remote process
+		'''
+		for iii in range(len(mp_global.configurations)):
+			my_function(iii)
+		'''
 
 
 		# pickle everything and store it
@@ -401,7 +395,8 @@ while True:
 		one_big_object['dataset_id'] = key
 		one_big_object['constraint_set_list'] = trials.trials[-1]['result']['constraints']
 
-		with open('/tmp/experiment' + str(current_run_time_id) + '/scenario' + str(run_counter) + '/run_info.pickle', 'wb') as f_log:
+		with open('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/run_info.pickle',
+				  'wb') as f_log:
 			pickle.dump(one_big_object, f_log)
 
 		run_counter += 1

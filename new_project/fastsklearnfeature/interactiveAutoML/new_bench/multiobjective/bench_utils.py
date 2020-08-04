@@ -338,7 +338,7 @@ def get_fair_data1_validation_openml(dataset_key=None, random_number=42):
 def get_fair_data1_validation(dataset_key=None, random_number=42):
 	map_dataset = {}
 
-	'''
+
 	map_dataset['31'] = 'foreign_worker@{yes,no}'
 	map_dataset['802'] = 'sex@{female,male}'
 	map_dataset['1590'] = 'sex@{Female,Male}'
@@ -358,10 +358,12 @@ def get_fair_data1_validation(dataset_key=None, random_number=42):
 	map_dataset['1003'] = 'sex@{male,female}'
 	map_dataset['934'] = 'race@{black,white}'
 	map_dataset['42565'] = 'gender@{g1,g2}' #students
-	'''
 
+
+	'''
 	map_dataset['1240'] = 'sex@{Female,Male}'
 	map_dataset['42132'] = 'race@{BLACKLIVESMATTER,OTHER}'#traffic
+	'''
 
 	number_instances = []
 	number_attributes = []
