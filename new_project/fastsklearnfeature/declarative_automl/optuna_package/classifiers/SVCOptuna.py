@@ -14,3 +14,14 @@ class SVCOptuna(LinearSVC):
         self.max_iter = -1
 
         #todo: add conditional parameters
+
+    def generate_hyperparameters(self, space_gen):
+        self.name = id_name('SVC_')
+
+        space_gen.generate_number(self.name + "C", 1.0)
+        space_gen.generate_cat(self.name + "kernel", ["rbf", "poly", "sigmoid"], "rbf")
+        space_gen.generate_number(self.name + "degree", 3)
+        space_gen.generate_number(self.name + "gamma", 0.1)
+        space_gen.generate_number(self.name + "coef0", 0)
+        space_gen.generate_cat(self.name + "shrinking", [True, False], True)
+        space_gen.generate_number(self.name + "tol", 1e-3)

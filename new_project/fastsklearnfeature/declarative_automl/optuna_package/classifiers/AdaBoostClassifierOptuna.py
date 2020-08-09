@@ -12,3 +12,10 @@ class AdaBoostClassifierOptuna(AdaBoostClassifier):
         self.max_depth = trial.suggest_int(self.name + "max_depth", 1, 10, log=False)
         self.base_estimator = DecisionTreeClassifier(max_depth=self.max_depth)
         self.classes_ = np.unique(y.astype(int))
+
+    def generate_hyperparameters(self, space_gen):
+        self.name = id_name('AdaBoostClassifier_')
+        space_gen.generate_number(self.name + "n_estimators", 50)
+        space_gen.generate_number(self.name + "learning_rate", 0.1)
+        space_gen.generate_cat(self.name + "algorithm", ["SAMME.R", "SAMME"], "SAMME.R")
+        space_gen.generate_number(self.name + "max_depth", 1)

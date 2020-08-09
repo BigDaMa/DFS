@@ -7,3 +7,10 @@ class TruncatedSVDOptuna(TruncatedSVD):
 
         self.target_dim = trial.suggest_int(self.name + "target_dim", 10, 256)
 
+    def generate_hyperparameters(self, space_gen):
+        self.name = id_name('TruncatedSVD_')
+
+        space_gen.generate_number(self.name + "target_dim", 128)
+
+
+

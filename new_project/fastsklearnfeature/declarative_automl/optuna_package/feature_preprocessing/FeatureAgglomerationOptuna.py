@@ -15,5 +15,14 @@ class FeatureAgglomerationOptuna(FeatureAgglomeration):
         else:
             self.affinity = trial.suggest_categorical(self.name + "affinity", ["euclidean", "manhattan", "cosine"])
 
-        self.pooling_func = categorical(trial, self.name + "pooling_func", [np.mean, np.median, np.max])
+        self.pooling_func = trial.suggest_categorical(self.name + "pooling_func", [np.mean, np.median, np.max])
+
+    def generate_hyperparameters(self, space_gen):
+        self.name = id_name('FeatureAgglomeration_')
+
+        space_gen.generate_number(self.name + "n_clusters", 25)
+        space_gen.generate_cat(self.name + "linkage", ["ward", "complete", "average"], "ward")
+        space_gen.generate_cat(self.name + "affinity", ["euclidean", "manhattan", "cosine"], "euclidean")
+        space_gen.generate_cat(self.name + "pooling_func", [np.mean, np.median, np.max], np.mean)
+
 

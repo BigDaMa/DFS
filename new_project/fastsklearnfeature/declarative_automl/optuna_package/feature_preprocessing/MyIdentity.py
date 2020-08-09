@@ -6,3 +6,6 @@ class IdentityTransformation(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         return self
+
+    def generate_hyperparameters(self, space_gen):
+        pass

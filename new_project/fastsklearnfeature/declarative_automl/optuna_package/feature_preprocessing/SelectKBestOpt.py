@@ -66,7 +66,3 @@ class SelectKBestOpt(SelectKBest):
 
             self.score_func = bindFunction1(model)
 
-
-
-
-

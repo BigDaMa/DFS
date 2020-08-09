@@ -9,3 +9,12 @@ class PassiveAggressiveOptuna(PassiveAggressiveClassifier):
         self.loss = trial.suggest_categorical(self.name + "loss", ["hinge", "squared_hinge"])
         self.tol = trial.suggest_loguniform(self.name + "tol", 1e-5, 1e-1)
         self.average = trial.suggest_categorical(self.name + "average", [False, True])
+
+    def generate_hyperparameters(self, space_gen):
+        self.name = id_name('PassiveAggressive_')
+
+        space_gen.generate_number(self.name + "C", 1.0)
+        space_gen.generate_cat(self.name + "loss", ["hinge", "squared_hinge"], "hinge")
+        space_gen.generate_number(self.name + "tol", 1e-4)
+        space_gen.generate_cat(self.name + "average", [False, True], False)
+

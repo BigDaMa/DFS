@@ -5,3 +5,6 @@ class GaussianNBOptuna(GaussianNB):
     def init_hyperparameters(self, trial, X, y):
         #self.classes_ = np.unique(y.astype(int))
         pass
+
+    def generate_hyperparameters(self, space_gen):
+        pass

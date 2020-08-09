@@ -7,3 +7,8 @@ class BernoulliNBOptuna(BernoulliNB):
         self.name = id_name('BernoulliNB_')
         self.alpha = trial.suggest_loguniform(self.name + "alpha", 1e-2, 100)
         self.fit_prior = trial.suggest_categorical(self.name + "fit_prior", [True, False])
+
+    def generate_hyperparameters(self, space_gen):
+        self.name = id_name('BernoulliNB_')
+        space_gen.generate_number(self.name + "alpha", 1)
+        space_gen.generate_cat(self.name + "fit_prior", [True, False], True)

@@ -20,3 +20,15 @@ class HistGradientBoostingClassifierOptuna(HistGradientBoostingClassifier):
         self.validation_fraction = trial.suggest_uniform(self.name + "validation_fraction", 0.01, 0.4)
         self.classes_ = np.unique(y.astype(int))
 
+    def generate_hyperparameters(self, space_gen):
+        self.name = id_name('HistGradientBoostingClassifier_')
+
+        space_gen.generate_number(self.name + "learning_rate", 0.1)
+        space_gen.generate_number(self.name + "min_samples_leaf", 20)
+        space_gen.generate_number(self.name + "max_leaf_nodes", 31)
+        space_gen.generate_number(self.name + "l2_regularization", 1E-10)
+        space_gen.generate_cat(self.name + "early_stop", ["off", "train", "valid"], "off")
+        space_gen.generate_number(self.name + "n_iter_no_change", 10)
+        space_gen.generate_number(self.name + "validation_fraction", 0.1)
+
+

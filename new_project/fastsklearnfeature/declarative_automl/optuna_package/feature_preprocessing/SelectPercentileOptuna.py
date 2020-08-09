@@ -63,6 +63,32 @@ class SelectPercentileOptuna(SelectPercentile):
 
             self.score_func = bindFunction1(model)
 
+    def generate_hyperparameters(self, space_gen):
+        self.name = id_name('SelectPercentile')
+
+        space_gen.generate_number(self.name + "percentile", 50)
+        space_gen.generate_cat(self.name + 'score_func',['chi2', 'f_classif', 'mutual_info', 'ExtraTreesClassifier', 'LinearSVC',
+                                                'variance'], "chi2")
+
+        new_name = self.name + '_' + 'ExtraTreesClassifier' + '_'
+
+        space_gen.generate_cat(new_name + "criterion", ["gini", "entropy"], "gini")
+        space_gen.generate_number(new_name + "max_features", 0.5)
+        space_gen.generate_number(new_name + "min_samples_split", 2)
+        space_gen.generate_number(new_name + "min_samples_leaf", 1)
+        space_gen.generate_cat(new_name + "bootstrap", [True, False], False)
+
+        new_name = self.name + '_' + 'LinearSVC' + '_'
+        space_gen.generate_cat(new_name + "loss", ["hinge", "squared_hinge"], "squared_hinge")
+        space_gen.generate_number(new_name + "tol", 1e-4)
+        space_gen.generate_number(new_name + "C", 1.0)
+
+
+
+
+
+
+
 
 
 
