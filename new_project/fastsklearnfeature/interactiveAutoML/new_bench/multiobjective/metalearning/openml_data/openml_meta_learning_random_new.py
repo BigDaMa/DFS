@@ -51,6 +51,10 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation_openml
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.PrivateDecisionTree import PrivateDecisionTree
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.randomforest.PrivateRandomForrest import PrivateRandomForest
+
+
+from sklearn.ensemble import RandomForestClassifier
 
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
@@ -161,8 +165,11 @@ while True:
 			elif hps['model'] == 'Decision Tree':
 				model = DecisionTreeClassifier(class_weight='balanced')
 				if type(cv_privacy) != type(None):
-					model = PrivateDecisionTree(epsilon=cv_privacy)
-
+					model = PrivateRandomForest(n_estimators=1, epsilon=cv_privacy)
+			elif hps['model'] == 'Random Forest':
+				model = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+				if type(cv_privacy) != type(None):
+					model = PrivateRandomForest(n_estimators=100, epsilon=cv_privacy)
 
 			if type(cv_privacy) == type(None):
 				cv_privacy = X_train_tiny.shape[0]
@@ -235,7 +242,8 @@ while True:
 							[
 								'Logistic Regression',
 								'Gaussian Naive Bayes',
-								'Decision Tree'
+								'Decision Tree',
+								'Random Forest'
 							]),
 			 'k': hp.choice('k_choice',
 							[
@@ -294,6 +302,7 @@ while True:
 		# maybe run multiple times to smooth stochasticity
 
 		model = None
+		print(most_uncertain_f)
 		if most_uncertain_f['model_choice'][0] == 0:
 			model = LogisticRegression(class_weight='balanced')
 			if most_uncertain_f['privacy_choice'][0]:
@@ -305,9 +314,12 @@ while True:
 		elif most_uncertain_f['model_choice'][0] == 2:
 			model = DecisionTreeClassifier(class_weight='balanced')
 			if most_uncertain_f['privacy_choice'][0]:
-				model = PrivateDecisionTree(epsilon=most_uncertain_f['privacy_specified'][0])
+				model = PrivateRandomForest(n_estimators=1, epsilon=most_uncertain_f['privacy_specified'][0])
+		elif most_uncertain_f['model_choice'][0] == 3:
+			model = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+			if most_uncertain_f['privacy_choice'][0]:
+				model = PrivateRandomForest(n_estimators=100, epsilon=most_uncertain_f['privacy_specified'][0])
 
-		model = PrivateDecisionTree(epsilon=0.1)
 		print(model)
 
 		mp_global.clf = model
@@ -368,7 +380,7 @@ while True:
 
 
 		#6
-		with ProcessPool(max_workers=6) as pool:
+		with ProcessPool(max_workers=17) as pool:
 			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 			iterator = future.result()
