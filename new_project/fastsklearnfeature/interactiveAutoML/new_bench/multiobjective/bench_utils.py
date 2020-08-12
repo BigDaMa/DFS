@@ -361,8 +361,10 @@ def get_fair_data1_validation(dataset_key=None, random_number=42):
 
 
 	'''
-	map_dataset['1240'] = 'sex@{Female,Male}'
-	map_dataset['42132'] = 'race@{BLACKLIVESMATTER,OTHER}'#traffic
+	#map_dataset['1240'] = 'sex@{Female,Male}'
+	#map_dataset['42132'] = 'race@{BLACKLIVESMATTER,OTHER}'#traffic
+
+	map_dataset['1590'] = 'sex@{Female,Male}'
 
 
 	number_instances = []

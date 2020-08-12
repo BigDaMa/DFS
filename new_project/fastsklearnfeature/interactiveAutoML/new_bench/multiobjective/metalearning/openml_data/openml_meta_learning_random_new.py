@@ -307,6 +307,7 @@ while True:
 			if most_uncertain_f['privacy_choice'][0]:
 				model = PrivateDecisionTree(epsilon=most_uncertain_f['privacy_specified'][0])
 
+		model = PrivateDecisionTree(epsilon=0.1)
 		print(model)
 
 		mp_global.clf = model
