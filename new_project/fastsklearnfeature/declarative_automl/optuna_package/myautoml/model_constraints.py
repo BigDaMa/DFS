@@ -32,7 +32,7 @@ from sklearn.compose import ColumnTransformer
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.OneHotEncoderOptuna import OneHotEncoderOptuna
 
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.Space_Generation import SpaceGenerator
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.Space_GenerationTree import SpaceGenerator
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import PassiveAggressiveClassifier
@@ -41,6 +41,8 @@ from func_timeout import func_timeout, FunctionTimedOut, func_set_timeout
 import threading
 from sklearn.model_selection import StratifiedKFold
 import pandas as pd
+
+from anytree import Node, RenderTree
 
 from sklearn.ensemble import RandomForestRegressor
 
@@ -73,6 +75,9 @@ def run_AutoML(trial):
     space = gen.generate_params()
     space.sample_parameters(trial)
 
+    for pre, _, node in RenderTree(space.parameter_tree):
+        print("%s%s: %s" % (pre, node.name, node.status))
+
     # which dataset to use
     #todo: add more datasets
     dataset = openml.datasets.get_dataset(31)
@@ -102,12 +107,19 @@ while True:
 
     print('done')
 
-    my_list = list(study.get_trials()[0].params.keys())
+    mgen = SpaceGenerator()
+    mspace = mgen.generate_params()
+
+    my_list = list(mspace.name2node.keys())
     my_list.sort()
+
+    my_list_constraints = ['global_search_time_constraint']
 
     #generate training data
     all_trials = study.get_trials()
-    X_meta = np.zeros((len(all_trials), len(all_trials[0].params)))
+    X_meta_parameters = np.zeros((len(all_trials), len(my_list)))
+
+    X_meta_constraints = np.zeros((len(all_trials), len(my_list_constraints)))
     y_meta = []
 
     #todo: create metafeatures for dataset
@@ -120,7 +132,19 @@ while True:
         else:
             y_meta.append(0.0)
         for parameter_i in range(len(my_list)):
-            X_meta[t, parameter_i] = current_trial.params[my_list[parameter_i]]
+            if my_list[parameter_i] in current_trial.params:
+                X_meta_parameters[t, parameter_i] = current_trial.params[my_list[parameter_i]]
+            else:
+                X_meta_parameters[t, parameter_i] = False
+
+        for constraint_i in range(len(my_list_constraints)):
+            X_meta_constraints[t, constraint_i] = current_trial.params[my_list_constraints[constraint_i]]
+
+
+    X_meta = np.hstack((X_meta_parameters,X_meta_constraints))
+
+    feature_names = my_list
+    feature_names.extend(my_list_constraints)
 
 
     model = RandomForestRegressor()
@@ -130,7 +154,7 @@ while True:
 
     import operator
     def plot_most_important_features(rf_random, names_features, title='importance'):
-        importances =  {}
+        importances = {}
         for name_i in range(len(names_features)):
             importances[names_features[name_i]] = rf_random.feature_importances_[name_i]
 
@@ -158,7 +182,7 @@ while True:
         plt.subplots_adjust(bottom=0.6)
         plt.show()
 
-    plot_most_important_features(model, my_list)
+    plot_most_important_features(model, feature_names)
 
 #generate training data
 

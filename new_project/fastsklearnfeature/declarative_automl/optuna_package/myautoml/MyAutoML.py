@@ -155,10 +155,11 @@ class MyAutoML:
                     pass
 
         def objective(trial):
+
             return_dict = {}
             return_dict['value'] = -np.inf
             # Start foo as a process
-            p = threading.Thread(target=objective1, name="Foo", args=(trial, return_dict))
+            p = threading.Thread(target=objective1, name="Foo" + str(time.time()), args=(trial, return_dict))
             p.start()
 
             p.join(2 * 60)
@@ -184,5 +185,11 @@ if __name__ == "__main__":
 
     gen = SpaceGenerator()
     space = gen.generate_params()
+
+    from anytree import Node, RenderTree
+
+    for pre, _, node in RenderTree(space.parameter_tree):
+        print("%s%s: %s" % (pre, node.name, node.status))
+
     search = MyAutoML(cv=5, n_jobs=6, time_limit=20, space=space)
     search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)

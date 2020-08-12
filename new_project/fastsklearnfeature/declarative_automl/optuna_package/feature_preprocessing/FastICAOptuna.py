@@ -10,13 +10,13 @@ class FastICAOptuna(FastICA):
         self.whiten = trial.suggest_categorical(self.name + 'whiten', [False, True])
         self.fun = trial.suggest_categorical(self.name + 'fun', ['logcosh', 'exp', 'cube'])
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('FastICA_')
 
-        space_gen.generate_number(self.name + "n_components", 100)
-        space_gen.generate_cat(self.name + 'algorithm', ['parallel', 'deflation'], 'parallel')
-        space_gen.generate_cat(self.name + 'whiten', [False, True], False)
-        space_gen.generate_cat(self.name + 'fun', ['logcosh', 'exp', 'cube'], 'logcosh')
+        space_gen.generate_number(self.name + "n_components", 100, depending_node=depending_node)
+        space_gen.generate_cat(self.name + 'algorithm', ['parallel', 'deflation'], 'parallel', depending_node=depending_node)
+        space_gen.generate_cat(self.name + 'whiten', [False, True], False, depending_node=depending_node)
+        space_gen.generate_cat(self.name + 'fun', ['logcosh', 'exp', 'cube'], 'logcosh', depending_node=depending_node)
 
 
 

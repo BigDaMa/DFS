@@ -24,9 +24,9 @@ class LinearSVCOptuna(LinearSVC):
         if self.penalty == 'l1':
             self.loss = "squared_hinge"
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('LinearSVC_')
-        space_gen.generate_cat(self.name + "penalty", ["l1", "l2"], "l2")
-        space_gen.generate_cat(self.name + "loss", ["hinge", "squared_hinge"], "squared_hinge")
-        space_gen.generate_number(self.name + "tol", 1e-4)
-        space_gen.generate_number(self.name + "C", 1.0)
+        space_gen.generate_cat(self.name + "penalty", ["l1", "l2"], "l2", depending_node=depending_node)
+        space_gen.generate_cat(self.name + "loss", ["hinge", "squared_hinge"], "squared_hinge", depending_node=depending_node)
+        space_gen.generate_number(self.name + "tol", 1e-4, depending_node=depending_node)
+        space_gen.generate_number(self.name + "C", 1.0, depending_node=depending_node)

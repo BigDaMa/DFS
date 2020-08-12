@@ -8,5 +8,5 @@ class OneHotEncoderOptuna(OneHotEncoder):
         self.sparse = False
         self.handle_unknown='ignore'
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         pass

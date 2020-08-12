@@ -7,6 +7,6 @@ class SimpleImputerOptuna(SimpleImputer):
 
         self.strategy = trial.suggest_categorical(self.name + "strategy", ["mean", "median", "most_frequent"])
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('SimpleImputer_')
-        space_gen.generate_cat(self.name + "strategy", ["mean", "median", "most_frequent"], 'mean')
+        space_gen.generate_cat(self.name + "strategy", ["mean", "median", "most_frequent"], 'mean', depending_node=depending_node)

@@ -8,6 +8,6 @@ class QuadraticDiscriminantAnalysisOptuna(QuadraticDiscriminantAnalysis):
 
         self.reg_param = trial.suggest_uniform(self.name + 'reg_param', 0.0, 1.0)
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('QuadraticDiscriminantAnalysis_')
-        space_gen.generate_number(self.name + 'reg_param', 0.0)
+        space_gen.generate_number(self.name + 'reg_param', 0.0, depending_node=depending_node)

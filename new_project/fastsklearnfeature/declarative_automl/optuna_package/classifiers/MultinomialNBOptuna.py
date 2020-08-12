@@ -9,8 +9,8 @@ class MultinomialNBOptuna(MultinomialNB):
         self.alpha = trial.suggest_loguniform(self.name + "alpha", 1e-2, 100)
         self.fit_prior = trial.suggest_categorical(self.name + "fit_prior", [True, False])
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('MultinomialNB_')
-        space_gen.generate_number(self.name + "alpha", 1)
-        space_gen.generate_cat(self.name + "fit_prior", [True, False], True)
+        space_gen.generate_number(self.name + "alpha", 1, depending_node=depending_node)
+        space_gen.generate_cat(self.name + "fit_prior", [True, False], True, depending_node=depending_node)
 

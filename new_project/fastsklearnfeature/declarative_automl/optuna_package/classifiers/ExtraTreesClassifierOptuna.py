@@ -16,10 +16,10 @@ class ExtraTreesClassifierOptuna(ExtraTreesClassifier):
         self.bootstrap = trial.suggest_categorical(self.name + "bootstrap", [True, False])
         self.classes_ = np.unique(y.astype(int))
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('ExtraTreesClassifier_')
-        space_gen.generate_cat(self.name + "criterion", ["gini", "entropy"], "gini")
-        space_gen.generate_number(self.name + 'max_features', 0.5)
-        space_gen.generate_number(self.name + "min_samples_split", 2)
-        space_gen.generate_number(self.name + "min_samples_leaf", 1)
-        space_gen.generate_cat(self.name + "bootstrap", [True, False], False)
+        space_gen.generate_cat(self.name + "criterion", ["gini", "entropy"], "gini", depending_node=depending_node)
+        space_gen.generate_number(self.name + 'max_features', 0.5, depending_node=depending_node)
+        space_gen.generate_number(self.name + "min_samples_split", 2, depending_node=depending_node)
+        space_gen.generate_number(self.name + "min_samples_leaf", 1, depending_node=depending_node)
+        space_gen.generate_cat(self.name + "bootstrap", [True, False], False, depending_node=depending_node)

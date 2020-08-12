@@ -6,5 +6,5 @@ class GaussianNBOptuna(GaussianNB):
         #self.classes_ = np.unique(y.astype(int))
         pass
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         pass

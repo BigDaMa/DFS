@@ -8,8 +8,8 @@ class KernelPCAOptuna(PCA):
         self.keep_variance = trial.suggest_uniform(self.name + "keep_variance", 0.5, 0.9999)
         self.whiten = trial.suggest_categorical(self.name + "whiten", [False, True])
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('PCA_')
 
-        space_gen.generate_number(self.name + "keep_variance", 0.9999)
-        space_gen.generate_cat(self.name + "whiten", [False, True], False)
+        space_gen.generate_number(self.name + "keep_variance", 0.9999, depending_node=depending_node)
+        space_gen.generate_cat(self.name + "whiten", [False, True], False, depending_node=depending_node)

@@ -1,25 +1,25 @@
 from abc import ABCMeta, abstractmethod
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.Smooth_Random_Trees import DP_Random_Forest
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.randomforest.samfletcherforest import DP_Random_Forest
 from sklearn.base import BaseEstimator, ClassifierMixin
-import numpy as np
 import pandas as pd
-import pickle
 import copy
+import numpy as np
 
-class PrivateDecisionTree(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
+class PrivateRandomForest(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
 
-    def __init__(self, epsilon):
+    def __init__(self, n_estimators, epsilon):
+        self.n_estimators = n_estimators
         self.epsilon = epsilon
 
     def fit(self, X, y, sample_weight=None):
+
+        self.n_outputs_ = 1
+        self.n_features_ = X.shape[1]
 
         cats = []
         for i in range(X.shape[1]):
             if len(np.unique(X[:, i])) <= 2:
                 cats.append(i + 1)
-
-        self.n_outputs_ = 1
-        self.n_features_ = X.shape[1]
 
         new_y = copy.deepcopy(y)
         if isinstance(y, pd.DataFrame):
@@ -30,7 +30,7 @@ class PrivateDecisionTree(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
 
         all_data = np.hstack((new_y,X))
 
-        self.model = DP_Random_Forest(all_data, epsilon=self.epsilon, categs=cats)
+        self.model = DP_Random_Forest(all_data, epsilon=self.epsilon, num_trees=self.n_estimators, categs=cats)
         return self
 
     def predict(self, X):
@@ -38,27 +38,24 @@ class PrivateDecisionTree(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
         all_data = np.hstack((empty, X))
         return np.asarray(self.model.predict(all_data))
 
-''' A toy example of how to call the class 
+# A toy example of how to call the class
 if __name__ == '__main__':
-    from sklearn.datasets import load_iris
-    diabetes = load_iris()
+    from sklearn.datasets import load_breast_cancer
+    from sklearn.metrics import f1_score
+    diabetes = load_breast_cancer()
 
     X = diabetes.data
     y = diabetes.target
 
-    X = pickle.load(open('/tmp/X.pkl', 'rb'))
-    y = pickle.load(open('/tmp/y.pkl', 'rb'))
-
-
-    print(y)
-
-    model = PrivateDecisionTree(epsilon=0.01)
+    model = PrivateRandomForest(n_estimators=100, epsilon=0.1)
     model.fit(X, y)
 
+    print(f1_score(y,model.predict(X)))
 
 
 
-    print(model.predict(X))
+
+    #print(model.predict(X))
 
     import numpy as np
     from art.classifiers import SklearnClassifier
@@ -72,4 +69,3 @@ if __name__ == '__main__':
     X_test_adv = attack.generate(X)
 
     print(model.predict(X_test_adv))
-'''

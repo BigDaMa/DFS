@@ -13,13 +13,13 @@ class RandomTreesEmbeddingOptuna(RandomTreesEmbedding):
         self.max_leaf_nodes = None
         self.bootstrap = trial.suggest_categorical(self.name + 'bootstrap', [True, False])
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('RandomTreesEmbedding_')
 
-        space_gen.generate_number(self.name + "n_estimators", 10)
-        space_gen.generate_number(self.name + "max_depth", 5)
-        space_gen.generate_number(self.name + "min_samples_split", 2)
-        space_gen.generate_number(self.name + "min_samples_leaf", 1)
-        space_gen.generate_cat(self.name + "bootstrap", [True, False], False)
+        space_gen.generate_number(self.name + "n_estimators", 10, depending_node=depending_node)
+        space_gen.generate_number(self.name + "max_depth", 5, depending_node=depending_node)
+        space_gen.generate_number(self.name + "min_samples_split", 2, depending_node=depending_node)
+        space_gen.generate_number(self.name + "min_samples_leaf", 1, depending_node=depending_node)
+        space_gen.generate_cat(self.name + "bootstrap", [True, False], False, depending_node=depending_node)
 
 

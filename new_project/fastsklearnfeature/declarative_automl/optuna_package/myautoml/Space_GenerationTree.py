@@ -26,6 +26,7 @@ import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.s
 
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import categorical
 from fastsklearnfeature.declarative_automl.optuna_package.IdentityOptuna import IdentityOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.RandomForestClassifierOptuna import RandomForestClassifierOptuna
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.compose import ColumnTransformer
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
@@ -74,24 +75,26 @@ class SpaceGenerator:
 
         self.space.generate_cat('balanced', [True, False], True)
 
-        category_children = self.space.generate_cat('preprocessor', self.preprocessor_list, IdentityOptuna())
-        print(category_children)
-        for preprocessor in self.preprocessor_list:
-            preprocessor.generate_hyperparameters(self.space)
+        category_preprocessor = self.space.generate_cat('preprocessor', self.preprocessor_list, IdentityOptuna())
+        for p_i in range(len(self.preprocessor_list)):
+            preprocessor = self.preprocessor_list[p_i]
+            preprocessor.generate_hyperparameters(self.space, category_preprocessor[p_i])
 
-        self.space.generate_cat('classifier', self.classifier_list, self.classifier_list[0])
-        for classifier in self.classifier_list:
-            classifier.generate_hyperparameters(self.space)
+        category_classifier = self.space.generate_cat('classifier', self.classifier_list, RandomForestClassifierOptuna())
+        for c_i in range(len(self.classifier_list)):
+            classifier = self.classifier_list[c_i]
+            classifier.generate_hyperparameters(self.space, category_classifier[c_i])
 
-        self.space.generate_cat('scaler', self.scaling_list, IdentityOptuna())
-        for scaler in self.scaling_list:
-            scaler.generate_hyperparameters(self.space)
+        category_scaler = self.space.generate_cat('scaler', self.scaling_list, IdentityOptuna())
+        for s_i in range(len(self.scaling_list)):
+            scaler = self.scaling_list[s_i]
+            scaler.generate_hyperparameters(self.space, category_scaler[s_i])
 
         imputer = SimpleImputerOptuna()
         imputer.generate_hyperparameters(self.space)
 
         categorical_transformer = OneHotEncoderOptuna()
-        scaler.generate_hyperparameters(self.space)
+        categorical_transformer.generate_hyperparameters(self.space)
 
 
         return self.space

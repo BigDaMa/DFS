@@ -11,12 +11,12 @@ class NystroemOptuna(Nystroem):
         self.degree = trial.suggest_int(self.name + 'degree', 2, 5, log=False)
         self.coef0 = trial.suggest_uniform(self.name + "coef0", -1, 1)
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('Nystroem_')
 
-        space_gen.generate_cat(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine', 'chi2'], 'rbf')
-        space_gen.generate_number(self.name + "n_components", 100)
-        space_gen.generate_number(self.name + "gamma", 0.1)
-        space_gen.generate_number(self.name + 'degree', 3)
-        space_gen.generate_number(self.name + "coef0", 0)
+        space_gen.generate_cat(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine', 'chi2'], 'rbf', depending_node=depending_node)
+        space_gen.generate_number(self.name + "n_components", 100, depending_node=depending_node)
+        space_gen.generate_number(self.name + "gamma", 0.1, depending_node=depending_node)
+        space_gen.generate_number(self.name + 'degree', 3, depending_node=depending_node)
+        space_gen.generate_number(self.name + "coef0", 0, depending_node=depending_node)
 

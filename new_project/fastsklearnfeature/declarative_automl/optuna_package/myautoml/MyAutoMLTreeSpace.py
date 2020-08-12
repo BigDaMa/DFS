@@ -14,11 +14,12 @@ class MyAutoMLSpace:
         if type(depending_node) != type(None):
             parent_node = depending_node
 
-        categorical_node = Node(name=name, parent=parent_node, status=True, default_element=default_element)
+        categorical_node = Node(name=name, parent=parent_node, status=True, default_element=default_element, is_default=False)
 
         self.name2node[str(name)] = categorical_node
         for element in my_list:
-            self.name2node[str(name) + '##' + str(element)] = Node(name=str(name) + '##' + str(element), parent=categorical_node, status=True)
+            is_default = str(default_element) == str(element)
+            self.name2node[str(name) + '##' + str(element)] = Node(name=str(name) + '##' + str(element), parent=categorical_node, status=True, is_default=is_default)
 
         return categorical_node.children
 
@@ -28,7 +29,7 @@ class MyAutoMLSpace:
         if type(depending_node) != type(None):
             parent_node = depending_node
 
-        numeric_node = Node(name=name, parent=parent_node, status=True, default_element=default_element)
+        numeric_node = Node(name=name, parent=parent_node, status=True, default_element=default_element, is_default=False)
         self.name2node[str(name)] = numeric_node
         return numeric_node
 
@@ -38,7 +39,10 @@ class MyAutoMLSpace:
             if node.status:
                 child.status = trial.suggest_categorical(child.name, [True, False])
             else:
-                child.status = False
+                if child.is_default and node.parent.status:
+                    child.status = True
+                else:
+                    child.status = False
             self.recursive_sampling(child, trial)
 
     def sample_parameters(self, trial):

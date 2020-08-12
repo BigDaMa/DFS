@@ -63,25 +63,28 @@ class SelectPercentileOptuna(SelectPercentile):
 
             self.score_func = bindFunction1(model)
 
-    def generate_hyperparameters(self, space_gen):
+    def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('SelectPercentile')
 
-        space_gen.generate_number(self.name + "percentile", 50)
-        space_gen.generate_cat(self.name + 'score_func',['chi2', 'f_classif', 'mutual_info', 'ExtraTreesClassifier', 'LinearSVC',
-                                                'variance'], "chi2")
+        space_gen.generate_number(self.name + "percentile", 50, depending_node=depending_node)
+        category_fs = space_gen.generate_cat(self.name + 'score_func',['chi2', 'f_classif', 'mutual_info', 'ExtraTreesClassifier', 'LinearSVC',
+                                                'variance'], "chi2", depending_node=depending_node)
+
+        tree_catgory = category_fs[3]
+        lr_catgory = category_fs[4]
 
         new_name = self.name + '_' + 'ExtraTreesClassifier' + '_'
 
-        space_gen.generate_cat(new_name + "criterion", ["gini", "entropy"], "gini")
-        space_gen.generate_number(new_name + "max_features", 0.5)
-        space_gen.generate_number(new_name + "min_samples_split", 2)
-        space_gen.generate_number(new_name + "min_samples_leaf", 1)
-        space_gen.generate_cat(new_name + "bootstrap", [True, False], False)
+        space_gen.generate_cat(new_name + "criterion", ["gini", "entropy"], "gini", depending_node=tree_catgory)
+        space_gen.generate_number(new_name + "max_features", 0.5, depending_node=tree_catgory)
+        space_gen.generate_number(new_name + "min_samples_split", 2, depending_node=tree_catgory)
+        space_gen.generate_number(new_name + "min_samples_leaf", 1, depending_node=tree_catgory)
+        space_gen.generate_cat(new_name + "bootstrap", [True, False], False, depending_node=tree_catgory)
 
         new_name = self.name + '_' + 'LinearSVC' + '_'
-        space_gen.generate_cat(new_name + "loss", ["hinge", "squared_hinge"], "squared_hinge")
-        space_gen.generate_number(new_name + "tol", 1e-4)
-        space_gen.generate_number(new_name + "C", 1.0)
+        space_gen.generate_cat(new_name + "loss", ["hinge", "squared_hinge"], "squared_hinge", depending_node=lr_catgory)
+        space_gen.generate_number(new_name + "tol", 1e-4, depending_node=lr_catgory)
+        space_gen.generate_number(new_name + "C", 1.0, depending_node=lr_catgory)
 
 
 
