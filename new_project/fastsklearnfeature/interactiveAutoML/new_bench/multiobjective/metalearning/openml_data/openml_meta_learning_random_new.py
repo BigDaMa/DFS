@@ -380,7 +380,7 @@ while True:
 
 
 		#6
-		with ProcessPool(max_workers=17) as pool:
+		with ProcessPool(max_workers=6) as pool:
 			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 			iterator = future.result()
