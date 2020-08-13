@@ -88,7 +88,7 @@ def my_function(config_id):
 
 current_run_time_id = time.time()
 
-time_limit = 60 * 60 * 3
+time_limit = 60*10#60 * 60 * 3
 number_of_runs = 1
 
 
