@@ -117,7 +117,10 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 
 			my_result['success_test'] = success
 			with open(log_file, 'ab') as f_log:
-				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+				my_result_new = copy.deepcopy(my_result)
+				my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+				my_result_new['model'] = None
+				pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 			return my_result, {'success': success}
 
@@ -161,7 +164,10 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 			if min_loss > my_result['loss']:
 				min_loss = my_result['loss']
 				with open(log_file, 'ab') as f_log:
-					pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+					my_result_new = copy.deepcopy(my_result)
+					my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+					my_result_new['model'] = None
+					pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 			if len(combo_result) > 0:
 				return combo_result
 			combo_loss = my_result['loss']
@@ -197,7 +203,11 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 					if min_loss > my_result['loss']:
 						min_loss = my_result['loss']
 						with open(log_file, 'ab') as f_log:
-							pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+							my_result_new = copy.deepcopy(my_result)
+							my_result_new['selected_features'] = copy.deepcopy(
+								my_result_new['model'].named_steps['selection'])
+							my_result_new['model'] = None
+							pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 					if len(combo_result) > 0:
 						return combo_result
 					combo_loss = my_result['loss']
@@ -219,7 +229,10 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 				 'Finished': True}
 	with open(log_file, 'ab') as f_log:
-		pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+		my_result_new = copy.deepcopy(my_result)
+		my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+		my_result_new['model'] = None
+		pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	return {'success': False}
 
 

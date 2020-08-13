@@ -13,6 +13,7 @@ from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate
 from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 import itertools
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
+import copy
 
 def map_hyper2vals(hyper):
 	new_vals = {}
@@ -99,6 +100,7 @@ def exhaustive(X_train, X_validation, X_train_val, X_test, y_train, y_validation
 			cv_number_features = result['cv_number_features']
 
 			my_result = result
+
 			my_result['number_evaluations'] = number_of_evaluations
 
 			##check on test
@@ -130,18 +132,27 @@ def exhaustive(X_train, X_validation, X_train_val, X_test, y_train, y_validation
 
 				my_result['success_test'] = success
 				with open(log_file, 'ab') as f_log:
-					pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+					my_result_new = copy.deepcopy(my_result)
+					my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+					my_result_new['model'] = None
+					pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 				return {'success': success}
 
 			if min_loss > my_result['loss']:
 				min_loss = my_result['loss']
 				with open(log_file, 'ab') as f_log:
-					pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+					my_result_new = copy.deepcopy(my_result)
+					my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+					my_result_new['model'] = None
+					pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 				 'Finished': True}
 	with open(log_file, 'ab') as f_log:
-		pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+		my_result_new = copy.deepcopy(my_result)
+		my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+		my_result_new['model'] = None
+		pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	return {'success': False}
 
 

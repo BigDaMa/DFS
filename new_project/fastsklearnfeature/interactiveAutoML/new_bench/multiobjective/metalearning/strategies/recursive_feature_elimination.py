@@ -119,7 +119,10 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 
 			my_result['success_test'] = success
 			with open(log_file, 'ab') as f_log:
-				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+				my_result_new = copy.deepcopy(my_result)
+				my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+				my_result_new['model'] = None
+				pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 			return my_result, {'success': success}
 
 		return my_result, {}
@@ -138,7 +141,10 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 		if min_loss > my_result['loss']:
 			min_loss = my_result['loss']
 			with open(log_file, 'ab') as f_log:
-				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+				my_result_new = copy.deepcopy(my_result)
+				my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+				my_result_new['model'] = None
+				pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 		combo_loss = my_result['loss']
@@ -147,7 +153,7 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 			return combo_result
 
 		if len(current_feature_set) > 1:
-			worst_id = np.argmin(my_feature_importance(my_result['model'], accuracy_scorer, X_train, y_train))
+			worst_id = np.argmin(my_feature_importance(copy.deepcopy(my_result['model']), accuracy_scorer, X_train, y_train))
 			current_feature_set.remove(current_feature_set[worst_id])
 		else:
 			current_feature_set = []
@@ -156,7 +162,10 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 				 'Finished': True}
 	with open(log_file, 'ab') as f_log:
-		pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+		my_result_new = copy.deepcopy(my_result)
+		my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+		my_result_new['model'] = None
+		pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 	return {'success': False}
 

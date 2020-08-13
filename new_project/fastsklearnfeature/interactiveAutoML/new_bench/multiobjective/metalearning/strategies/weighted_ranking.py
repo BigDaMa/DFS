@@ -13,7 +13,7 @@ from hyperopt import fmin, hp, tpe, Trials, STATUS_OK
 from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
 from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelection import WeightedRankingSelection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
-
+import copy
 
 def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features: float = 1.0, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)):
 	min_loss = np.inf
@@ -108,6 +108,7 @@ def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_vali
 		validation_robust = trials.trials[-1]['result']['cv_robust']
 
 		my_result = trials.trials[-1]['result']
+
 		my_result['number_evaluations'] = number_of_evaluations
 
 		#check test results
@@ -139,20 +140,29 @@ def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_vali
 
 			my_result['success_test'] = success
 			with open(log_file, 'ab') as f_log:
-				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+				my_result_new = copy.deepcopy(my_result)
+				my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+				my_result_new['model'] = None
+				pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 			return {'success': success}
 
 
 		if min_loss > trials.trials[-1]['result']['loss']:
 			min_loss = trials.trials[-1]['result']['loss']
 			with open(log_file, 'ab') as f_log:
-				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+				my_result_new = copy.deepcopy(my_result)
+				my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+				my_result_new['model'] = None
+				pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 		i += 1
 
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time, 'Finished': True}
 	with open(log_file, 'ab') as f_log:
-		pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+		my_result_new = copy.deepcopy(my_result)
+		my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+		my_result_new['model'] = None
+		pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	return {'success': False}
 
 

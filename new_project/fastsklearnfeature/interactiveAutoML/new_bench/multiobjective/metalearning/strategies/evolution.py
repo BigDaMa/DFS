@@ -22,6 +22,7 @@ from pymoo.model.repair import Repair
 import pickle
 import copy
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
+import copy
 
 def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy=0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)):
 
@@ -61,6 +62,8 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 									  min_fairness, min_accuracy, min_robustness, max_number_features,
 									  model_hyperparameters=None, start_time=start_time)
 
+		new_pipeline = copy.deepcopy(my_result['model'])
+
 		validation_acc = my_result['cv_acc']
 		validation_fair = my_result['cv_fair']
 		validation_robust = my_result['cv_robust']
@@ -73,8 +76,7 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 		#check constraints for test set
 		my_result['number_evaluations'] = cheating_global.successfull_result[hash]['cv_number_evaluations']
 
-
-		pipeline.fit(X_train_val, pd.DataFrame(y_train_val))
+		new_pipeline.fit(X_train_val, pd.DataFrame(y_train_val))
 
 		test_acc = accuracy_scorer(pipeline, X_test, pd.DataFrame(y_test))
 
@@ -103,14 +105,20 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 
 			my_result['success_test'] = success
 			with open(log_file, 'ab') as f_log:
-				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+				my_result_new = copy.deepcopy(my_result)
+				my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+				my_result_new['model'] = None
+				pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 			return [validation_acc, validation_fair, validation_robust, validation_simplicity, min_loss]
 
 
 		if min_loss > loss:
 			min_loss = loss
 			with open(log_file, 'ab') as f_log:
-				pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+				my_result_new = copy.deepcopy(my_result)
+				my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+				my_result_new['model'] = None
+				pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 		return [validation_acc, validation_fair, validation_robust, validation_simplicity, min_loss]
 	
@@ -222,7 +230,10 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 		my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time,
 					 'Finished': True}
 		with open(log_file, 'ab') as f_log:
-			pickle.dump(my_result, f_log, protocol=pickle.HIGHEST_PROTOCOL)
+			my_result_new = copy.deepcopy(my_result)
+			my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
+			my_result_new['model'] = None
+			pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	else:
 		success = copy.deepcopy(cheating_global.successfull_result[hash]['success'])
 
