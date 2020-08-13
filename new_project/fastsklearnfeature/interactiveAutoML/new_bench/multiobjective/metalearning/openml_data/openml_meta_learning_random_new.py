@@ -2,10 +2,8 @@ import copy
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import LinearRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import SVC
 
 import pickle
 from sklearn.model_selection import StratifiedKFold
@@ -49,8 +47,6 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils import get_fair_data1_validation_openml
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.PrivateDecisionTree import PrivateDecisionTree
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.randomforest.PrivateRandomForrest import PrivateRandomForest
 
 
@@ -106,7 +102,7 @@ while True:
 	path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
 	path.mkdir(parents=True, exist_ok=True)
 
-	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation()
+	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation('1590')
 	#X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id, is_regression = get_fair_data1_validation_openml()
 	is_regression = False
 
@@ -379,8 +375,8 @@ while True:
 
 
 
-		#6
-		with ProcessPool(max_workers=6) as pool:
+		#6#17
+		with ProcessPool(max_workers=17) as pool:
 			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 			iterator = future.result()
