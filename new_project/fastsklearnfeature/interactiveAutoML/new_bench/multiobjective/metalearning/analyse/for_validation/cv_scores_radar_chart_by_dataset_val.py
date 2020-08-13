@@ -81,7 +81,9 @@ map_dataset2name['1018'] = 'IPUMS Census'
 map_dataset2name['38'] = 'Thyroid Disease'
 map_dataset2name['1003'] = 'Primary Tumor'
 map_dataset2name['934'] ='Social Mobility'
+map_dataset2name['42565'] = 'students' #students
 
+map_dataset2name['42132'] = 'traffic'
 
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
@@ -134,7 +136,8 @@ def print_constraints_2(features):
 
 #get all files from folder
 
-experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 
 print(experiment_folders)
 

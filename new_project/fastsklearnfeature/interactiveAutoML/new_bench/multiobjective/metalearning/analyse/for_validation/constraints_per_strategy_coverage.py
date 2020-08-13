@@ -93,7 +93,8 @@ for s in range(1, len(mappnames) + 1):
 
 
 
-experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 
 print(experiment_folders)
 

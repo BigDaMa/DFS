@@ -54,7 +54,8 @@ names_features = ['accuracy',
 
 #get all files from folder
 
-experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 
 print(experiment_folders)
 
@@ -192,7 +193,7 @@ print("training size: " + str(len(success_ids)))
 X_data = np.matrix(X_train)[success_ids]
 y_data = np.array(y_train)[success_ids]
 groups = np.array(dataset['dataset_id'])[success_ids]
-outer_cv_all = list(GroupKFold(n_splits=20).split(X_data, None, groups=groups))
+outer_cv_all = list(GroupKFold(n_splits=19).split(X_data, None, groups=groups))
 
 
 strategy_search_times = np.zeros((X_data.shape[0], len(mappnames)))
@@ -466,13 +467,14 @@ print('strategy size: ' + str(strategy_folds_f1.shape))
 
 
 #save models
+'''
 for my_strategy in range(strategy_success.shape[1]):
 	rf_random = RandomForestClassifier(n_estimators=4000, class_weight='balanced')
 	rf_random.fit(X_data, strategy_success[:, my_strategy])
 
 	with open('/tmp/model_strategy' + str(my_strategy) + '.pickle', 'wb+') as f_log:
 		pickle.dump(rf_random, f_log, protocol=pickle.HIGHEST_PROTOCOL)
-
+'''
 print("\nmodels done :)\n\n")
 
 

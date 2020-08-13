@@ -67,7 +67,8 @@ def print_constraints_2(features):
 	print(my_str)
 
 
-experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 
 print(experiment_folders)
 

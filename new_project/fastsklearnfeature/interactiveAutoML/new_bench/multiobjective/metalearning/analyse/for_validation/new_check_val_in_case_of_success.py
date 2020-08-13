@@ -70,7 +70,8 @@ def print_constraints_2(features):
 
 
 
-experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 
 print(experiment_folders)
 
@@ -284,7 +285,9 @@ for efolder in experiment_folders:
 		break
 
 
-assert len(dataset['success_value']) == number_ml_scenarios
+#assert len(dataset['success_value']) == number_ml_scenarios
+
+print(len(dataset['success_value']))
 
 success_ids = np.array(list(range(len(dataset['best_strategy']))))
 
