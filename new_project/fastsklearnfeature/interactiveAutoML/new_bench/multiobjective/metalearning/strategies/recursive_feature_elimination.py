@@ -93,6 +93,7 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 
 		model = result['model']
 		model.fit(X_train_val, pd.DataFrame(y_train_val))
+		my_result['model'] = model
 
 		test_acc = accuracy_scorer(model, X_test, pd.DataFrame(y_test))
 		test_fair = 0.0
@@ -163,8 +164,6 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 				 'Finished': True}
 	with open(log_file, 'ab') as f_log:
 		my_result_new = copy.deepcopy(my_result)
-		my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
-		my_result_new['model'] = None
 		pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 
 	return {'success': False}

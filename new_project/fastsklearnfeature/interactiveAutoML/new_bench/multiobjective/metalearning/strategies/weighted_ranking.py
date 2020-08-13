@@ -160,8 +160,6 @@ def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_vali
 	my_result = {'number_evaluations': number_of_evaluations, 'success_test': False, 'final_time': time.time() - start_time, 'Finished': True}
 	with open(log_file, 'ab') as f_log:
 		my_result_new = copy.deepcopy(my_result)
-		my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
-		my_result_new['model'] = None
 		pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	return {'success': False}
 

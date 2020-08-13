@@ -185,8 +185,6 @@ def hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_tr
 				 'Finished': True}
 	with open(log_file, 'ab') as f_log:
 		my_result_new = copy.deepcopy(my_result)
-		my_result_new['selected_features'] = copy.deepcopy(my_result_new['model'].named_steps['selection'])
-		my_result_new['model'] = None
 		pickle.dump(my_result_new, f_log, protocol=pickle.HIGHEST_PROTOCOL)
 	return {'success': False}
 
