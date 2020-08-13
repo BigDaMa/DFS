@@ -76,6 +76,7 @@ def print_constraints_2(features):
 #experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 
 experiment_folders = glob.glob("/home/neutatz/data/experiments_rf/*/")
+#experiment_folders = glob.glob("/home/felix/phd2/experiments_rf/*/")
 
 print(experiment_folders)
 
@@ -195,7 +196,8 @@ name2color['Gaussian Naive Bayes'] = 'red'
 name2color['Random Forest'] = 'yellow'
 
 
-for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes', 'Random Forest']:
+#for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes', 'Random Forest']:
+for model_name in ['Decision Tree']:
 
 	datapoints = []
 
@@ -207,9 +209,10 @@ for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes
 		for rfolder in run_folders:
 			try:
 				info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
-				#print(info_dict)
 
 				if info_dict['dataset_id'] == '1590' and info_dict['constraint_set_list']['model'] == model_name:
+					print(info_dict)
+					print(info_dict['constraint_set_list']['model'])
 
 					distance_of_this_run_test = []
 					distance_of_this_run_validation = []
@@ -217,8 +220,12 @@ for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes
 						exp_results = []
 						try:
 							exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+
+							print(exp_results)
 						except:
 							pass
+
+						print(len(exp_results))
 
 
 						for min_r in range(len(exp_results)):
@@ -227,6 +234,8 @@ for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes
 								validation_acc = exp_results[min_r]['cv_acc']
 								validation_robust = exp_results[min_r]['cv_robust']
 								validation_number_features = exp_results[min_r]['cv_number_features']
+
+								print([validation_fair, validation_acc, validation_robust, validation_number_features])
 
 								validation_time = 0.0
 								if True:#exp_results[min_r]['success_test']:

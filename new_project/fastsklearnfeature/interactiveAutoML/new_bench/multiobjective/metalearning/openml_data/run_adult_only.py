@@ -317,7 +317,6 @@ while True:
 
 			# pickle everything and store it
 			one_big_object = {}
-			one_big_object['features'] = trials.trials[-1]['result']['features']
 			one_big_object['dataset_id'] = key
 			one_big_object['constraint_set_list'] = trials.trials[-1]['result']['constraints']
 
