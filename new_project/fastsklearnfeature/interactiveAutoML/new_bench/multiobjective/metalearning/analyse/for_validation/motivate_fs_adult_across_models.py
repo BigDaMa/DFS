@@ -196,8 +196,8 @@ name2color['Gaussian Naive Bayes'] = 'red'
 name2color['Random Forest'] = 'yellow'
 
 
-#for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes', 'Random Forest']:
-for model_name in ['Decision Tree']:
+for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes', 'Random Forest']:
+#for model_name in ['Decision Tree']:
 
 	datapoints = []
 
