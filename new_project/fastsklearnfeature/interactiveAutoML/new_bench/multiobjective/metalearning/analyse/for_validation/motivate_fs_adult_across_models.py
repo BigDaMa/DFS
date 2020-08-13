@@ -78,6 +78,8 @@ def print_constraints_2(features):
 experiment_folders = glob.glob("/home/neutatz/data/experiments_rf/*/")
 #experiment_folders = glob.glob("/home/felix/phd2/experiments_rf/*/")
 
+experiment_folders = glob.glob("/home/felix/phd2/expadult/*/")
+
 print(experiment_folders)
 
 
@@ -190,13 +192,13 @@ my_latex_safety = ""
 my_latex_privacy = ""
 
 name2color = {}
-name2color['Logistic Regression'] = 'blue'
-name2color['Decision Tree'] = 'green'
-name2color['Gaussian Naive Bayes'] = 'red'
-name2color['Random Forest'] = 'yellow'
+name2color['Logistic Regression'] = 'color2'
+name2color['Decision Tree'] = 'color4'
+name2color['Gaussian Naive Bayes'] = 'color8'
+name2color['Random Forest'] = 'color16'
 
 
-for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes', 'Random Forest']:
+for model_name in ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree']:
 #for model_name in ['Decision Tree']:
 
 	datapoints = []
@@ -351,6 +353,18 @@ for model_name in ['Logistic Regression', 'Decision Tree', 'Gaussian Naive Bayes
 	'''
 
 
-print("Fair: \n\n" + str(my_latex_fair) +'\n\n')
-print("Safety: \n\n" + str(my_latex_safety) +'\n\n')
-print("Privacy: \n\n" + str(my_latex_privacy) +'\n\n')
+fair_start = '''
+\\nextgroupplot[xlabel=Fairness,ylabel=Accuracy, xmin=0, xmax=1,legend to name=testLegendlabelsMotivation,legend entries={
+Logistic Regression, 
+Naive Bayes, 
+Decision Tree, 
+Random Forest} ]
+
+\\addlegendimage{only marks, mark=o, color=color2}
+\\addlegendimage{only marks, mark=o, color=color4}
+\\addlegendimage{only marks, mark=o, color=color8} \n\n
+'''
+
+print(fair_start + str(my_latex_fair) +'\n\n')
+print("\\nextgroupplot[xlabel=Safety, xmin=0, xmax=1] \n\n" + str(my_latex_safety) +'\n\n')
+print("\\nextgroupplot[xlabel=Privacy Epsilon, xmode=log] \n\n" + str(my_latex_privacy) +'\n\n')

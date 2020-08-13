@@ -102,7 +102,7 @@ while True:
 	path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
 	path.mkdir(parents=True, exist_ok=True)
 
-	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation('1590')
+	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation()
 	#X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id, is_regression = get_fair_data1_validation_openml()
 	is_regression = False
 
@@ -238,8 +238,7 @@ while True:
 							[
 								'Logistic Regression',
 								'Gaussian Naive Bayes',
-								'Decision Tree',
-								'Random Forest'
+								'Decision Tree' #, 'Random Forest'
 							]),
 			 'k': hp.choice('k_choice',
 							[

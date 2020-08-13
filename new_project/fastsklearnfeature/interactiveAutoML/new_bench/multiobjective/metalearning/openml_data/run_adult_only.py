@@ -92,7 +92,7 @@ def my_function(config_id):
 
 current_run_time_id = time.time()
 
-time_limit = 60 * 2
+time_limit = 60 * 60 * 3
 number_of_runs = 1
 
 
@@ -181,7 +181,7 @@ while True:
 		if trials.trials[-1]['result']['loss'] == np.inf:
 			break
 
-		for model_choice in [3,2,1,0]:
+		for model_choice in [2,1,0]:
 
 			# create folder to store files:
 			path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
