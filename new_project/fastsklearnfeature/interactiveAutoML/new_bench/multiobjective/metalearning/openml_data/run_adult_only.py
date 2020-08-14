@@ -168,8 +168,7 @@ while True:
 							[
 								(0.0),
 								(hp.uniform('robustness_specified', 0.8, 1))
-							]),
-		     'search_time': hp.uniform('search_time_specified', 10, time_limit), # in seconds
+							])
 			}
 
 	while True:
@@ -206,7 +205,7 @@ while True:
 			if most_uncertain_f['k_choice'][0]:
 				max_number_features = most_uncertain_f['k_specified'][0]
 
-			max_search_time = most_uncertain_f['search_time_specified'][0]
+			max_search_time = 60*60
 
 			# Execute each search strategy with a given time limit (in parallel)
 			# maybe run multiple times to smooth stochasticity

@@ -75,10 +75,12 @@ def print_constraints_2(features):
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
 #experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 
-experiment_folders = glob.glob("/home/neutatz/data/experiments_rf/*/")
+#experiment_folders = glob.glob("/home/neutatz/data/experiments_rf/*/")
 #experiment_folders = glob.glob("/home/felix/phd2/experiments_rf/*/")
 
-experiment_folders = glob.glob("/home/felix/phd2/expadult/*/")
+#experiment_folders = glob.glob("/home/felix/phd2/expadult/*/")
+
+experiment_folders = glob.glob("/home/felix/phd2/experiments_new-dt/*/")
 
 print(experiment_folders)
 
@@ -197,6 +199,11 @@ name2color['Decision Tree'] = 'color4'
 name2color['Gaussian Naive Bayes'] = 'color8'
 name2color['Random Forest'] = 'color16'
 
+name2marker = {}
+name2marker['Logistic Regression'] = 'o'
+name2marker['Decision Tree'] = 'star'
+name2marker['Gaussian Naive Bayes'] = 'triangle'
+#name2marker['Random Forest'] = 'color16'
 
 for model_name in ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree']:
 #for model_name in ['Decision Tree']:
@@ -290,7 +297,7 @@ for model_name in ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree
 	'''
 
 
-	my_latex_fair += '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=o] coordinates {'
+	my_latex_fair += '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=' + str(name2marker[model_name]) + '] coordinates {'
 	for i in range(len(datapoints)):
 		my_latex_fair += '(' + str(datapoints[i,0]) + ',' + str(datapoints[i,1]) + ')'
 	my_latex_fair += '};\n'
@@ -310,7 +317,7 @@ for model_name in ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree
 	for i in range(len(datapoints)):
 		my_latex += '(' + str(datapoints[i,2]) + ',' + str(datapoints[i,1]) + ')'
 
-	my_latex_safety += '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=o] coordinates {'
+	my_latex_safety += '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=' + str(name2marker[model_name]) + '] coordinates {'
 	for i in range(len(datapoints)):
 		my_latex_safety += '(' + str(datapoints[i,2]) + ',' + str(datapoints[i,1]) + ')'
 	my_latex_safety += '};\n'
@@ -339,7 +346,7 @@ for model_name in ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree
 
 	print(my_latex)
 
-	my_latex_privacy += '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=o] coordinates {'
+	my_latex_privacy += '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=' + str(name2marker[model_name]) + '] coordinates {'
 	for i in range(len(datapoints)):
 		my_latex_privacy += '(' + str(datapoints[i,4]) + ',' + str(datapoints[i,1]) + ')'
 	my_latex_privacy += '};\n'
@@ -357,13 +364,12 @@ fair_start = '''
 \\nextgroupplot[xlabel=Fairness,ylabel=Accuracy, xmin=0, xmax=1,legend to name=testLegendlabelsMotivation,legend entries={
 Logistic Regression, 
 Naive Bayes, 
-Decision Tree, 
-Random Forest} ]
+Decision Tree} ] \n\n'''
 
-\\addlegendimage{only marks, mark=o, color=color2}
-\\addlegendimage{only marks, mark=o, color=color4}
-\\addlegendimage{only marks, mark=o, color=color8} \n\n
-'''
+for model_name in ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree']:
+	fair_start += '\\addlegendimage{only marks, color=' + str(name2color[model_name]) + ', mark=' + str(name2marker[model_name]) + '}\n'
+
+fair_start += "\n\n"
 
 print(fair_start + str(my_latex_fair) +'\n\n')
 print("\\nextgroupplot[xlabel=Safety, xmin=0, xmax=1] \n\n" + str(my_latex_safety) +'\n\n')
