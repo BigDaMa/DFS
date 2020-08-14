@@ -172,9 +172,9 @@ while True:
 		     'search_time': hp.uniform('search_time_specified', 10, time_limit), # in seconds
 			}
 
-	trials = Trials()
 	while True:
-		fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials, show_progressbar=False)
+		trials = Trials()
+		fmin(objective, space=space, algo=tpe.suggest, max_evals=1, trials=trials, show_progressbar=False)
 		if trials.trials[-1]['result']['loss'] == np.inf:
 			break
 
@@ -323,7 +323,6 @@ while True:
 
 			run_counter += 1
 
-		trials = Trials()
 		break
 
 
