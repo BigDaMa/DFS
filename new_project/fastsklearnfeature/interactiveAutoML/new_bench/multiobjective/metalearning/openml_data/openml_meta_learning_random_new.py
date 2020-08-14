@@ -149,23 +149,9 @@ while True:
 			cv_k = 1.0
 			cv_privacy = hps['privacy']
 
-			model = None
-			if hps['model'] == 'Logistic Regression':
-				model = LogisticRegression(class_weight='balanced')
-				if type(cv_privacy) != type(None):
-					model = models.LogisticRegression(epsilon=cv_privacy, class_weight='balanced')
-			elif hps['model'] == 'Gaussian Naive Bayes':
-				model = GaussianNB()
-				if type(cv_privacy) != type(None):
-					model = models.GaussianNB(epsilon=cv_privacy)
-			elif hps['model'] == 'Decision Tree':
-				model = DecisionTreeClassifier(class_weight='balanced')
-				if type(cv_privacy) != type(None):
-					model = PrivateRandomForest(n_estimators=1, epsilon=cv_privacy)
-			elif hps['model'] == 'Random Forest':
-				model = RandomForestClassifier(n_estimators=100, class_weight='balanced')
-				if type(cv_privacy) != type(None):
-					model = PrivateRandomForest(n_estimators=100, epsilon=cv_privacy)
+			model = LogisticRegression(class_weight='balanced')
+			if type(cv_privacy) != type(None):
+				model = models.LogisticRegression(epsilon=cv_privacy, class_weight='balanced')
 
 			if type(cv_privacy) == type(None):
 				cv_privacy = X_train_tiny.shape[0]
