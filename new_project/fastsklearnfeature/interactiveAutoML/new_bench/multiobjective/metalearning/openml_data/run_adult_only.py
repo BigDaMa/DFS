@@ -315,6 +315,7 @@ while True:
 			one_big_object = {}
 			one_big_object['dataset_id'] = key
 			one_big_object['constraint_set_list'] = trials.trials[-1]['result']['constraints']
+			one_big_object['constraint_set_list']['model'] = model_choice
 
 			with open('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/run_info.pickle',
 					  'wb') as f_log:
