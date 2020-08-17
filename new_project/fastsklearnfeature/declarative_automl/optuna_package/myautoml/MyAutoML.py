@@ -44,6 +44,8 @@ from func_timeout import func_timeout, FunctionTimedOut, func_set_timeout
 import threading
 from sklearn.model_selection import StratifiedKFold
 import pandas as pd
+import time
+import threading
 
 def get_all_classes(my_module, addNone=False):
     clsmembers = inspect.getmembers(my_module, inspect.ismodule)
@@ -64,10 +66,11 @@ def get_all_classes(my_module, addNone=False):
 
 
 class MyAutoML:
-    def __init__(self, cv=5, time_limit=10*60, n_jobs=1, space=None):
+    def __init__(self, cv=5, evaluation_budget=np.inf, time_search_budget=10*60, n_jobs=1, space=None):
         self.cv = cv
-        self.time_limit = time_limit
+        self.time_search_budget = time_search_budget
         self.n_jobs = n_jobs
+        self.evaluation_budget = evaluation_budget
 
         self.classifier_list = get_all_classes(optuna_classifiers)
         self.preprocessor_list = get_all_classes(optuna_preprocessor, addNone=True)
@@ -83,6 +86,8 @@ class MyAutoML:
 
 
     def fit(self, X, y, sample_weight=None, categorical_indicator=None, scorer=None):
+        self.start_fitting = time.time()
+
         def objective1(trial, return_dict):
             start_total = time.time()
 
@@ -156,17 +161,27 @@ class MyAutoML:
 
         def objective(trial):
 
+            already_used_time = time.time() - self.start_fitting
+
+            if already_used_time >= self.time_search_budget: #already over budget
+                return -np.inf
+
+            remaining_time = np.min([self.evaluation_budget, self.time_search_budget - already_used_time])
+
             return_dict = {}
             return_dict['value'] = -np.inf
             # Start foo as a process
-            p = threading.Thread(target=objective1, name="Foo" + str(time.time()), args=(trial, return_dict))
-            p.start()
 
-            p.join(2 * 60)
+            t = threading.Thread(target=objective1, args=(trial, return_dict))
+            t.daemon = True
+            t.start()
+
+            t.join(remaining_time)
+
             return return_dict['value']
 
         study = optuna.create_study(direction='maximize')
-        study.optimize(objective, timeout=self.time_limit, n_jobs=self.n_jobs)
+        study.optimize(objective, timeout=self.time_search_budget, n_jobs=self.n_jobs)
         return study.best_value
 
 if __name__ == "__main__":
@@ -191,5 +206,10 @@ if __name__ == "__main__":
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=5, n_jobs=6, time_limit=20, space=space)
+    search = MyAutoML(cv=5, n_jobs=6, time_search_budget=120, space=space)
+
+    begin = time.time()
+
     search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
+
+    print(time.time() - begin)
