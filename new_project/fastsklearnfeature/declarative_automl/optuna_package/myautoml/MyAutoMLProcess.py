@@ -110,6 +110,7 @@ def evaluatePipeline(key,return_dict):
     scores = []
     for cv_num in range(number_of_cvs):
         my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(time.time())).split(X, y)
+        #my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(42)).split(X, y)
         for train_ids, test_ids in my_splits:
             if balanced:
                 p.fit(X[train_ids, :], y[train_ids], classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y[train_ids]))
@@ -165,92 +166,97 @@ class MyAutoML:
         def objective1(trial):
             start_total = time.time()
 
-            self.space.trial = trial
-
-            preprocessor = self.space.suggest_categorical('preprocessor', self.preprocessor_list)
-            preprocessor.init_hyperparameters(self.space, X, y)
-
-            classifier = self.space.suggest_categorical('classifier', self.classifier_list)
-            classifier.init_hyperparameters(self.space, X, y)
-
-            balanced = False
-            if isinstance(classifier, KNeighborsClassifierOptuna) or \
-                    isinstance(classifier, QuadraticDiscriminantAnalysisOptuna) or \
-                    isinstance(classifier, PassiveAggressiveOptuna) or \
-                    isinstance(classifier, HistGradientBoostingClassifierOptuna):
-                balanced = False
-            else:
-                balanced = self.space.suggest_categorical('balanced', [True, False])
-
-            imputer = SimpleImputerOptuna()
-            imputer.init_hyperparameters(self.space, X, y)
-
-            scaler = self.space.suggest_categorical('scaler', self.scaling_list)
-            scaler.init_hyperparameters(self.space, X, y)
-
-            categorical_transformer = OneHotEncoderOptuna()
-            scaler.init_hyperparameters(self.space, X, y)
-
-
-            numeric_transformer = Pipeline([('imputation', imputer), ('scaler', scaler)])
-
-            data_preprocessor = ColumnTransformer(
-                transformers=[
-                    ('num', numeric_transformer, np.invert(categorical_indicator)),
-                    ('cat', categorical_transformer, categorical_indicator)])
-
-            my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
-                          ('classifier', classifier)])
-
-
-            key = 'My_processs' + str(time.time()) + " ## " + str(np.random.randint(0,1000))
-
-            mp_global.mp_store[key] = {}
-
-            mp_global.mp_store[key]['balanced'] = balanced
-            mp_global.mp_store[key]['p'] = my_pipeline
-            mp_global.mp_store[key]['number_of_cvs'] = self.number_of_cvs
-            mp_global.mp_store[key]['cv'] = self.cv
-            mp_global.mp_store[key]['scorer'] = scorer
-            mp_global.mp_store[key]['X'] = X
-            mp_global.mp_store[key]['y'] = y
-            mp_global.mp_store[key]['main_memory_budget_gb'] = self.main_memory_budget_gb
-
-            already_used_time = time.time() - self.start_fitting
-
-            if already_used_time + 2 >= self.time_search_budget:  # already over budget
-                raise TimeException()
-
-            remaining_time = np.min([self.evaluation_budget, self.time_search_budget - already_used_time])
-
-            manager = multiprocessing.Manager()
-            return_dict = manager.dict()
-            my_process = multiprocessing.Process(target=evaluatePipeline, name='start'+key, args=(key, return_dict,))
-            my_process.start()
-
-            my_process.join(int(remaining_time))
-
-            # If thread is active
-            while my_process.is_alive():
-                # Terminate foo
-                my_process.terminate()
-                my_process.join()
-
-            del mp_global.mp_store[key]
-
-            result = -np.inf
-            if key + 'result' in return_dict:
-                result = return_dict[key + 'result']
-
-            trial.set_user_attr('total_time', time.time() - start_total)
-
             try:
-                if self.study.best_value < result:
-                    trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
-            except:
-                trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
 
-            return result
+                self.space.trial = trial
+
+                preprocessor = self.space.suggest_categorical('preprocessor', self.preprocessor_list)
+                preprocessor.init_hyperparameters(self.space, X, y)
+
+                classifier = self.space.suggest_categorical('classifier', self.classifier_list)
+                classifier.init_hyperparameters(self.space, X, y)
+
+                balanced = False
+                if isinstance(classifier, KNeighborsClassifierOptuna) or \
+                        isinstance(classifier, QuadraticDiscriminantAnalysisOptuna) or \
+                        isinstance(classifier, PassiveAggressiveOptuna) or \
+                        isinstance(classifier, HistGradientBoostingClassifierOptuna):
+                    balanced = False
+                else:
+                    balanced = self.space.suggest_categorical('balanced', [True, False])
+
+                imputer = SimpleImputerOptuna()
+                imputer.init_hyperparameters(self.space, X, y)
+
+                scaler = self.space.suggest_categorical('scaler', self.scaling_list)
+                scaler.init_hyperparameters(self.space, X, y)
+
+                categorical_transformer = OneHotEncoderOptuna()
+                scaler.init_hyperparameters(self.space, X, y)
+
+
+                numeric_transformer = Pipeline([('imputation', imputer), ('scaler', scaler)])
+
+                data_preprocessor = ColumnTransformer(
+                    transformers=[
+                        ('num', numeric_transformer, np.invert(categorical_indicator)),
+                        ('cat', categorical_transformer, categorical_indicator)])
+
+                my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
+                              ('classifier', classifier)])
+
+
+                key = 'My_processs' + str(time.time()) + " ## " + str(np.random.randint(0,1000))
+
+                mp_global.mp_store[key] = {}
+
+                mp_global.mp_store[key]['balanced'] = balanced
+                mp_global.mp_store[key]['p'] = my_pipeline
+                mp_global.mp_store[key]['number_of_cvs'] = self.number_of_cvs
+                mp_global.mp_store[key]['cv'] = self.cv
+                mp_global.mp_store[key]['scorer'] = scorer
+                mp_global.mp_store[key]['X'] = X
+                mp_global.mp_store[key]['y'] = y
+                mp_global.mp_store[key]['main_memory_budget_gb'] = self.main_memory_budget_gb
+
+                already_used_time = time.time() - self.start_fitting
+
+                if already_used_time + 2 >= self.time_search_budget:  # already over budget
+                    time.sleep(2)
+                    return -np.inf
+
+                remaining_time = np.min([self.evaluation_budget, self.time_search_budget - already_used_time])
+
+                manager = multiprocessing.Manager()
+                return_dict = manager.dict()
+                my_process = multiprocessing.Process(target=evaluatePipeline, name='start'+key, args=(key, return_dict,))
+                my_process.start()
+
+                my_process.join(int(remaining_time))
+
+                # If thread is active
+                while my_process.is_alive():
+                    # Terminate foo
+                    my_process.terminate()
+                    my_process.join()
+
+                del mp_global.mp_store[key]
+
+                result = -np.inf
+                if key + 'result' in return_dict:
+                    result = return_dict[key + 'result']
+
+                trial.set_user_attr('total_time', time.time() - start_total)
+
+                try:
+                    if self.study.best_value < result:
+                        trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
+                except:
+                    trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
+
+                return result
+            except:
+                return -np.inf
 
         if type(self.study) == type(None):
             self.study = optuna.create_study(direction='maximize')

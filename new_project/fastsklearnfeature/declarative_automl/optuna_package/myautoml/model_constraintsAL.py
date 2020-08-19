@@ -1,4 +1,4 @@
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.MyAutoML import MyAutoML
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.MyAutoMLProcess import MyAutoML
 import optuna
 from sklearn.pipeline import Pipeline
 import pickle
@@ -124,7 +124,7 @@ def run_AutoML(trial):
         target=dataset.default_target_attribute
     )
 
-    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
+    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=int(time.time()))
 
     search = MyAutoML(cv=cv,
                       number_of_cvs=number_of_cvs,
