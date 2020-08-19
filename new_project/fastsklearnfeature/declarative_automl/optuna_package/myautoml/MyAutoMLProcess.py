@@ -200,10 +200,15 @@ class MyAutoML:
                 categorical_transformer = Pipeline([('removeNAN', CategoricalMissingTransformer()), ('onehot_transform', onehot_transformer)])
 
 
-                data_preprocessor = ColumnTransformer(
-                    transformers=[
-                        ('num', numeric_transformer, np.invert(categorical_indicator)),
-                        ('cat', categorical_transformer, categorical_indicator)])
+                my_transformers = []
+                if np.sum(np.invert(categorical_indicator)) > 0:
+                    my_transformers.append(('num', numeric_transformer, np.invert(categorical_indicator)))
+
+                if np.sum(categorical_indicator) > 0:
+                    my_transformers.append(('cat', categorical_transformer, categorical_indicator))
+
+
+                data_preprocessor = ColumnTransformer(transformers=my_transformers)
 
                 my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
                               ('classifier', classifier)])
@@ -270,9 +275,24 @@ class MyAutoML:
 
 
 if __name__ == "__main__":
-    auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
+    auc = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
-    dataset = openml.datasets.get_dataset(1590)
+    '''
+    my_openml_datasets = [  # 31, #German Credit # yes
+        # 1464,  # Blood Transfusion
+        # 333,  # Monks Problem 1
+        334,  # Monks Problem 2
+        50,  # TicTacToe
+        # 1504,  # steel plates fault #yes
+        # 3,  # kr-vs-kp #works
+        # 1494,  # qsar-biodeg #yes
+        # 1510,  # wdbc #yes
+        # 1489,  # phoneme #yes
+        1590 #adult #yes
+    ]
+    '''
+
+    dataset = openml.datasets.get_dataset(1504)
 
     #dataset = openml.datasets.get_dataset(31)
     #dataset = openml.datasets.get_dataset(1590)
@@ -281,6 +301,8 @@ if __name__ == "__main__":
         dataset_format='array',
         target=dataset.default_target_attribute
     )
+
+    print(X)
 
 
     X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
@@ -293,10 +315,14 @@ if __name__ == "__main__":
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=5, n_jobs=2, time_search_budget=240, space=space)
+    search = MyAutoML(cv=5, n_jobs=2, time_search_budget=60, space=space)
 
     begin = time.time()
 
-    search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
+    best_result = search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
+
+    test_score = auc(search.get_best_pipeline(), X_test, y_test)
+
+    print("result: " + str(best_result) + " test: " + str(test_score))
 
     print(time.time() - begin)
