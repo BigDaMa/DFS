@@ -26,6 +26,7 @@ import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.s
 
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import categorical
 from fastsklearnfeature.declarative_automl.optuna_package.IdentityOptuna import IdentityOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.CategoricalMissingTransformer import CategoricalMissingTransformer
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.compose import ColumnTransformer
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
@@ -145,7 +146,7 @@ class MyAutoML:
 
         #print("number of hyperparameters: " + str(len(self.space.parameters_used)))
 
-        signal.signal(signal.SIGSEGV, signal_handler)
+        #signal.signal(signal.SIGSEGV, signal_handler)
 
 
     def get_best_pipeline(self):
@@ -191,11 +192,13 @@ class MyAutoML:
                 scaler = self.space.suggest_categorical('scaler', self.scaling_list)
                 scaler.init_hyperparameters(self.space, X, y)
 
-                categorical_transformer = OneHotEncoderOptuna()
-                scaler.init_hyperparameters(self.space, X, y)
+                onehot_transformer = OneHotEncoderOptuna()
+                onehot_transformer.init_hyperparameters(self.space, X, y)
 
 
                 numeric_transformer = Pipeline([('imputation', imputer), ('scaler', scaler)])
+                categorical_transformer = Pipeline([('removeNAN', CategoricalMissingTransformer()), ('onehot_transform', onehot_transformer)])
+
 
                 data_preprocessor = ColumnTransformer(
                     transformers=[
@@ -269,7 +272,9 @@ class MyAutoML:
 if __name__ == "__main__":
     auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
-    dataset = openml.datasets.get_dataset(31)
+    dataset = openml.datasets.get_dataset(1590)
+
+    #dataset = openml.datasets.get_dataset(31)
     #dataset = openml.datasets.get_dataset(1590)
 
     X, y, categorical_indicator, attribute_names = dataset.get_data(
@@ -288,7 +293,7 @@ if __name__ == "__main__":
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=10, n_jobs=2, time_search_budget=60, space=space)
+    search = MyAutoML(cv=5, n_jobs=2, time_search_budget=240, space=space)
 
     begin = time.time()
 

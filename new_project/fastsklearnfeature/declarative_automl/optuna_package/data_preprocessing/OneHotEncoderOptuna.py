@@ -6,7 +6,7 @@ class OneHotEncoderOptuna(OneHotEncoder):
         self.name = id_name('OneHotEncoder_')
 
         self.sparse = False
-        self.handle_unknown='ignore'
+        self.handle_unknown = 'ignore'
 
     def generate_hyperparameters(self, space_gen, depending_node=None):
         pass

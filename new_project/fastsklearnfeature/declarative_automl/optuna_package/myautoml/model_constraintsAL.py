@@ -1,7 +1,7 @@
+from autosklearn.metalearning.metafeatures.metafeatures import calculate_all_metafeatures_with_labels
+
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.MyAutoMLProcess import MyAutoML
 import optuna
-from sklearn.pipeline import Pipeline
-import pickle
 import time
 import sklearn.model_selection
 import sklearn.datasets
@@ -9,72 +9,65 @@ import sklearn.metrics
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
 import openml
-from sklearn.model_selection import cross_val_score
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.impute import SimpleImputer
-import sys, inspect
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers import *
-import fastsklearnfeature.declarative_automl.optuna_package.classifiers as optuna_classifiers
-from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing import *
-import fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing as optuna_preprocessor
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling import *
-import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling as optuna_scaler
-
-
-from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import categorical
-from fastsklearnfeature.declarative_automl.optuna_package.IdentityOptuna import IdentityOptuna
-from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.compose import ColumnTransformer
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.OneHotEncoderOptuna import OneHotEncoderOptuna
-
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.Space_GenerationTree import SpaceGenerator
-
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import PassiveAggressiveClassifier
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from func_timeout import func_timeout, FunctionTimedOut, func_set_timeout
-import threading
-from sklearn.model_selection import StratifiedKFold
-import pandas as pd
 import copy
+from optuna.trial import FrozenTrial
 
-from anytree import Node, RenderTree
+from anytree import RenderTree
 
 from sklearn.ensemble import RandomForestRegressor
 
 from optuna.samplers.random import RandomSampler
 import matplotlib.pyplot as plt
-import resource
 
-#size = int(4 * 1024 * 1024 * 1024)
-#resource.setrlimit(resource.RLIMIT_AS, (size, resource.RLIM_INFINITY))
 
-#from autosklearn.metalearning.metafeatures.metafeatures import calculate_all_metafeatures_with_labels
+#test data
+
+dataset_hold = openml.datasets.get_dataset(dataset_id=31)
+
+X_hold, y_hold, categorical_indicator_hold, attribute_names_hold = dataset_hold.get_data(
+    dataset_format='array',
+    target=dataset_hold.default_target_attribute
+)
+
+X_train_hold, X_test_hold, y_train_hold, y_test_hold = sklearn.model_selection.train_test_split(X_hold, y_hold, random_state=42)
+
+
 
 auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
-dataset = openml.datasets.get_dataset(31)
-
-X, y, categorical_indicator, attribute_names = dataset.get_data(
-    dataset_format='array',
-    target=dataset.default_target_attribute
-)
-
-X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
 
 
+total_search_time = 120#10 * 60
 
-#print(calculate_all_metafeatures_with_labels(X_train, y, categorical=categorical_indicator, dataset_name='data'))
+my_openml_datasets = [  # 31, #German Credit
+            #1464,  # Blood Transfusion
+            #333,  # Monks Problem 1
+            334,  # Monks Problem 2
+            50,  # TicTacToe
+            #1504,  # steel plates fault
+            #3,  # kr-vs-kp
+            #1494,  # qsar-biodeg
+            #1510,  # wdbc
+            #1489,  # phoneme
+        ]
 
 
-total_search_time = 2 * 60
+mgen = SpaceGenerator()
+mspace = mgen.generate_params()
 
-def run_AutoML(trial):
+my_list = list(mspace.name2node.keys())
+my_list.sort()
+
+my_list_constraints = ['global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint', 'global_cv', 'global_number_cv']
+
+
+metafeaturenn = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilityMean', 'ClassProbabilityMin', 'ClassProbabilitySTD', 'DatasetRatio', 'InverseDatasetRatio', 'LogDatasetRatio', 'LogInverseDatasetRatio', 'LogNumberOfFeatures', 'LogNumberOfInstances', 'NumberOfCategoricalFeatures', 'NumberOfClasses', 'NumberOfFeatures', 'NumberOfFeaturesWithMissingValues', 'NumberOfInstances', 'NumberOfInstancesWithMissingValues', 'NumberOfMissingValues', 'NumberOfNumericFeatures', 'PercentageOfFeaturesWithMissingValues', 'PercentageOfInstancesWithMissingValues', 'PercentageOfMissingValues', 'RatioNominalToNumerical', 'RatioNumericalToNominal', 'SymbolsMax', 'SymbolsMean', 'SymbolsMin', 'SymbolsSTD', 'SymbolsSum']
+
+
+
+def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
     space = None
     search_time = None
     if not 'space' in trial.user_attrs:
@@ -89,7 +82,7 @@ def run_AutoML(trial):
         search_time = trial.suggest_int('global_search_time_constraint', 10, total_search_time, log=False)
 
         # how much time for each evaluation
-        evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, total_search_time, log=False)
+        evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time, log=False)
 
         # how much memory is allowed
         memory_limit = trial.suggest_uniform('global_memory_constraint', 1.5, 4)
@@ -98,6 +91,8 @@ def run_AutoML(trial):
         cv = trial.suggest_int('global_cv', 2, 20, log=False)
 
         number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+
+        dataset_id = trial.suggest_categorical('dataset_id', my_openml_datasets)
 
     else:
         space = trial.user_attrs['space']
@@ -111,20 +106,36 @@ def run_AutoML(trial):
         cv = trial.params['global_cv']
         number_of_cvs = trial.params['global_number_cv']
 
+        if 'dataset_id' in trial.params:
+            dataset_id = trial.params['dataset_id'] #get same random seed
+        else:
+            dataset_id = 31
+
 
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
     # which dataset to use
     #todo: add more datasets
-    dataset = openml.datasets.get_dataset(31)
 
-    X, y, categorical_indicator, attribute_names = dataset.get_data(
-        dataset_format='array',
-        target=dataset.default_target_attribute
-    )
 
-    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=int(time.time()))
+    if type(X_train) == type(None):
+
+        dataset = openml.datasets.get_dataset(dataset_id=dataset_id)
+
+        print(dataset.name)
+
+        X, y, categorical_indicator, attribute_names = dataset.get_data(
+            dataset_format='array',
+            target=dataset.default_target_attribute
+        )
+
+        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=int(time.time()))
+
+        if not isinstance(trial, FrozenTrial):
+            my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
+            features = space2features(space, my_list_constraints_values, X_train, y_train, categorical_indicator)
+            trial.set_user_attr('features', features)
 
     search = MyAutoML(cv=cv,
                       number_of_cvs=number_of_cvs,
@@ -145,7 +156,27 @@ def run_AutoML(trial):
     return test_score
 
 
-def space2features(space, trial, my_list_constraints_values):
+def data2features(X_train, y_train, categorical_indicator):
+    metafeatures = calculate_all_metafeatures_with_labels(X_train, y_train, categorical=categorical_indicator,
+                                                          dataset_name='data')
+
+    metafeature_names = list(metafeatures.keys())
+    metafeature_names.sort()
+
+    metafeature_names_new = []
+    for n_i in range(len(metafeature_names)):
+        if metafeatures[metafeature_names[n_i]].type_ == "METAFEATURE":
+            metafeature_names_new.append(metafeature_names[n_i])
+    metafeature_names_new.sort()
+    #print(metafeature_names_new)
+
+    metafeature_values = np.zeros((1, len(metafeature_names_new)))
+    for m_i in range(len(metafeature_names_new)):
+        metafeature_values[0, m_i] = metafeatures[metafeature_names_new[m_i]].value
+    return metafeature_values
+
+
+def space2features(space, my_list_constraints_values, X_train, y_train, categorical_indicator):
     tuple_param = np.zeros((1, len(my_list)))
     tuple_constraints = np.zeros((1, len(my_list_constraints)))
     t = 0
@@ -156,7 +187,9 @@ def space2features(space, trial, my_list_constraints_values):
     for constraint_i in range(len(my_list_constraints)):
         tuple_constraints[t, constraint_i] = my_list_constraints_values[constraint_i] #current_trial.params[my_list_constraints[constraint_i]]
 
-    return np.hstack((tuple_param, tuple_constraints))
+    metafeature_values = data2features(X_train, y_train, categorical_indicator)
+
+    return np.hstack((tuple_param, tuple_constraints, metafeature_values))
 
 def predict_range(model, X):
     y_pred = model.predict(X)
@@ -173,15 +206,32 @@ def optimize_uncertainty(trial):
     trial.set_user_attr('space', copy.deepcopy(space))
 
     search_time = trial.suggest_int('global_search_time_constraint', 10, total_search_time, log=False)
-    evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, total_search_time, log=False)
-    memory_limit = trial.suggest_uniform('global_memory_constraint', 0.001, 4)
+    evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time, log=False)
+    memory_limit = trial.suggest_uniform('global_memory_constraint', 1.5, 4)
     cv = trial.suggest_int('global_cv', 2, 20, log=False)
     number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
 
+    dataset_id = trial.suggest_categorical('dataset_id', my_openml_datasets)
+
+    dataset = openml.datasets.get_dataset(dataset_id=dataset_id)
+
+    print(dataset.name)
+
+    X, y, categorical_indicator, attribute_names = dataset.get_data(
+        dataset_format='array',
+        target=dataset.default_target_attribute
+    )
+
+    random_seed = int(time.time())
+
+    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=random_seed)
+
+    #add metafeatures of data
+
 
     my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
-
-    features = space2features(space, trial, my_list_constraints_values)
+    features = space2features(space, my_list_constraints_values, X_train, y_train, categorical_indicator)
+    trial.set_user_attr('features', features)
 
     predictions = []
     for tree in range(model.n_estimators):
@@ -193,7 +243,7 @@ def optimize_uncertainty(trial):
 
 search_time_frozen = 60
 
-def optimize_accuracy_under_constraints(trial):
+def optimize_accuracy_under_constraints(trial, X_train, y_train, categorical_indicator):
     gen = SpaceGenerator()
     space = gen.generate_params()
     space.sample_parameters(trial)
@@ -207,13 +257,13 @@ def optimize_accuracy_under_constraints(trial):
     number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
 
     my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
-
-    features = space2features(space, trial, my_list_constraints_values)
+    features = space2features(space, my_list_constraints_values, X_train, y_train, categorical_indicator)
+    trial.set_user_attr('features', features)
 
     return predict_range(model, features)
 
-
-def trial2features(trial):
+'''
+def trial2features(trial, X_train, y_train, categorical_indicator):
     X_row_params = np.zeros((1, len(my_list)))
     X_row_constraints = np.zeros((1, len(my_list_constraints)))
 
@@ -225,10 +275,13 @@ def trial2features(trial):
     for constraint_i in range(len(my_list_constraints)):
         X_row_constraints[t, constraint_i] = current_trial.params[my_list_constraints[constraint_i]]
 
+    metafeature_values = data2features(X_train, y_train, categorical_indicator)
 
-    X_row_all = np.hstack((X_row_params, X_row_constraints))
+
+    X_row_all = np.hstack((X_row_params, X_row_constraints, metafeature_values))
 
     return X_row_all
+'''
 
 
 
@@ -238,24 +291,13 @@ study = optuna.create_study(direction='maximize', sampler=RandomSampler(seed=42)
 
 
 #first random sampling
-study.optimize(run_AutoML, n_trials=4, n_jobs=1)
+study.optimize(run_AutoML, n_trials=4, n_jobs=2)
 
 print('done')
 
-
-mgen = SpaceGenerator()
-mspace = mgen.generate_params()
-
-my_list = list(mspace.name2node.keys())
-my_list.sort()
-
-my_list_constraints = ['global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint', 'global_cv', 'global_number_cv']
-
 #generate training data
 all_trials = study.get_trials()
-X_meta_parameters = np.zeros((len(all_trials), len(my_list)))
-
-X_meta_constraints = np.zeros((len(all_trials), len(my_list_constraints)))
+X_meta = []
 y_meta = []
 
 #todo: create metafeatures for dataset
@@ -267,17 +309,14 @@ for t in range(len(study.get_trials())):
         y_meta.append(current_trial.value)
     else:
         y_meta.append(0.0)
-    for parameter_i in range(len(my_list)):
-        X_meta_parameters[t, parameter_i] = current_trial.user_attrs['space'].name2node[my_list[parameter_i]].status
+    X_meta.append(current_trial.user_attrs['features'])
 
-    for constraint_i in range(len(my_list_constraints)):
-        X_meta_constraints[t, constraint_i] = current_trial.params[my_list_constraints[constraint_i]]
-
-
-X_meta = np.hstack((X_meta_parameters,X_meta_constraints))
+X_meta = np.vstack(X_meta)
+print(X_meta.shape)
 
 feature_names = copy.deepcopy(my_list)
 feature_names.extend(my_list_constraints)
+feature_names.extend(metafeaturenn)
 
 
 pruned_accuray_results = []
@@ -289,15 +328,20 @@ while True:
 
     #random sampling 10 iterations
     study_uncertainty = optuna.create_study(direction='maximize')
-    study_uncertainty.optimize(optimize_uncertainty, n_trials=100, n_jobs=1)
+    study_uncertainty.optimize(optimize_uncertainty, n_trials=100, n_jobs=4)
 
-    X_meta = np.vstack((X_meta, trial2features(study_uncertainty.best_trial)))
+    X_meta = np.vstack((X_meta, study_uncertainty.best_trial.user_attrs['features']))
     y_meta.append(run_AutoML(study_uncertainty.best_trial))
 
     study_prune = optuna.create_study(direction='maximize')
-    study_prune.optimize(optimize_accuracy_under_constraints, n_trials=500, n_jobs=1)
+    study_prune.optimize(lambda trial: optimize_accuracy_under_constraints(trial, X_train_hold, y_train_hold, categorical_indicator_hold), n_trials=500, n_jobs=4)
 
-    pruned_accuray_results.append(run_AutoML(study_prune.best_trial))
+    pruned_accuray_results.append(run_AutoML(study_prune.best_trial,
+                                             X_train=X_train_hold,
+                                             X_test=X_test_hold,
+                                             y_train=y_train_hold,
+                                             y_test=y_test_hold,
+                                             categorical_indicator=categorical_indicator_hold))
 
     plt.plot(range(len(pruned_accuray_results)), pruned_accuray_results)
     plt.show()
