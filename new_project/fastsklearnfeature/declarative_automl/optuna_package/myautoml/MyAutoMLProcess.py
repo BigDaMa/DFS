@@ -51,6 +51,7 @@ import time
 import threading
 import resource
 import signal
+import copy
 
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.automl_parameters as mp_global
 
@@ -102,6 +103,10 @@ def evaluatePipeline(key,return_dict):
         p.fit(X, y)
     training_time = time.time() - start_training
 
+    return_dict[key + 'pipeline'] = copy.deepcopy(p)
+
+
+
     scores = []
     for cv_num in range(number_of_cvs):
         my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(time.time())).split(X, y)
@@ -112,7 +117,7 @@ def evaluatePipeline(key,return_dict):
                 p.fit(X[train_ids, :], y[train_ids])
             scores.append(scorer(p, X[test_ids, :], pd.DataFrame(y[test_ids])))
 
-    return_dict[key] = np.mean(scores)
+    return_dict[key + 'result'] = np.mean(scores)
 
 
 
@@ -234,16 +239,16 @@ class MyAutoML:
             del mp_global.mp_store[key]
 
             result = -np.inf
-            if key in return_dict:
-                result = return_dict[key]
+            if key + 'result' in return_dict:
+                result = return_dict[key + 'result']
 
             trial.set_user_attr('total_time', time.time() - start_total)
 
             try:
                 if self.study.best_value < result:
-                    trial.set_user_attr('pipeline', my_pipeline)
+                    trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
             except:
-                trial.set_user_attr('pipeline', my_pipeline)
+                trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
 
             return result
 

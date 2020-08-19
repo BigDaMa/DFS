@@ -5,16 +5,22 @@ from sklearn.feature_selection import SelectPercentile
 import sklearn
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
+import functools
+
 def model_score(X, y=None, estimator=None):
     estimator.fit(X,y)
     scores = _get_feature_importances(estimator)
     return scores
 
+'''
 def bindFunction1(estimator):
     def func1(X,y):
         return model_score(X, y, estimator=estimator)
     func1.__name__ = 'score_model_' + estimator.__class__.__name__
     return func1
+'''
+
+
 
 class SelectPercentileOptuna(SelectPercentile):
     def init_hyperparameters(self, trial, X, y):
@@ -47,7 +53,7 @@ class SelectPercentileOptuna(SelectPercentile):
             model.min_impurity_decrease = 0.
             model.bootstrap = trial.suggest_categorical(new_name + "bootstrap", [True, False])
 
-            self.score_func = bindFunction1(model)
+            self.score_func = functools.partial(model_score, estimator=model) #bindFunction1(model)
 
         elif score_func == 'LinearSVC':
             new_name = self.name + '_' + score_func + '_'
@@ -61,7 +67,7 @@ class SelectPercentileOptuna(SelectPercentile):
             model.fit_intercept = True
             model.intercept_scaling = 1
 
-            self.score_func = bindFunction1(model)
+            self.score_func = functools.partial(model_score, estimator=model)
 
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('SelectPercentile')

@@ -1,4 +1,4 @@
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.MyAutoML import MyAutoML
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.MyAutoMLProcess import MyAutoML
 import optuna
 from sklearn.pipeline import Pipeline
 import pickle
@@ -80,7 +80,7 @@ test_scores = []
 #add Caruana ensemble with replacement # save pipelines to disk
 
 for i in range(1, 10):
-    search = MyAutoML(cv=20, number_of_cvs=1, n_jobs=1, time_search_budget=6*60, space=space, study=my_study, main_memory_budget_gb=4)
+    search = MyAutoML(cv=10, number_of_cvs=1, n_jobs=2, time_search_budget=1*60, space=space, study=my_study, main_memory_budget_gb=4)
     best_result = search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
     my_study = search.study
 
