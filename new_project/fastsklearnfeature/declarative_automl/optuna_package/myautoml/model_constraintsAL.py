@@ -49,8 +49,12 @@ from sklearn.ensemble import RandomForestRegressor
 
 from optuna.samplers.random import RandomSampler
 import matplotlib.pyplot as plt
+import resource
 
-from autosklearn.metalearning.metafeatures.metafeatures import calculate_all_metafeatures_with_labels
+#size = int(4 * 1024 * 1024 * 1024)
+#resource.setrlimit(resource.RLIMIT_AS, (size, resource.RLIM_INFINITY))
+
+#from autosklearn.metalearning.metafeatures.metafeatures import calculate_all_metafeatures_with_labels
 
 auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
@@ -65,10 +69,10 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y
 
 
 
-print(calculate_all_metafeatures_with_labels(X_train, y, categorical=categorical_indicator, dataset_name='data'))
+#print(calculate_all_metafeatures_with_labels(X_train, y, categorical=categorical_indicator, dataset_name='data'))
 
 
-
+total_search_time = 2 * 60
 
 def run_AutoML(trial):
     space = None
@@ -82,14 +86,30 @@ def run_AutoML(trial):
         trial.set_user_attr('space', copy.deepcopy(space))
 
         # which constraints to use
-        search_time = trial.suggest_int('global_search_time_constraint', 10, 2 * 60, log=False)
+        search_time = trial.suggest_int('global_search_time_constraint', 10, total_search_time, log=False)
+
+        # how much time for each evaluation
+        evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, total_search_time, log=False)
+
+        # how much memory is allowed
+        memory_limit = trial.suggest_uniform('global_memory_constraint', 1.5, 4)
+
+        # how many cvs should be used
+        cv = trial.suggest_int('global_cv', 2, 20, log=False)
+
+        number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+
     else:
         space = trial.user_attrs['space']
 
-        if 'global_search_time_constraint' in trial.params:
-            search_time = trial.params['global_search_time_constraint']
-        else:
-            search_time = trial.user_attrs['global_search_time_constraint']
+        print(trial.params)
+
+        #make this a hyperparameter
+        search_time = trial.params['global_search_time_constraint']
+        evaluation_time = trial.params['global_evaluation_time_constraint']
+        memory_limit = trial.params['global_memory_constraint']
+        cv = trial.params['global_cv']
+        number_of_cvs = trial.params['global_number_cv']
 
 
     for pre, _, node in RenderTree(space.parameter_tree):
@@ -106,9 +126,23 @@ def run_AutoML(trial):
 
     X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
 
-    search = MyAutoML(cv=5, n_jobs=1, time_limit=search_time, space=space)
-    best_value = search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
-    return best_value
+    search = MyAutoML(cv=cv,
+                      number_of_cvs=number_of_cvs,
+                      n_jobs=1,
+                      evaluation_budget=evaluation_time,
+                      time_search_budget=search_time,
+                      space=space,
+                      main_memory_budget_gb=memory_limit)
+    search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
+
+    best_pipeline = search.get_best_pipeline()
+
+    test_score = 0.0
+    if type(best_pipeline) != type(None):
+        test_score = auc(search.get_best_pipeline(), X_test, y_test)
+
+
+    return test_score
 
 
 def space2features(space, trial, my_list_constraints_values):
@@ -138,8 +172,14 @@ def optimize_uncertainty(trial):
 
     trial.set_user_attr('space', copy.deepcopy(space))
 
-    search_time = trial.suggest_int('global_search_time_constraint', 10, 2 * 60, log=False)
-    my_list_constraints_values = [search_time]
+    search_time = trial.suggest_int('global_search_time_constraint', 10, total_search_time, log=False)
+    evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, total_search_time, log=False)
+    memory_limit = trial.suggest_uniform('global_memory_constraint', 0.001, 4)
+    cv = trial.suggest_int('global_cv', 2, 20, log=False)
+    number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+
+
+    my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
 
     features = space2features(space, trial, my_list_constraints_values)
 
@@ -160,9 +200,13 @@ def optimize_accuracy_under_constraints(trial):
 
     trial.set_user_attr('space', copy.deepcopy(space))
 
-    trial.set_user_attr('global_search_time_constraint', search_time_frozen)
+    search_time = trial.suggest_int('global_search_time_constraint', 10, search_time_frozen, log=False)
+    evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time_frozen, log=False)
+    memory_limit = trial.suggest_uniform('global_memory_constraint', 0.001, 4)
+    cv = trial.suggest_int('global_cv', 2, 20, log=False)
+    number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
 
-    my_list_constraints_values = [search_time_frozen]
+    my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
 
     features = space2features(space, trial, my_list_constraints_values)
 
@@ -194,9 +238,10 @@ study = optuna.create_study(direction='maximize', sampler=RandomSampler(seed=42)
 
 
 #first random sampling
-study.optimize(run_AutoML, n_trials=4, n_jobs=2)
+study.optimize(run_AutoML, n_trials=4, n_jobs=1)
 
 print('done')
+
 
 mgen = SpaceGenerator()
 mspace = mgen.generate_params()
@@ -204,7 +249,7 @@ mspace = mgen.generate_params()
 my_list = list(mspace.name2node.keys())
 my_list.sort()
 
-my_list_constraints = ['global_search_time_constraint']
+my_list_constraints = ['global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint', 'global_cv', 'global_number_cv']
 
 #generate training data
 all_trials = study.get_trials()
@@ -292,8 +337,3 @@ while True:
         plt.show()
 
     plot_most_important_features(model, feature_names)
-
-#generate training data
-
-
-#uncertainty sampling

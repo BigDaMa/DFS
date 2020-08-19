@@ -37,6 +37,8 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.HistGradie
 
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.Space_GenerationTree import SpaceGenerator
 
+from concurrent.futures import TimeoutError
+from pebble import ProcessPool, ProcessExpired
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import PassiveAggressiveClassifier
@@ -49,6 +51,10 @@ import time
 import threading
 import resource
 import signal
+
+import fastsklearnfeature.declarative_automl.optuna_package.myautoml.automl_parameters as mp_global
+
+import multiprocessing
 
 def get_all_classes(my_module, addNone=False):
     clsmembers = inspect.getmembers(my_module, inspect.ismodule)
@@ -75,6 +81,42 @@ class TimeException(Exception):
         super().__init__(self.message)
 
 
+def evaluatePipeline(key,return_dict):
+    balanced = mp_global.mp_store[key]['balanced']
+    p = mp_global.mp_store[key]['p']
+    number_of_cvs = mp_global.mp_store[key]['number_of_cvs']
+    cv = mp_global.mp_store[key]['cv']
+    scorer = mp_global.mp_store[key]['scorer']
+    X = mp_global.mp_store[key]['X']
+    y = mp_global.mp_store[key]['y']
+    main_memory_budget_gb = mp_global.mp_store[key]['main_memory_budget_gb']
+
+    size = int(main_memory_budget_gb * 1024.0 * 1024.0 * 1024.0)
+    resource.setrlimit(resource.RLIMIT_AS, (size, resource.RLIM_INFINITY))
+
+    start_training = time.time()
+
+    if balanced:
+        p.fit(X, y, classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y))
+    else:
+        p.fit(X, y)
+    training_time = time.time() - start_training
+
+    scores = []
+    for cv_num in range(number_of_cvs):
+        my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(time.time())).split(X, y)
+        for train_ids, test_ids in my_splits:
+            if balanced:
+                p.fit(X[train_ids, :], y[train_ids], classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y[train_ids]))
+            else:
+                p.fit(X[train_ids, :], y[train_ids])
+            scores.append(scorer(p, X[test_ids, :], pd.DataFrame(y[test_ids])))
+
+    return_dict[key] = np.mean(scores)
+
+
+
+
 
 class MyAutoML:
     def __init__(self, cv=5, number_of_cvs=1, evaluation_budget=np.inf, time_search_budget=10*60, n_jobs=1, space=None, study=None, main_memory_budget_gb=4):
@@ -93,12 +135,9 @@ class MyAutoML:
 
         self.space = space
         self.study = study
+        self.main_memory_budget_gb = main_memory_budget_gb
 
         #print("number of hyperparameters: " + str(len(self.space.parameters_used)))
-
-        size = int(main_memory_budget_gb * 1024.0 * 1024.0 * 1024.0)
-        print(size)
-        resource.setrlimit(resource.RLIMIT_AS, (size, resource.RLIM_INFINITY))
 
         signal.signal(signal.SIGSEGV, signal_handler)
 
@@ -118,7 +157,7 @@ class MyAutoML:
     def fit(self, X, y, sample_weight=None, categorical_indicator=None, scorer=None):
         self.start_fitting = time.time()
 
-        def objective1(trial, return_dict):
+        def objective1(trial):
             start_total = time.time()
 
             self.space.trial = trial
@@ -147,90 +186,74 @@ class MyAutoML:
             categorical_transformer = OneHotEncoderOptuna()
             scaler.init_hyperparameters(self.space, X, y)
 
-            try:
-                numeric_transformer = Pipeline([('imputation', imputer), ('scaler', scaler)])
 
-                data_preprocessor = ColumnTransformer(
-                    transformers=[
-                        ('num', numeric_transformer, np.invert(categorical_indicator)),
-                        ('cat', categorical_transformer, categorical_indicator)])
+            numeric_transformer = Pipeline([('imputation', imputer), ('scaler', scaler)])
 
-                p = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
-                              ('classifier', classifier)])
+            data_preprocessor = ColumnTransformer(
+                transformers=[
+                    ('num', numeric_transformer, np.invert(categorical_indicator)),
+                    ('cat', categorical_transformer, categorical_indicator)])
 
-                start_training = time.time()
-
-                if balanced:
-                    p.fit(X, y,
-                          classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y))
-                else:
-                    p.fit(X, y)
-                training_time = time.time() - start_training
-                trial.set_user_attr('training_time', training_time)
-
-                scores = []
-                for cv_num in range(self.number_of_cvs):
-                    my_splits = StratifiedKFold(n_splits=self.cv, shuffle=True, random_state=int(time.time())).split(X, y)
-                    for train_ids, test_ids in my_splits:
-                        if balanced:
-                            p.fit(X[train_ids, :], y[train_ids], classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y[train_ids]))
-                        else:
-                            p.fit(X[train_ids, :], y[train_ids])
-                        scores.append(scorer(p, X[test_ids, :], pd.DataFrame(y[test_ids])))
-
-                trial.set_user_attr('total_time', time.time() - start_total)
-                return_dict['value'] = np.mean(scores)
-
-                if self.study.best_value < return_dict['value']:
-                    trial.set_user_attr('pipeline', p)
+            my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
+                          ('classifier', classifier)])
 
 
-            except MemoryError as me:
-                print(p)
-                print(str(me))
-                try:
-                    trial.set_user_attr('total_time', time.time() - start_total)
-                    return_dict['value'] = -np.inf
-                except:
-                    pass
-            except Exception as e:
-                print(p)
-                print(str(e))
-                try:
-                    trial.set_user_attr('total_time', time.time() - start_total)
-                    return_dict['value'] = -np.inf
-                except:
-                    pass
+            key = 'My_processs' + str(time.time()) + " ## " + str(np.random.randint(0,1000))
 
+            mp_global.mp_store[key] = {}
 
-        def objective(trial):
+            mp_global.mp_store[key]['balanced'] = balanced
+            mp_global.mp_store[key]['p'] = my_pipeline
+            mp_global.mp_store[key]['number_of_cvs'] = self.number_of_cvs
+            mp_global.mp_store[key]['cv'] = self.cv
+            mp_global.mp_store[key]['scorer'] = scorer
+            mp_global.mp_store[key]['X'] = X
+            mp_global.mp_store[key]['y'] = y
+            mp_global.mp_store[key]['main_memory_budget_gb'] = self.main_memory_budget_gb
 
             already_used_time = time.time() - self.start_fitting
 
-            if already_used_time >= self.time_search_budget or self.time_search_budget - already_used_time < 1: #already over budget
+            if already_used_time + 2 >= self.time_search_budget:  # already over budget
                 raise TimeException()
-                #return -np.inf
 
             remaining_time = np.min([self.evaluation_budget, self.time_search_budget - already_used_time])
 
-            return_dict = {}
-            return_dict['value'] = -np.inf
-            # Start foo as a process
+            manager = multiprocessing.Manager()
+            return_dict = manager.dict()
+            my_process = multiprocessing.Process(target=evaluatePipeline, name='start'+key, args=(key, return_dict,))
+            my_process.start()
 
+            my_process.join(int(remaining_time))
 
-            t = threading.Thread(target=objective1, name='mydaemonthread' + str(time.time()) + str(np.random.randint(0,1000)), args=(trial, return_dict))
-            #t.daemon = True
-            t.start()
-            t.join(remaining_time)
+            # If thread is active
+            while my_process.is_alive():
+                # Terminate foo
+                my_process.terminate()
+                my_process.join()
 
-            #objective1(trial, return_dict)
+            del mp_global.mp_store[key]
 
-            return return_dict['value']
+            result = -np.inf
+            if key in return_dict:
+                result = return_dict[key]
+
+            trial.set_user_attr('total_time', time.time() - start_total)
+
+            try:
+                if self.study.best_value < result:
+                    trial.set_user_attr('pipeline', my_pipeline)
+            except:
+                trial.set_user_attr('pipeline', my_pipeline)
+
+            return result
 
         if type(self.study) == type(None):
             self.study = optuna.create_study(direction='maximize')
-        self.study.optimize(objective, timeout=self.time_search_budget, n_jobs=self.n_jobs, catch=(TimeException,))
+        self.study.optimize(objective1, timeout=self.time_search_budget, n_jobs=self.n_jobs, catch=(TimeException,))
         return self.study.best_value
+
+
+
 
 if __name__ == "__main__":
     auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
@@ -254,7 +277,7 @@ if __name__ == "__main__":
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=10, n_jobs=6, time_search_budget=3*60, space=space)
+    search = MyAutoML(cv=10, n_jobs=2, time_search_budget=60, space=space)
 
     begin = time.time()
 
