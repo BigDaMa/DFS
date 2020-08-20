@@ -2,6 +2,7 @@ from sklearn.svm import SVC
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class SVCOptuna(SVC):
+
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('SVC_')
         self.C = trial.suggest_loguniform(self.name + "C", 0.03125, 32768)

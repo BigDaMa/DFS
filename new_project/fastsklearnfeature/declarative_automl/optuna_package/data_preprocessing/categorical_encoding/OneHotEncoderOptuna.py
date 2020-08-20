@@ -8,5 +8,8 @@ class OneHotEncoderOptuna(OneHotEncoder):
         self.sparse = False
         self.handle_unknown = 'ignore'
 
+        self.sparse = trial.suggest_categorical(self.name + 'sparse', [True, False])
+
     def generate_hyperparameters(self, space_gen, depending_node=None):
-        pass
+        self.name = id_name('OneHotEncoder_')
+        space_gen.generate_cat(self.name + 'sparse', [True, False], True, depending_node=depending_node)

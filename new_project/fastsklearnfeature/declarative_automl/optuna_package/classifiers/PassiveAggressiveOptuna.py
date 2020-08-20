@@ -2,6 +2,7 @@ from sklearn.linear_model import PassiveAggressiveClassifier
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class PassiveAggressiveOptuna(PassiveAggressiveClassifier):
+
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('PassiveAggressive_')
         self.C = trial.suggest_loguniform(self.name + "C", 1e-5, 10)

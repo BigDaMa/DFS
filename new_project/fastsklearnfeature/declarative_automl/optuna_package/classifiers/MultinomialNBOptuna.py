@@ -2,6 +2,7 @@ from sklearn.naive_bayes import MultinomialNB
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class MultinomialNBOptuna(MultinomialNB):
+
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('MultinomialNB_')
         #self.classes_ = np.unique(y.astype(int))

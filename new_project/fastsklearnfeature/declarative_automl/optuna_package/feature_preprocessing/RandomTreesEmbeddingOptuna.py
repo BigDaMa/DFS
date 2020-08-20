@@ -12,6 +12,9 @@ class RandomTreesEmbeddingOptuna(RandomTreesEmbedding):
         self.min_weight_fraction_leaf = 0.0
         self.max_leaf_nodes = None
         self.bootstrap = trial.suggest_categorical(self.name + 'bootstrap', [True, False])
+        self.sparse_output = trial.suggest_categorical(self.name + 'sparse_output', [True, False])
+
+        self.sparse = self.sparse_output
 
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('RandomTreesEmbedding_')
@@ -21,5 +24,6 @@ class RandomTreesEmbeddingOptuna(RandomTreesEmbedding):
         space_gen.generate_number(self.name + "min_samples_split", 2, depending_node=depending_node)
         space_gen.generate_number(self.name + "min_samples_leaf", 1, depending_node=depending_node)
         space_gen.generate_cat(self.name + "bootstrap", [True, False], False, depending_node=depending_node)
+        space_gen.generate_cat(self.name + "sparse_output", [True, False], True, depending_node=depending_node)
 
 

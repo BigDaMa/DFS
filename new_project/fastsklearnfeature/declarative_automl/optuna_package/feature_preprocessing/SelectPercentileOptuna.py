@@ -12,21 +12,13 @@ def model_score(X, y=None, estimator=None):
     scores = _get_feature_importances(estimator)
     return scores
 
-'''
-def bindFunction1(estimator):
-    def func1(X,y):
-        return model_score(X, y, estimator=estimator)
-    func1.__name__ = 'score_model_' + estimator.__class__.__name__
-    return func1
-'''
-
-
-
 class SelectPercentileOptuna(SelectPercentile):
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('SelectPercentile')
 
         self.percentile = trial.suggest_int(self.name + "percentile", 1, 99)
+
+        self.sparse = False
 
 
 

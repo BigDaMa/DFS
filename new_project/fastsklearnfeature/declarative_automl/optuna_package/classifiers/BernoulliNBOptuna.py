@@ -2,6 +2,7 @@ from sklearn.naive_bayes import BernoulliNB
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class BernoulliNBOptuna(BernoulliNB):
+
     def init_hyperparameters(self, trial, X, y):
         #self.classes_ = np.unique(y.astype(int))
         self.name = id_name('BernoulliNB_')

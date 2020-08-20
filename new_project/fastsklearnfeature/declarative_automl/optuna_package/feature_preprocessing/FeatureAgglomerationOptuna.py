@@ -17,6 +17,8 @@ class FeatureAgglomerationOptuna(FeatureAgglomeration):
 
         self.pooling_func = trial.suggest_categorical(self.name + "pooling_func", [np.mean, np.median, np.max])
 
+        self.sparse = False
+
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('FeatureAgglomeration_')
 

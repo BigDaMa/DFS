@@ -1,7 +1,9 @@
 from sklearn.impute import SimpleImputer
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
+import numpy as np
 
 class SimpleImputerOptuna(SimpleImputer):
+
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('SimpleImputer_')
 

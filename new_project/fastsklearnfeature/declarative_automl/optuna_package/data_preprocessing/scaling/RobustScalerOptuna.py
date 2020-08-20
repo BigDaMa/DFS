@@ -2,6 +2,7 @@ from sklearn.preprocessing import RobustScaler
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class RobustScalerOptuna(RobustScaler):
+
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('RobustScaler_')
 

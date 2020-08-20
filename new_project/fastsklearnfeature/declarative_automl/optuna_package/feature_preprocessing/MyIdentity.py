@@ -1,6 +1,9 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 
 class IdentityTransformation(BaseEstimator, TransformerMixin):
+    def init_hyperparameters(self, trial, X, y):
+        pass
+
     def transform(self, X):
         return X
 

@@ -3,6 +3,7 @@ import numpy as np
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class ExtraTreesClassifierOptuna(ExtraTreesClassifier):
+
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('ExtraTreesClassifier_')
         self.criterion = trial.suggest_categorical(self.name + "criterion", ["gini", "entropy"])

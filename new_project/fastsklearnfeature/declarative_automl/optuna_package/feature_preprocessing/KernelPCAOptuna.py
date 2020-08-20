@@ -12,6 +12,8 @@ class KernelPCAOptuna(KernelPCA):
         self.coef0 = trial.suggest_uniform(self.name + "coef0", -1, 1)
         self.remove_zero_eig = True
 
+        self.sparse = False
+
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('KernelPCA_')
 

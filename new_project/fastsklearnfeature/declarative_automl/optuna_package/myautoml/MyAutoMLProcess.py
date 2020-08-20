@@ -1,36 +1,21 @@
 import optuna
 from sklearn.pipeline import Pipeline
-import pickle
-import time
-import sklearn.model_selection
-import sklearn.datasets
 import sklearn.metrics
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
 import openml
-from sklearn.model_selection import cross_val_score
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.impute import SimpleImputer
-import sys, inspect
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers import *
+import inspect
 import fastsklearnfeature.declarative_automl.optuna_package.classifiers as optuna_classifiers
-from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing import *
 import fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing as optuna_preprocessor
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling import *
 import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling as optuna_scaler
+import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding as optuna_categorical_encoding
 
-
-from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import categorical
-from fastsklearnfeature.declarative_automl.optuna_package.IdentityOptuna import IdentityOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.MyIdentity import IdentityTransformation
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.CategoricalMissingTransformer import CategoricalMissingTransformer
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.compose import ColumnTransformer
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.OneHotEncoderOptuna import OneHotEncoderOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.QuadraticDiscriminantAnalysisOptuna import QuadraticDiscriminantAnalysisOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.PassiveAggressiveOptuna import PassiveAggressiveOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.KNeighborsClassifierOptuna import KNeighborsClassifierOptuna
@@ -38,39 +23,26 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.HistGradie
 
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.Space_GenerationTree import SpaceGenerator
 
-from concurrent.futures import TimeoutError
-from pebble import ProcessPool, ProcessExpired
-
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import PassiveAggressiveClassifier
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from func_timeout import func_timeout, FunctionTimedOut, func_set_timeout
-import threading
 from sklearn.model_selection import StratifiedKFold
 import pandas as pd
 import time
-import threading
 import resource
-import signal
 import copy
 
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.automl_parameters as mp_global
 
 import multiprocessing
 
-def get_all_classes(my_module, addNone=False):
-    clsmembers = inspect.getmembers(my_module, inspect.ismodule)
-    class_list = []
-    for member in clsmembers:
-        member_classes = inspect.getmembers(member[1])
-        for mclass in member_classes:
-            if 'Optuna' in mclass[0]:
-                class_list.append(mclass[1]())
+from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling.QuantileTransformerOptuna import QuantileTransformerOptuna
 
-    if addNone:
-        class_list.append(IdentityOptuna())
+from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.FrequencyEncodingOptuna import FrequencyEncodingOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.OneHotEncoderOptuna import OneHotEncoderOptuna
 
-    return class_list
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.RandomForestClassifierOptuna import RandomForestClassifierOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.AdaBoostClassifierOptuna import AdaBoostClassifierOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.BernoulliNBOptuna import BernoulliNBOptuna
+import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_space as myspace
+
 
 
 def signal_handler(sig, frame):
@@ -84,42 +56,46 @@ class TimeException(Exception):
 
 
 def evaluatePipeline(key,return_dict):
-    balanced = mp_global.mp_store[key]['balanced']
-    p = mp_global.mp_store[key]['p']
-    number_of_cvs = mp_global.mp_store[key]['number_of_cvs']
-    cv = mp_global.mp_store[key]['cv']
-    scorer = mp_global.mp_store[key]['scorer']
-    X = mp_global.mp_store[key]['X']
-    y = mp_global.mp_store[key]['y']
-    main_memory_budget_gb = mp_global.mp_store[key]['main_memory_budget_gb']
+    try:
+        balanced = mp_global.mp_store[key]['balanced']
+        p = mp_global.mp_store[key]['p']
+        number_of_cvs = mp_global.mp_store[key]['number_of_cvs']
+        cv = mp_global.mp_store[key]['cv']
+        scorer = mp_global.mp_store[key]['scorer']
+        X = mp_global.mp_store[key]['X']
+        y = mp_global.mp_store[key]['y']
+        main_memory_budget_gb = mp_global.mp_store[key]['main_memory_budget_gb']
 
-    size = int(main_memory_budget_gb * 1024.0 * 1024.0 * 1024.0)
-    resource.setrlimit(resource.RLIMIT_AS, (size, resource.RLIM_INFINITY))
+        size = int(main_memory_budget_gb * 1024.0 * 1024.0 * 1024.0)
+        resource.setrlimit(resource.RLIMIT_AS, (size, resource.RLIM_INFINITY))
 
-    start_training = time.time()
+        start_training = time.time()
 
-    if balanced:
-        p.fit(X, y, classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y))
-    else:
-        p.fit(X, y)
-    training_time = time.time() - start_training
+        if balanced:
+            p.fit(X, y, classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y))
+        else:
+            p.fit(X, y)
+        training_time = time.time() - start_training
 
-    return_dict[key + 'pipeline'] = copy.deepcopy(p)
+        return_dict[key + 'pipeline'] = copy.deepcopy(p)
 
 
 
-    scores = []
-    for cv_num in range(number_of_cvs):
-        my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(time.time())).split(X, y)
-        #my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(42)).split(X, y)
-        for train_ids, test_ids in my_splits:
-            if balanced:
-                p.fit(X[train_ids, :], y[train_ids], classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y[train_ids]))
-            else:
-                p.fit(X[train_ids, :], y[train_ids])
-            scores.append(scorer(p, X[test_ids, :], pd.DataFrame(y[test_ids])))
+        scores = []
+        for cv_num in range(number_of_cvs):
+            my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(time.time())).split(X, y)
+            #my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(42)).split(X, y)
+            for train_ids, test_ids in my_splits:
+                if balanced:
+                    p.fit(X[train_ids, :], y[train_ids], classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y[train_ids]))
+                else:
+                    p.fit(X[train_ids, :], y[train_ids])
+                scores.append(scorer(p, X[test_ids, :], pd.DataFrame(y[test_ids])))
 
-    return_dict[key + 'result'] = np.mean(scores)
+        return_dict[key + 'result'] = np.mean(scores)
+    except Exception as e:
+        print(p)
+        print(str(e) + '\n\n')
 
 
 
@@ -133,9 +109,10 @@ class MyAutoML:
         self.evaluation_budget = evaluation_budget
         self.number_of_cvs = number_of_cvs
 
-        self.classifier_list = get_all_classes(optuna_classifiers)
-        self.preprocessor_list = get_all_classes(optuna_preprocessor, addNone=True)
-        self.scaling_list = get_all_classes(optuna_scaler, addNone=True)
+        self.classifier_list = myspace.classifier_list
+        self.preprocessor_list = myspace.preprocessor_list
+        self.scaling_list = myspace.scaling_list
+        self.categorical_encoding_list = myspace.categorical_encoding_list
 
         #generate binary or mapping for each hyperparameter
 
@@ -171,6 +148,15 @@ class MyAutoML:
 
                 self.space.trial = trial
 
+                imputer = SimpleImputerOptuna()
+                imputer.init_hyperparameters(self.space, X, y)
+
+                scaler = self.space.suggest_categorical('scaler', self.scaling_list)
+                scaler.init_hyperparameters(self.space, X, y)
+
+                onehot_transformer = self.space.suggest_categorical('categorical_encoding', self.categorical_encoding_list)
+                onehot_transformer.init_hyperparameters(self.space, X, y)
+
                 preprocessor = self.space.suggest_categorical('preprocessor', self.preprocessor_list)
                 preprocessor.init_hyperparameters(self.space, X, y)
 
@@ -185,16 +171,6 @@ class MyAutoML:
                     balanced = False
                 else:
                     balanced = self.space.suggest_categorical('balanced', [True, False])
-
-                imputer = SimpleImputerOptuna()
-                imputer.init_hyperparameters(self.space, X, y)
-
-                scaler = self.space.suggest_categorical('scaler', self.scaling_list)
-                scaler.init_hyperparameters(self.space, X, y)
-
-                onehot_transformer = OneHotEncoderOptuna()
-                onehot_transformer.init_hyperparameters(self.space, X, y)
-
 
                 numeric_transformer = Pipeline([('imputation', imputer), ('scaler', scaler)])
                 categorical_transformer = Pipeline([('removeNAN', CategoricalMissingTransformer()), ('onehot_transform', onehot_transformer)])
@@ -213,13 +189,12 @@ class MyAutoML:
                 my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
                               ('classifier', classifier)])
 
-
                 key = 'My_processs' + str(time.time()) + " ## " + str(np.random.randint(0,1000))
 
                 mp_global.mp_store[key] = {}
 
                 mp_global.mp_store[key]['balanced'] = balanced
-                mp_global.mp_store[key]['p'] = my_pipeline
+                mp_global.mp_store[key]['p'] = copy.deepcopy(my_pipeline)
                 mp_global.mp_store[key]['number_of_cvs'] = self.number_of_cvs
                 mp_global.mp_store[key]['cv'] = self.cv
                 mp_global.mp_store[key]['scorer'] = scorer
@@ -263,7 +238,8 @@ class MyAutoML:
                     trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
 
                 return result
-            except:
+            except Exception as e:
+                print(str(e) + '\n\n')
                 return -np.inf
 
         if type(self.study) == type(None):
@@ -289,10 +265,20 @@ if __name__ == "__main__":
         # 1510,  # wdbc #yes
         # 1489,  # phoneme #yes
         1590 #adult #yes
+        1067, #kc1
+        37, #diabetes
+        1487, #ozon
+        1479, #hill valley
+        1063, # kc2
+        1471, #eeg
+        1467, #climatemodel
+        44, #spambase
+        1461, #bankmarketing
+        4135, #amazon
     ]
     '''
 
-    dataset = openml.datasets.get_dataset(1504)
+    dataset = openml.datasets.get_dataset(31)
 
     #dataset = openml.datasets.get_dataset(31)
     #dataset = openml.datasets.get_dataset(1590)
@@ -310,12 +296,12 @@ if __name__ == "__main__":
     gen = SpaceGenerator()
     space = gen.generate_params()
 
-    from anytree import Node, RenderTree
+    from anytree import RenderTree
 
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=5, n_jobs=2, time_search_budget=60, space=space)
+    search = MyAutoML(cv=5, n_jobs=1, time_search_budget=500, space=space)
 
     begin = time.time()
 

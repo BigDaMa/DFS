@@ -5,7 +5,7 @@ class QuantileTransformerOptuna(QuantileTransformer):
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('QuantileTransformer_')
 
-        self.n_quantiles = trial.suggest_int(self.name + 'n_quantiles', 10, 2000)
+        self.n_quantiles = trial.suggest_int(self.name + 'n_quantiles', 10, X.shape[0])
         self.output_distribution = trial.suggest_categorical(self.name + 'output_distribution', ['uniform', 'normal'])
 
     def generate_hyperparameters(self, space_gen, depending_node=None):

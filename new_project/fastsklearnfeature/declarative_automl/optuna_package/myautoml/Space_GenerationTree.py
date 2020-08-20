@@ -1,60 +1,7 @@
-import optuna
-from sklearn.pipeline import Pipeline
-import pickle
-import time
-import sklearn.model_selection
-import sklearn.datasets
-import sklearn.metrics
-from sklearn.metrics import make_scorer
-from sklearn.metrics import roc_auc_score
-import openml
-from sklearn.model_selection import cross_val_score
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.impute import SimpleImputer
-import sys, inspect
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers import *
-import fastsklearnfeature.declarative_automl.optuna_package.classifiers as optuna_classifiers
-from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing import *
-import fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing as optuna_preprocessor
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling import *
-import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling as optuna_scaler
-
-
-from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import categorical
-from fastsklearnfeature.declarative_automl.optuna_package.IdentityOptuna import IdentityOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers.RandomForestClassifierOptuna import RandomForestClassifierOptuna
-from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.compose import ColumnTransformer
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.OneHotEncoderOptuna import OneHotEncoderOptuna
-
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import PassiveAggressiveClassifier
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from func_timeout import func_timeout, FunctionTimedOut, func_set_timeout
-import threading
-from sklearn.model_selection import StratifiedKFold
-import pandas as pd
+import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_space as myspace
 
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.MyAutoMLTreeSpace import MyAutoMLSpace
-
-def get_all_classes(my_module, addNone=False):
-    clsmembers = inspect.getmembers(my_module, inspect.ismodule)
-    class_list = []
-    for member in clsmembers:
-        member_classes = inspect.getmembers(member[1])
-        for mclass in member_classes:
-            if 'Optuna' in mclass[0]:
-                class_list.append(mclass[1]())
-
-    if addNone:
-        class_list.append(IdentityOptuna())
-
-    return class_list
+from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
 
 
 
@@ -62,9 +9,10 @@ def get_all_classes(my_module, addNone=False):
 
 class SpaceGenerator:
     def __init__(self):
-        self.classifier_list = get_all_classes(optuna_classifiers)
-        self.preprocessor_list = get_all_classes(optuna_preprocessor, addNone=True)
-        self.scaling_list = get_all_classes(optuna_scaler, addNone=True)
+        self.classifier_list = myspace.classifier_list
+        self.preprocessor_list = myspace.preprocessor_list
+        self.scaling_list = myspace.scaling_list
+        self.categorical_encoding_list = myspace.categorical_encoding_list
 
         self.space = MyAutoMLSpace()
 
@@ -75,17 +23,17 @@ class SpaceGenerator:
 
         self.space.generate_cat('balanced', [True, False], True)
 
-        category_preprocessor = self.space.generate_cat('preprocessor', self.preprocessor_list, IdentityOptuna())
+        category_preprocessor = self.space.generate_cat('preprocessor', self.preprocessor_list, self.preprocessor_list[0])
         for p_i in range(len(self.preprocessor_list)):
             preprocessor = self.preprocessor_list[p_i]
             preprocessor.generate_hyperparameters(self.space, category_preprocessor[p_i])
 
-        category_classifier = self.space.generate_cat('classifier', self.classifier_list, RandomForestClassifierOptuna())
+        category_classifier = self.space.generate_cat('classifier', self.classifier_list, self.classifier_list[0])
         for c_i in range(len(self.classifier_list)):
             classifier = self.classifier_list[c_i]
             classifier.generate_hyperparameters(self.space, category_classifier[c_i])
 
-        category_scaler = self.space.generate_cat('scaler', self.scaling_list, IdentityOptuna())
+        category_scaler = self.space.generate_cat('scaler', self.scaling_list, self.scaling_list[0])
         for s_i in range(len(self.scaling_list)):
             scaler = self.scaling_list[s_i]
             scaler.generate_hyperparameters(self.space, category_scaler[s_i])
@@ -93,8 +41,10 @@ class SpaceGenerator:
         imputer = SimpleImputerOptuna()
         imputer.generate_hyperparameters(self.space)
 
-        categorical_transformer = OneHotEncoderOptuna()
-        categorical_transformer.generate_hyperparameters(self.space)
+        category_categorical_encoding = self.space.generate_cat('categorical_encoding', self.categorical_encoding_list, self.categorical_encoding_list[0])
+        for cat_i in range(len(self.categorical_encoding_list)):
+            categorical_encoding = self.categorical_encoding_list[cat_i]
+            categorical_encoding.generate_hyperparameters(self.space, category_categorical_encoding[cat_i])
 
 
         return self.space

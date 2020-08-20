@@ -2,6 +2,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
 class QuadraticDiscriminantAnalysisOptuna(QuadraticDiscriminantAnalysis):
+
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('QuadraticDiscriminantAnalysis_')
         #self.classes_ = np.unique(y.astype(int))

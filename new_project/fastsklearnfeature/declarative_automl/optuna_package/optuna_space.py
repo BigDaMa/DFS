@@ -2,25 +2,15 @@ import optuna
 from sklearn.pipeline import Pipeline
 import pickle
 import time
-import sklearn.model_selection
-import sklearn.datasets
 import sklearn.metrics
 from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
 import openml
 from sklearn.model_selection import cross_val_score
 import numpy as np
-import matplotlib.pyplot as plt
-import os
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.impute import SimpleImputer
-import sys, inspect
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers import *
+import inspect
 import fastsklearnfeature.declarative_automl.optuna_package.classifiers as optuna_classifiers
-from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing import *
 import fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing as optuna_preprocessor
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling import *
 import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling as optuna_scaler
 
 
@@ -29,12 +19,11 @@ from fastsklearnfeature.declarative_automl.optuna_package.IdentityOptuna import 
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.compose import ColumnTransformer
 from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.SimpleImputerOptuna import SimpleImputerOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.OneHotEncoderOptuna import OneHotEncoderOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.OneHotEncoderOptuna import OneHotEncoderOptuna
 
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import PassiveAggressiveClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-from func_timeout import func_timeout, FunctionTimedOut, func_set_timeout
 import threading
 
 def get_all_classes(my_module, addNone=False):

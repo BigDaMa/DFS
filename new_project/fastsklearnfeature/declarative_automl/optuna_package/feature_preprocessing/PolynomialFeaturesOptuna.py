@@ -9,6 +9,8 @@ class PolynomialFeaturesOptuna(PolynomialFeatures):
         self.interaction_only = trial.suggest_categorical(self.name + "interaction_only", [False, True])
         self.include_bias = trial.suggest_categorical(self.name + "include_bias", [True, False])
 
+        self.sparse = False
+
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('PolynomialFeatures_')
 
