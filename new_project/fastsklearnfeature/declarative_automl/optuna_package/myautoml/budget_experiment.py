@@ -10,6 +10,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.Space_Generat
 
 auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
+#dataset = openml.datasets.get_dataset(40536)
 dataset = openml.datasets.get_dataset(31)
 #dataset = openml.datasets.get_dataset(1590)
 
@@ -19,7 +20,7 @@ X, y, categorical_indicator, attribute_names = dataset.get_data(
 )
 
 
-X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
+X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1, stratify=y, train_size=0.6)
 
 gen = SpaceGenerator()
 space = gen.generate_params()
@@ -39,7 +40,7 @@ test_scores = []
 #add Caruana ensemble with replacement # save pipelines to disk
 
 for i in range(1, 10):
-    search = MyAutoML(cv=10, number_of_cvs=1, n_jobs=1, time_search_budget=1*60, space=space, study=my_study, main_memory_budget_gb=4)
+    search = MyAutoML(cv=10, number_of_cvs=1, n_jobs=2, time_search_budget=2*60, space=space, study=my_study, main_memory_budget_gb=4)
     best_result = search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
     my_study = search.study
 

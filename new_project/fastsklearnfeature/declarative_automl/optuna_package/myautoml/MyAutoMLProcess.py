@@ -5,13 +5,6 @@ from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_auc_score
 import openml
 import numpy as np
-import inspect
-import fastsklearnfeature.declarative_automl.optuna_package.classifiers as optuna_classifiers
-import fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing as optuna_preprocessor
-import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling as optuna_scaler
-import fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding as optuna_categorical_encoding
-
-from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.MyIdentity import IdentityTransformation
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.CategoricalMissingTransformer import CategoricalMissingTransformer
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.compose import ColumnTransformer
@@ -20,34 +13,18 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.QuadraticD
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.PassiveAggressiveOptuna import PassiveAggressiveOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.KNeighborsClassifierOptuna import KNeighborsClassifierOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.HistGradientBoostingClassifierOptuna import HistGradientBoostingClassifierOptuna
-
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.Space_GenerationTree import SpaceGenerator
-
 from sklearn.model_selection import StratifiedKFold
 import pandas as pd
 import time
 import resource
 import copy
-
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.automl_parameters as mp_global
-
 import multiprocessing
-
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.scaling.QuantileTransformerOptuna import QuantileTransformerOptuna
-
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.FrequencyEncodingOptuna import FrequencyEncodingOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.categorical_encoding.OneHotEncoderOptuna import OneHotEncoderOptuna
-
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers.RandomForestClassifierOptuna import RandomForestClassifierOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers.AdaBoostClassifierOptuna import AdaBoostClassifierOptuna
-from fastsklearnfeature.declarative_automl.optuna_package.classifiers.BernoulliNBOptuna import BernoulliNBOptuna
+from pathlib import Path
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_space as myspace
-
-
-
-def signal_handler(sig, frame):
-    print('got a signal')
-    raise Exception('Signal arrived')
+import pickle
+import os
 
 class TimeException(Exception):
     def __init__(self, message="Time is over!"):
@@ -55,7 +32,7 @@ class TimeException(Exception):
         super().__init__(self.message)
 
 
-def evaluatePipeline(key,return_dict):
+def evaluatePipeline(key, return_dict):
     try:
         balanced = mp_global.mp_store[key]['balanced']
         p = mp_global.mp_store[key]['p']
@@ -78,6 +55,10 @@ def evaluatePipeline(key,return_dict):
         training_time = time.time() - start_training
 
         return_dict[key + 'pipeline'] = copy.deepcopy(p)
+        #pickle instead otherwise get a segmentation error
+
+        with open('/tmp/my_pipeline' + str(key) + '.p', "wb") as pickle_pipeline_file:
+            pickle.dump(p, pickle_pipeline_file)
 
 
 
@@ -189,7 +170,7 @@ class MyAutoML:
                 my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
                               ('classifier', classifier)])
 
-                key = 'My_processs' + str(time.time()) + " ## " + str(np.random.randint(0,1000))
+                key = 'My_processs' + str(time.time()) + "##" + str(np.random.randint(0,1000))
 
                 mp_global.mp_store[key] = {}
 
@@ -233,9 +214,15 @@ class MyAutoML:
 
                 try:
                     if self.study.best_value < result:
-                        trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
+                        if Path('/tmp/my_pipeline' + str(key) + '.p').is_file():
+                            with open('/tmp/my_pipeline' + str(key) + '.p', "rb") as pickle_pipeline_file:
+                                trial.set_user_attr('pipeline', pickle.load(pickle_pipeline_file))
+                            os.remove('/tmp/my_pipeline' + str(key) + '.p')
                 except:
-                    trial.set_user_attr('pipeline', return_dict[key + 'pipeline'])
+                    if Path('/tmp/my_pipeline' + str(key) + '.p').is_file():
+                        with open('/tmp/my_pipeline' + str(key) + '.p', "rb") as pickle_pipeline_file:
+                            trial.set_user_attr('pipeline', pickle.load(pickle_pipeline_file))
+                        os.remove('/tmp/my_pipeline' + str(key) + '.p')
 
                 return result
             except Exception as e:
@@ -291,7 +278,7 @@ if __name__ == "__main__":
     print(X)
 
 
-    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
+    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1, stratify=y, train_size=0.6)
 
     gen = SpaceGenerator()
     space = gen.generate_params()

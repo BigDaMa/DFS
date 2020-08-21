@@ -50,6 +50,9 @@ classifier_list = [RandomForestClassifierOptuna(),
                                 SGDClassifierOptuna(),
                                 SVCOptuna()
                                 ]
+
+#classifier_list = [RandomForestClassifierOptuna()]
+
 preprocessor_list = [IdentityTransformation(),
                                   FastICAOptuna(),
                                   FeatureAgglomerationOptuna(),
@@ -61,16 +64,17 @@ preprocessor_list = [IdentityTransformation(),
                                   RBFSamplerOptuna(),
                                   SelectPercentileOptuna(),
                                   TruncatedSVDOptuna()]
-'''
+
+#preprocessor_list = [IdentityTransformation()]
+
 scaling_list = [IdentityTransformation(),
                              MinMaxScalerOptuna(),
                              NormalizerOptuna(),
                              QuantileTransformerOptuna(),
                              RobustScalerOptuna(),
                              StandardScalerOptuna()]
-'''
 
-scaling_list = [QuantileTransformerOptuna()]
 
 categorical_encoding_list = [OneHotEncoderOptuna(),
                                           FrequencyEncodingOptuna()]
+
