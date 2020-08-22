@@ -25,6 +25,7 @@ from pathlib import Path
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_space as myspace
 import pickle
 import os
+import glob
 
 from dataclasses import dataclass
 
@@ -64,11 +65,7 @@ def evaluatePipeline(key, return_dict):
             p.fit(X, y)
         training_time = time.time() - start_training
 
-        return_dict[key + 'pipeline'] = copy.deepcopy(p)
-        #pickle instead otherwise get a segmentation error
-
-        with open('/tmp/my_pipeline' + str(key) + '.p', "wb") as pickle_pipeline_file:
-            pickle.dump(p, pickle_pipeline_file)
+        trained_pipeline = copy.deepcopy(p)
 
 
 
@@ -84,6 +81,11 @@ def evaluatePipeline(key, return_dict):
                 scores.append(scorer(p, X[test_ids, :], pd.DataFrame(y[test_ids])))
 
         return_dict[key + 'result'] = np.mean(scores)
+
+        if mp_global.mp_store[key]['study_best_value'] < return_dict[key + 'result']:
+            with open('/tmp/my_pipeline' + str(key) + '.p', "wb") as pickle_pipeline_file:
+                pickle.dump(trained_pipeline, pickle_pipeline_file)
+
     except Exception as e:
         print(p)
         print(str(e) + '\n\n')
@@ -111,6 +113,8 @@ class MyAutoML:
         self.space = space
         self.study = study
         self.main_memory_budget_gb = main_memory_budget_gb
+
+        self.random_key = str(time.time()) + '-' + str(np.random.randint(0,1000))
 
         #print("number of hyperparameters: " + str(len(self.space.parameters_used)))
 
@@ -180,7 +184,7 @@ class MyAutoML:
                 my_pipeline = Pipeline([('data_preprocessing', data_preprocessor), ('preprocessing', preprocessor),
                               ('classifier', classifier)])
 
-                key = 'My_processs' + str(time.time()) + "##" + str(np.random.randint(0,1000))
+                key = 'My_automl' + self.random_key + 'My_process' + str(time.time()) + "##" + str(np.random.randint(0,1000))
 
                 mp_global.mp_store[key] = {}
 
@@ -192,6 +196,11 @@ class MyAutoML:
                 mp_global.mp_store[key]['X'] = X
                 mp_global.mp_store[key]['y'] = y
                 mp_global.mp_store[key]['main_memory_budget_gb'] = self.main_memory_budget_gb
+
+                try:
+                    mp_global.mp_store[key]['study_best_value'] = self.study.best_value
+                except ValueError:
+                    mp_global.mp_store[key]['study_best_value'] = -np.inf
 
                 already_used_time = time.time() - self.start_fitting
 
@@ -246,6 +255,11 @@ class MyAutoML:
                             n_jobs=self.n_jobs,
                             catch=(TimeException,),
                             callbacks=[StopWhenOptimumReachedCallback(1.0)]) # todo: check for scorer to know what is the optimum
+
+        #clean up all remaining pipelines
+        for my_path in glob.glob('/tmp/my_pipeline' + 'My_automl' + self.random_key + 'My_process' + '*.p'):
+            os.remove(my_path)
+
         return self.study.best_value
 
 
@@ -267,7 +281,7 @@ if __name__ == "__main__":
     print(X)
 
 
-    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1, stratify=y, train_size=0.6)
+    X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=42, stratify=y, train_size=0.6)
 
     gen = SpaceGenerator()
     space = gen.generate_params()
@@ -277,7 +291,7 @@ if __name__ == "__main__":
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=5, n_jobs=1, time_search_budget=500, space=space)
+    search = MyAutoML(cv=10, n_jobs=1, time_search_budget=120, space=space)
 
     begin = time.time()
 
