@@ -293,7 +293,7 @@ while True:
 
     #random sampling 10 iterations
     study_uncertainty = optuna.create_study(direction='maximize')
-    study_uncertainty.optimize(optimize_uncertainty, n_trials=100, n_jobs=4)
+    study_uncertainty.optimize(optimize_uncertainty, n_trials=100, n_jobs=1) #todo: maybe wrap it into a process so it wont be killed by out of memory
 
     X_meta = np.vstack((X_meta, study_uncertainty.best_trial.user_attrs['features']))
     y_meta.append(run_AutoML(study_uncertainty.best_trial))
@@ -308,11 +308,12 @@ while True:
                                              y_test=y_test_hold,
                                              categorical_indicator=categorical_indicator_hold))
 
-
+    plt.plot(range(len(pruned_accuray_results)), pruned_accuray_results)
     if verbose:
-        plt.plot(range(len(pruned_accuray_results)), pruned_accuray_results)
         plt.show()
     else:
+        plt.savefig('/tmp/example_performance.png')
+        plt.clf()
         print("Results on check")
         print(pruned_accuray_results)
 
@@ -321,7 +322,7 @@ while True:
     print('Shape: ' + str(X_meta.shape))
 
     import operator
-    def plot_most_important_features(rf_random, names_features, title='importance'):
+    def plot_most_important_features(rf_random, names_features, title='importance', verbose=True):
         importances = {}
         for name_i in range(len(names_features)):
             importances[names_features[name_i]] = rf_random.feature_importances_[name_i]
@@ -348,8 +349,12 @@ while True:
         plt.margins(0.2)
         # Tweak spacing to prevent clipping of tick-labels
         plt.subplots_adjust(bottom=0.6)
-        plt.show()
+
+        if verbose:
+            plt.show()
+        else:
+            plt.savefig('/tmp/feature_importance.png')
+            plt.clf()
 
 
-    if verbose:
-        plot_most_important_features(model, feature_names)
+    plot_most_important_features(model, feature_names, verbose=verbose)

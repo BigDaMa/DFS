@@ -26,6 +26,16 @@ import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_spac
 import pickle
 import os
 
+from dataclasses import dataclass
+
+@dataclass
+class StopWhenOptimumReachedCallback:
+    optimum: float
+
+    def __call__(self, study, trial):
+        if study.best_value == self.optimum:
+            study.stop()
+
 class TimeException(Exception):
     def __init__(self, message="Time is over!"):
         self.message = message
@@ -195,7 +205,6 @@ class MyAutoML:
                 return_dict = manager.dict()
                 my_process = multiprocessing.Process(target=evaluatePipeline, name='start'+key, args=(key, return_dict,))
                 my_process.start()
-
                 my_process.join(int(remaining_time))
 
                 # If thread is active
@@ -212,17 +221,19 @@ class MyAutoML:
 
                 trial.set_user_attr('total_time', time.time() - start_total)
 
-                try:
-                    if self.study.best_value < result:
-                        if Path('/tmp/my_pipeline' + str(key) + '.p').is_file():
-                            with open('/tmp/my_pipeline' + str(key) + '.p', "rb") as pickle_pipeline_file:
+                if result > 0:
+                    pickle_file_name = '/tmp/my_pipeline' + str(key) + '.p'
+                    try:
+                        if os.path.exists(pickle_file_name):
+                            if self.study.best_value < result:
+                                with open(pickle_file_name, "rb") as pickle_pipeline_file:
+                                    trial.set_user_attr('pipeline', pickle.load(pickle_pipeline_file))
+                            os.remove(pickle_file_name)
+                    except:
+                        if os.path.exists(pickle_file_name):
+                            with open(pickle_file_name, "rb") as pickle_pipeline_file:
                                 trial.set_user_attr('pipeline', pickle.load(pickle_pipeline_file))
-                            os.remove('/tmp/my_pipeline' + str(key) + '.p')
-                except:
-                    if Path('/tmp/my_pipeline' + str(key) + '.p').is_file():
-                        with open('/tmp/my_pipeline' + str(key) + '.p', "rb") as pickle_pipeline_file:
-                            trial.set_user_attr('pipeline', pickle.load(pickle_pipeline_file))
-                        os.remove('/tmp/my_pipeline' + str(key) + '.p')
+                            os.remove(pickle_file_name)
 
                 return result
             except Exception as e:
@@ -231,7 +242,10 @@ class MyAutoML:
 
         if type(self.study) == type(None):
             self.study = optuna.create_study(direction='maximize')
-        self.study.optimize(objective1, timeout=self.time_search_budget, n_jobs=self.n_jobs, catch=(TimeException,))
+        self.study.optimize(objective1, timeout=self.time_search_budget,
+                            n_jobs=self.n_jobs,
+                            catch=(TimeException,),
+                            callbacks=[StopWhenOptimumReachedCallback(1.0)]) # todo: check for scorer to know what is the optimum
         return self.study.best_value
 
 
@@ -239,31 +253,6 @@ class MyAutoML:
 
 if __name__ == "__main__":
     auc = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
-
-    '''
-    my_openml_datasets = [  # 31, #German Credit # yes
-        # 1464,  # Blood Transfusion
-        # 333,  # Monks Problem 1
-        334,  # Monks Problem 2
-        50,  # TicTacToe
-        # 1504,  # steel plates fault #yes
-        # 3,  # kr-vs-kp #works
-        # 1494,  # qsar-biodeg #yes
-        # 1510,  # wdbc #yes
-        # 1489,  # phoneme #yes
-        1590 #adult #yes
-        1067, #kc1
-        37, #diabetes
-        1487, #ozon
-        1479, #hill valley
-        1063, # kc2
-        1471, #eeg
-        1467, #climatemodel
-        44, #spambase
-        1461, #bankmarketing
-        4135, #amazon
-    ]
-    '''
 
     dataset = openml.datasets.get_dataset(31)
 
