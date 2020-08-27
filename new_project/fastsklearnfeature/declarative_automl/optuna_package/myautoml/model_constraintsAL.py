@@ -16,24 +16,27 @@ from anytree import RenderTree
 from sklearn.ensemble import RandomForestRegressor
 from optuna.samplers.random import RandomSampler
 import matplotlib.pyplot as plt
+import pickle
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import plot_most_important_features
+
+metafeature_names_new = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilityMean', 'ClassProbabilityMin', 'ClassProbabilitySTD',
+     'DatasetRatio', 'InverseDatasetRatio', 'LogDatasetRatio', 'LogInverseDatasetRatio', 'LogNumberOfFeatures',
+     'LogNumberOfInstances', 'NumberOfCategoricalFeatures', 'NumberOfClasses', 'NumberOfFeatures',
+     'NumberOfFeaturesWithMissingValues', 'NumberOfInstances', 'NumberOfInstancesWithMissingValues',
+     'NumberOfMissingValues', 'NumberOfNumericFeatures', 'PercentageOfFeaturesWithMissingValues',
+     'PercentageOfInstancesWithMissingValues', 'PercentageOfMissingValues', 'RatioNominalToNumerical',
+     'RatioNumericalToNominal', 'SymbolsMax', 'SymbolsMean', 'SymbolsMin', 'SymbolsSTD', 'SymbolsSum']
 
 def data2features(X_train, y_train, categorical_indicator):
     metafeatures = calculate_all_metafeatures_with_labels(X_train, y_train, categorical=categorical_indicator,
                                                           dataset_name='data')
 
-    metafeature_names = list(metafeatures.keys())
-    metafeature_names.sort()
-
-    metafeature_names_new = []
-    for n_i in range(len(metafeature_names)):
-        if metafeatures[metafeature_names[n_i]].type_ == "METAFEATURE":
-            metafeature_names_new.append(metafeature_names[n_i])
-    metafeature_names_new.sort()
-    #print(metafeature_names_new)
-
     metafeature_values = np.zeros((1, len(metafeature_names_new)))
     for m_i in range(len(metafeature_names_new)):
-        metafeature_values[0, m_i] = metafeatures[metafeature_names_new[m_i]].value
+        try:
+            metafeature_values[0, m_i] = metafeatures[metafeature_names_new[m_i]].value
+        except:
+            pass
     return metafeature_values
 
 
@@ -84,10 +87,6 @@ my_list = list(mspace.name2node.keys())
 my_list.sort()
 
 my_list_constraints = ['global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint', 'global_cv', 'global_number_cv']
-
-
-metafeaturenn = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilityMean', 'ClassProbabilityMin', 'ClassProbabilitySTD', 'DatasetRatio', 'InverseDatasetRatio', 'LogDatasetRatio', 'LogInverseDatasetRatio', 'LogNumberOfFeatures', 'LogNumberOfInstances', 'NumberOfCategoricalFeatures', 'NumberOfClasses', 'NumberOfFeatures', 'NumberOfFeaturesWithMissingValues', 'NumberOfInstances', 'NumberOfInstancesWithMissingValues', 'NumberOfMissingValues', 'NumberOfNumericFeatures', 'PercentageOfFeaturesWithMissingValues', 'PercentageOfInstancesWithMissingValues', 'PercentageOfMissingValues', 'RatioNominalToNumerical', 'RatioNumericalToNominal', 'SymbolsMax', 'SymbolsMean', 'SymbolsMin', 'SymbolsSTD', 'SymbolsSum']
-
 
 
 def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
@@ -288,7 +287,7 @@ print(X_meta.shape)
 
 feature_names = copy.deepcopy(my_list)
 feature_names.extend(my_list_constraints)
-feature_names.extend(metafeaturenn)
+feature_names.extend(metafeature_names_new)
 
 
 pruned_accuray_results = []
@@ -300,11 +299,14 @@ while True:
     model = RandomForestRegressor()
     model.fit(X_meta, y_meta)
 
+    with open('/tmp/my_great_model.p', "wb") as pickle_model_file:
+        pickle.dump(model, pickle_model_file)
+
     #random sampling 10 iterations
     study_uncertainty = optuna.create_study(direction='maximize')
     study_uncertainty.optimize(optimize_uncertainty, n_trials=100, n_jobs=1) #todo: maybe wrap it into a process so it wont be killed by out of memory
 
-    X_meta = np.vstack((X_meta, study_uncertainty.best_trial.user_attrs['features']))
+    X_meta = np.vstack((X_meta, study_uncertainty.best_trial.user_attrs['features'])) #todo: add features for all better validation scores
     y_meta.append(run_AutoML(study_uncertainty.best_trial))
 
     study_prune = optuna.create_study(direction='maximize')
@@ -329,41 +331,5 @@ while True:
 
 
     print('Shape: ' + str(X_meta.shape))
-
-    import operator
-    def plot_most_important_features(rf_random, names_features, title='importance', verbose=True):
-        importances = {}
-        for name_i in range(len(names_features)):
-            importances[names_features[name_i]] = rf_random.feature_importances_[name_i]
-
-        sorted_x = sorted(importances.items(), key=operator.itemgetter(1), reverse=True)
-
-        labels = []
-        score = []
-        t = 0
-        for key, value in sorted_x:
-            labels.append(key)
-            score.append(value)
-            t += 1
-            if t == 25:
-                break
-
-        ind = np.arange(len(score))
-        plt.bar(ind, score, align='center', alpha=0.5)
-        #plt.yticks(ind, labels)
-
-        plt.xticks(ind, labels, rotation='vertical')
-
-        # Pad margins so that markers don't get clipped by the axes
-        plt.margins(0.2)
-        # Tweak spacing to prevent clipping of tick-labels
-        plt.subplots_adjust(bottom=0.6)
-
-        if verbose:
-            plt.show()
-        else:
-            plt.savefig('/tmp/feature_importance.png')
-            plt.clf()
-
 
     plot_most_important_features(model, feature_names, verbose=verbose)

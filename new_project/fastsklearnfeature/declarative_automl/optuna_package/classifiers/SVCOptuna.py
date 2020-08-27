@@ -26,6 +26,6 @@ class SVCOptuna(SVC):
 
         space_gen.generate_number(self.name + "degree", 3, depending_node=category_kernel[1])
         space_gen.generate_number(self.name + "gamma", 0.1, depending_node=depending_node)
-        space_gen.generate_number(self.name + "coef0", 0, depending_node=depending_node) #fix if we change to graph
+        space_gen.generate_number(self.name + "coef0", 0, depending_node=depending_node) #todo: fix if we change to graph
         space_gen.generate_cat(self.name + "shrinking", [True, False], True, depending_node=depending_node)
         space_gen.generate_number(self.name + "tol", 1e-3, depending_node=depending_node)

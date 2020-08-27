@@ -21,7 +21,6 @@ import resource
 import copy
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.automl_parameters as mp_global
 import multiprocessing
-from pathlib import Path
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_space as myspace
 import pickle
 import os
@@ -95,7 +94,17 @@ def evaluatePipeline(key, return_dict):
 
 
 class MyAutoML:
-    def __init__(self, cv=5, number_of_cvs=1, evaluation_budget=np.inf, time_search_budget=10*60, n_jobs=1, space=None, study=None, main_memory_budget_gb=4):
+    def __init__(self, cv=5,
+                 number_of_cvs=1,
+                 evaluation_budget=np.inf,
+                 time_search_budget=10*60,
+                 n_jobs=1,
+                 space=None,
+                 study=None,
+                 main_memory_budget_gb=4,
+                 sample_fraction=1.0,
+
+                 ):
         self.cv = cv
         self.time_search_budget = time_search_budget
         self.n_jobs = n_jobs
@@ -113,12 +122,9 @@ class MyAutoML:
         self.space = space
         self.study = study
         self.main_memory_budget_gb = main_memory_budget_gb
+        self.sample_fraction = sample_fraction
 
         self.random_key = str(time.time()) + '-' + str(np.random.randint(0,1000))
-
-        #print("number of hyperparameters: " + str(len(self.space.parameters_used)))
-
-        #signal.signal(signal.SIGSEGV, signal_handler)
 
 
     def get_best_pipeline(self):
@@ -133,8 +139,14 @@ class MyAutoML:
         return best_pipeline.predict(X)
 
 
-    def fit(self, X, y, sample_weight=None, categorical_indicator=None, scorer=None):
+    def fit(self, X_new, y_new, sample_weight=None, categorical_indicator=None, scorer=None):
         self.start_fitting = time.time()
+
+        if self.sample_fraction < 1.0:
+            X, _, y, _ = sklearn.model_selection.train_test_split(X_new, y_new, random_state=42, stratify=y_new, train_size=self.sample_fraction)
+        else:
+            X = X_new
+            y = y_new
 
         def objective1(trial):
             start_total = time.time()
@@ -228,7 +240,8 @@ class MyAutoML:
                 if key + 'result' in return_dict:
                     result = return_dict[key + 'result']
 
-                trial.set_user_attr('total_time', time.time() - start_total)
+                trial.set_user_attr('evaluation_time', time.time() - start_total)
+                trial.set_user_attr('time_since_start', time.time() - self.start_fitting)
 
                 if result > 0:
                     pickle_file_name = '/tmp/my_pipeline' + str(key) + '.p'
@@ -268,7 +281,7 @@ class MyAutoML:
 if __name__ == "__main__":
     auc = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
-    dataset = openml.datasets.get_dataset(31)
+    dataset = openml.datasets.get_dataset(1114)
 
     #dataset = openml.datasets.get_dataset(31)
     #dataset = openml.datasets.get_dataset(1590)
@@ -291,11 +304,17 @@ if __name__ == "__main__":
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=10, n_jobs=1, time_search_budget=120, space=space)
+    search = MyAutoML(cv=2, n_jobs=1, time_search_budget=60*30, space=space)
 
     begin = time.time()
 
     best_result = search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
+
+    from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import show_progress
+    show_progress(search, X_test, y_test, auc)
+
+
+
 
     test_score = auc(search.get_best_pipeline(), X_test, y_test)
 

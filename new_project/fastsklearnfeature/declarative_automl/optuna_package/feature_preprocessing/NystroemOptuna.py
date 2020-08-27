@@ -8,17 +8,21 @@ class NystroemOptuna(Nystroem):
         self.kernel = trial.suggest_categorical(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine', 'chi2'])
         self.n_components = trial.suggest_int(self.name + "n_components", 50, len(X), log=True)
         self.gamma = trial.suggest_loguniform(self.name + "gamma", 3.0517578125e-05, 8)
-        self.degree = trial.suggest_int(self.name + 'degree', 2, 5, log=False)
-        self.coef0 = trial.suggest_uniform(self.name + "coef0", -1, 1)
+
+        if self.kernel == 'poly':
+            self.degree = trial.suggest_int(self.name + 'degree', 2, 5, log=False)
+
+        if self.kernel == "poly" or self.kernel == "sigmoid":
+            self.coef0 = trial.suggest_uniform(self.name + "coef0", -1, 1)
 
         self.sparse = False
 
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('Nystroem_')
 
-        space_gen.generate_cat(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine', 'chi2'], 'rbf', depending_node=depending_node)
+        category_kernel = space_gen.generate_cat(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine', 'chi2'], 'rbf', depending_node=depending_node)
         space_gen.generate_number(self.name + "n_components", 100, depending_node=depending_node)
         space_gen.generate_number(self.name + "gamma", 0.1, depending_node=depending_node)
-        space_gen.generate_number(self.name + 'degree', 3, depending_node=depending_node)
-        space_gen.generate_number(self.name + "coef0", 0, depending_node=depending_node)
+        space_gen.generate_number(self.name + 'degree', 3, depending_node=category_kernel[0])
+        space_gen.generate_number(self.name + "coef0", 0, depending_node=depending_node) # todo: fix once it is a graph
 
