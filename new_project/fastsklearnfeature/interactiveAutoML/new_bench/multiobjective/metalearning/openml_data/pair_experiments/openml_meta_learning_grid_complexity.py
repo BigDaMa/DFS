@@ -108,17 +108,6 @@ for nruns in range(5):
 	mp_global.sensitive_ids.append(sensitive_ids)
 	mp_global.cv_splitter.append(cv_splitter)
 
-	mp_global.X_train = X_train
-	mp_global.X_validation = X_validation
-	mp_global.X_train_val = X_train_val
-	mp_global.X_test = X_test
-	mp_global.y_train = y_train
-	mp_global.y_validation = y_validation
-	mp_global.y_train_val = y_train_val
-	mp_global.y_test = y_test
-	mp_global.names = names
-	mp_global.sensitive_ids = sensitive_ids
-
 	mp_global.accuracy_scorer = make_scorer(f1_score)
 	mp_global.avoid_robustness = False
 
