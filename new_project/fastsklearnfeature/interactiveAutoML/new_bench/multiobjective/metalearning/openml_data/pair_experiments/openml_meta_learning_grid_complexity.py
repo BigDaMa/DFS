@@ -1,6 +1,5 @@
 import copy
 from sklearn.metrics import make_scorer
-from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
 import pickle
 from sklearn.model_selection import StratifiedKFold
@@ -33,6 +32,9 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.backward_floating_selection import backward_floating_selection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.recursive_feature_elimination import recursive_feature_elimination
 import os
+
+from sklearn.metrics import make_scorer
+from sklearn.metrics import f1_score
 
 #static constraints: fairness, number of features (absolute and relative), robustness, privacy, accuracy
 
@@ -78,8 +80,6 @@ number_runs = 1
 
 cv_splitter = StratifiedKFold(5, random_state=42)
 
-auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
-
 mp_global.X_train = []
 mp_global.X_validation = []
 mp_global.X_train_val = []
@@ -107,6 +107,21 @@ for nruns in range(5):
 	mp_global.names.append(names)
 	mp_global.sensitive_ids.append(sensitive_ids)
 	mp_global.cv_splitter.append(cv_splitter)
+
+	mp_global.X_train = X_train
+	mp_global.X_validation = X_validation
+	mp_global.X_train_val = X_train_val
+	mp_global.X_test = X_test
+	mp_global.y_train = y_train
+	mp_global.y_validation = y_validation
+	mp_global.y_train_val = y_train_val
+	mp_global.y_test = y_test
+	mp_global.names = names
+	mp_global.sensitive_ids = sensitive_ids
+
+	mp_global.accuracy_scorer = make_scorer(f1_score)
+	mp_global.avoid_robustness = False
+
 
 runs_per_dataset = 0
 l_acc = 0.40
@@ -209,7 +224,8 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 											   min_robustness=mp_global.min_robustness,
 											   max_number_features=mp_global.max_number_features,
 											   max_search_time=mp_global.max_search_time,
-											   log_file=log_file)
+											   log_file=log_file,
+											   accuracy_scorer=mp_global.accuracy_scorer)
 
 
 				result['strategy_id'] = conf['strategy_id']
