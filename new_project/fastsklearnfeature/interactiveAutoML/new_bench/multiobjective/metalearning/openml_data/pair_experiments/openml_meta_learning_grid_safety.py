@@ -40,6 +40,9 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.bench_utils i
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 
+from sklearn.metrics import make_scorer
+from sklearn.metrics import f1_score
+
 def load_pickle(fname):
 	data = []
 	with open(fname, "rb") as f:
@@ -108,9 +111,12 @@ for nruns in range(5):
 	mp_global.sensitive_ids.append(sensitive_ids)
 	mp_global.cv_splitter.append(cv_splitter)
 
+	mp_global.accuracy_scorer = make_scorer(f1_score)
+	mp_global.avoid_robustness = False
+
 runs_per_dataset = 0
-l_acc = 0.70
-u_acc = 0.90
+l_acc = 0.40
+u_acc = 0.70
 l_safety = 0.5
 u_safety = 1.0
 
@@ -210,7 +216,8 @@ for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
 											   min_robustness=mp_global.min_robustness,
 											   max_number_features=mp_global.max_number_features,
 											   max_search_time=mp_global.max_search_time,
-											   log_file=log_file)
+											   log_file=log_file,
+											   accuracy_scorer=mp_global.accuracy_scorer)
 
 
 				result['strategy_id'] = conf['strategy_id']
