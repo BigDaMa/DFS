@@ -121,8 +121,8 @@ l_safety = 0.5
 u_safety = 1.0
 
 results_heatmap = {}
-for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
-	for min_robustness in np.arange(l_safety, u_safety + ((u_safety - l_safety) / 10.0), (u_safety - l_safety) / 10.0):
+for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
+	for min_robustness in [0.5,  0.55, 0.6,  0.65, 0.7,  0.75, 0.8,  0.85, 0.9,  0.95, 1.0]:
 
 		success_per_strategy = np.zeros(18)
 		time_per_strategy = np.zeros(18)

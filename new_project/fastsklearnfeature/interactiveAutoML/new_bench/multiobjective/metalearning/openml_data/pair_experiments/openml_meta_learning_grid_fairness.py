@@ -125,9 +125,8 @@ u_fair = 0.91
 print(list(np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0)))
 
 results_heatmap = {}
-#for min_accuracy in np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0):
-for min_accuracy in [0.8400000000000001, 0.8600000000000001, 0.8800000000000001]:
-	for min_fairness in np.arange(l_fair, u_fair, (u_fair - l_fair) / 10.0):
+for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
+	for min_fairness in [0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.94, 0.97, 1.0]:
 
 		success_per_strategy = np.zeros(18)
 		time_per_strategy = np.zeros(18)
