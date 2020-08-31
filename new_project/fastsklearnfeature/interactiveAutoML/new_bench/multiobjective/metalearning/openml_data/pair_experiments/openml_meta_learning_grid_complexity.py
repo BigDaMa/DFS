@@ -118,7 +118,8 @@ u_acc = 0.70
 
 
 results_heatmap = {}
-for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
+#for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
+for min_accuracy in [0.65, 0.68, 0.71, 0.74, 0.77]:
 	for max_number_features in [0.1, 0.09, 0.08, 0.07, 0.06, 0.05, 0.04, 0.03, 0.02, 0.01]:
 
 		success_per_strategy = np.zeros(18)
