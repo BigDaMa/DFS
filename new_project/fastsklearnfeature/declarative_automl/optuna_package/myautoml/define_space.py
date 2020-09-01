@@ -55,21 +55,24 @@ classifier_list = [RandomForestClassifierOptuna(),
 
 #classifier_list = [RandomForestClassifierOptuna()]
 
-preprocessor_list = [IdentityTransformation(),
+preprocessor_list = [             IdentityTransformation(),
+
+                                  #Reduction
                                   FastICAOptuna(),
                                   FeatureAgglomerationOptuna(),
                                   KernelPCAOptuna(),
-                                  NystroemOptuna(),
                                   PCAOptuna(),
+                                  SelectKBestOptuna(),
+                                  TruncatedSVDOptuna(),
+                                  GaussianRandomProjectionOptuna(),
+                                  SparseRandomProjectionOptuna(),
+
+                                  #Extension
+                                  NystroemOptuna(),
                                   PolynomialFeaturesOptuna(),
                                   RandomTreesEmbeddingOptuna(),
                                   RBFSamplerOptuna(),
-                                  SelectKBestOptuna(),
-                                  TruncatedSVDOptuna(),
 
-                                  #new
-                                  GaussianRandomProjectionOptuna(),
-                                  SparseRandomProjectionOptuna()
                      ]
 
 #preprocessor_list = [IdentityTransformation()]
