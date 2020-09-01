@@ -283,8 +283,8 @@ if __name__ == "__main__":
 
     #dataset = openml.datasets.get_dataset(1114)
 
-    #dataset = openml.datasets.get_dataset(31)
-    dataset = openml.datasets.get_dataset(1590)
+    dataset = openml.datasets.get_dataset(31)
+    #dataset = openml.datasets.get_dataset(1590)
 
     X, y, categorical_indicator, attribute_names = dataset.get_data(
         dataset_format='array',

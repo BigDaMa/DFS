@@ -5,7 +5,7 @@ class KernelPCAOptuna(KernelPCA):
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('KernelPCA_')
 
-        self.n_components = trial.suggest_int(self.name + "n_components", min([10, X.shape[1]]), X.shape[1], log=False)
+        self.n_components_fraction = trial.suggest_uniform(self.name + 'n_components_fraction', 0.0, 1.0)
         self.kernel = trial.suggest_categorical(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine'])
         self.gamma = trial.suggest_loguniform(self.name + "gamma", 3.0517578125e-05, 8)
 
@@ -19,10 +19,15 @@ class KernelPCAOptuna(KernelPCA):
 
         self.sparse = False
 
+    def fit(self, X, y=None):
+        self.n_components = max(1, int(self.n_components_fraction * X.shape[1]))
+        #print('ncom: ' + str(self.n_components))
+        return super().fit(X=X, y=y)
+
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('KernelPCA_')
 
-        space_gen.generate_number(self.name + "n_components", 100, depending_node=depending_node)
+        space_gen.generate_number(self.name + "n_components_fraction", 0.5, depending_node=depending_node)
         category_kernel = space_gen.generate_cat(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine'], 'rbf', depending_node=depending_node)
         space_gen.generate_number(self.name + "gamma", 1.0, depending_node=depending_node)
         space_gen.generate_number(self.name + 'degree', 3, depending_node=category_kernel[0])

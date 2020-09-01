@@ -5,7 +5,7 @@ class SparseRandomProjectionOptuna(SparseRandomProjection):
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('SparseRandomProjection_')
 
-        self.eps = trial.suggest_loguniform(self.name + "eps", 1e-7, 1.0)
+        self.n_components_fraction = trial.suggest_uniform(self.name + 'n_components_fraction', 0.0, 1.0)
 
         if trial.suggest_categorical(self.name + 'density_auto', [True, False]):
             self.density = 'auto'
@@ -14,13 +14,15 @@ class SparseRandomProjectionOptuna(SparseRandomProjection):
 
         self.dense_output = trial.suggest_categorical(self.name + 'dense_output', [True, False])
 
-        self.n_components = 'auto'
+    def fit(self, X, y=None):
+        self.n_components = max(1, int(self.n_components_fraction * X.shape[1]))
+        return super().fit(X=X, y=y)
 
 
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('SparseRandomProjection_')
 
-        space_gen.generate_number(self.name + "eps", 0.1, depending_node=depending_node)
+        space_gen.generate_number(self.name + 'n_components_fraction', 0.1, depending_node=depending_node)
 
         category_density = space_gen.generate_cat(self.name + 'density_auto', [True, False], True,
                                                  depending_node=depending_node)

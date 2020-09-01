@@ -6,7 +6,7 @@ class NystroemOptuna(Nystroem):
         self.name = id_name('Nystroem_')
 
         self.kernel = trial.suggest_categorical(self.name + 'kernel', ['poly', 'rbf', 'sigmoid', 'cosine', 'chi2'])
-        self.n_components = trial.suggest_int(self.name + "n_components", 50, len(X), log=True)
+        self.n_components = trial.suggest_int(self.name + "n_components", 50, min(len(X),10000), log=True)
         self.gamma = trial.suggest_loguniform(self.name + "gamma", 3.0517578125e-05, 8)
 
         if self.kernel == 'poly':

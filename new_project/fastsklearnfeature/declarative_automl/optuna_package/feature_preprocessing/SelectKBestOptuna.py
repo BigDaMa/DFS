@@ -1,7 +1,7 @@
-from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectPercentile
 from sklearn.feature_selection.from_model import _get_feature_importances
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import SelectPercentile
+from sklearn.feature_selection import SelectKBest
 import sklearn
 from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id_name
 
@@ -12,15 +12,13 @@ def model_score(X, y=None, estimator=None):
     scores = _get_feature_importances(estimator)
     return scores
 
-class SelectPercentileOptuna(SelectPercentile):
+class SelectKBestOptuna(SelectKBest):
     def init_hyperparameters(self, trial, X, y):
-        self.name = id_name('SelectPercentile')
+        self.name = id_name('SelectKBest')
 
-        self.percentile = trial.suggest_int(self.name + "percentile", 1, 99)
+        self.k_fraction = trial.suggest_uniform(self.name + 'k_fraction', 0.0, 1.0)
 
         self.sparse = False
-
-
 
         score_func = trial.suggest_categorical(self.name + 'score_func', ['chi2', 'f_classif', 'mutual_info', 'ExtraTreesClassifier', 'LinearSVC'])
 
@@ -61,10 +59,15 @@ class SelectPercentileOptuna(SelectPercentile):
 
             self.score_func = functools.partial(model_score, estimator=model)
 
-    def generate_hyperparameters(self, space_gen, depending_node=None):
-        self.name = id_name('SelectPercentile')
+    def fit(self, X, y):
+        self.k = max(1, int(self.k_fraction * X.shape[1]))
+        #print('k: ' + str(self.k))
+        return super().fit(X=X, y=y)
 
-        space_gen.generate_number(self.name + "percentile", 50, depending_node=depending_node)
+    def generate_hyperparameters(self, space_gen, depending_node=None):
+        self.name = id_name('SelectKBest')
+
+        space_gen.generate_number(self.name + "k_fraction", 0.5, depending_node=depending_node)
         category_fs = space_gen.generate_cat(self.name + 'score_func',['chi2', 'f_classif', 'mutual_info', 'ExtraTreesClassifier', 'LinearSVC',
                                                 'variance'], "chi2", depending_node=depending_node)
 
