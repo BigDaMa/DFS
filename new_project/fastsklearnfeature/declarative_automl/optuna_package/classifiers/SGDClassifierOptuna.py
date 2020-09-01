@@ -21,7 +21,7 @@ class SGDClassifierOptuna(SGDClassifier):
             self.power_t = trial.suggest_uniform(self.name + "power_t", 1e-5, 1)
         self.average = trial.suggest_categorical(self.name + "average", [False, True])
 
-        self.max_iter = trial.suggest_int(self.name + "max_iter", 10, 10000, log=False)
+        self.max_iter = trial.suggest_int(self.name + "max_iter", 10, 1024, log=False)
 
         #todo: add conditional parameters
 

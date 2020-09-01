@@ -52,9 +52,9 @@ feature_names = copy.deepcopy(my_list)
 feature_names.extend(my_list_constraints)
 feature_names.extend(metafeature_names_new)
 
-test_holdout_dataset_id = 1218#4134#31#1139#31#1138#31
-search_time_frozen = 30*60#20*60#240#240
-memory_budget = 4
+test_holdout_dataset_id = 1590#1218#4134#31#1139#31#1138#31
+search_time_frozen = 10*60#20*60#240#240
+memory_budget = 1.0
 
 X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
 metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)

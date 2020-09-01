@@ -24,14 +24,15 @@ test_all =[0.5443749999999999, 0.5443749999999999, 0.7602380952380953, 0.7602380
 
 
 import matplotlib.pyplot as plt
-plt.plot(times_all, test_all, color='red')
-plt.plot(times_c, test_c, color='blue')
+plt.plot(times_all, test_all, color='red', label='static')
+plt.plot(times_c, test_c, color='blue', label='dynamic')
 
 #plt.plot([times_c[-1], 1200], [test_c[-1], test_c[-1]], color='green')
 
 plt.ylabel('AUC')
 plt.xlabel('Time (Seconds)')
 plt.title('German Credit(31)')
+plt.legend(loc='lower right')
 
 plt.ylim((0,1))
 plt.show()

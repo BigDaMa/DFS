@@ -281,10 +281,10 @@ class MyAutoML:
 if __name__ == "__main__":
     auc = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
-    dataset = openml.datasets.get_dataset(1114)
+    #dataset = openml.datasets.get_dataset(1114)
 
     #dataset = openml.datasets.get_dataset(31)
-    #dataset = openml.datasets.get_dataset(1590)
+    dataset = openml.datasets.get_dataset(1590)
 
     X, y, categorical_indicator, attribute_names = dataset.get_data(
         dataset_format='array',
@@ -304,7 +304,7 @@ if __name__ == "__main__":
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=2, n_jobs=1, time_search_budget=60*30, space=space)
+    search = MyAutoML(cv=2, n_jobs=1, time_search_budget=10*30, space=space, main_memory_budget_gb=1.0)
 
     begin = time.time()
 

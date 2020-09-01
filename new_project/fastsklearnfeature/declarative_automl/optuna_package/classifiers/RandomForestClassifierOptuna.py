@@ -17,6 +17,9 @@ class RandomForestClassifierOptuna(RandomForestClassifier):
         self.bootstrap = trial.suggest_categorical(self.name + "bootstrap", [True, False])
         self.classes_ = np.unique(y.astype(int))
 
+        #hyperopt config
+        self.n_estimators = trial.suggest_int(self.name + "n_estimators", 10, 512, log=True)
+
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('RandomForestClassifier_')
 
@@ -25,3 +28,5 @@ class RandomForestClassifierOptuna(RandomForestClassifier):
         space_gen.generate_number(self.name + "min_samples_split", 2, depending_node=depending_node)
         space_gen.generate_number(self.name + "min_samples_leaf", 1, depending_node=depending_node)
         space_gen.generate_cat(self.name + "bootstrap", [True, False], True, depending_node=depending_node)
+
+        space_gen.generate_number(self.name + "n_estimators", 100, depending_node=depending_node)

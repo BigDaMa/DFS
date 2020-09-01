@@ -14,14 +14,15 @@ test_all =[0.6314010219979127, 0.6314010219979127, 0.6314010219979127, 0.6314010
 
 
 import matplotlib.pyplot as plt
-plt.plot(times_all, test_all, color='red')
-plt.plot(times_c, test_c, color='blue')
+plt.plot(times_all, test_all, color='red', label='static')
+plt.plot(times_c, test_c, color='blue', label='dynamic')
 
 #plt.plot([times_c[-1], times_all[-1]], [test_c[-1], test_c[-1]], color='green')
 
 plt.ylabel('AUC')
 plt.xlabel('Time (Seconds)')
 plt.title('KDDCup09_upselling(1114)')
+plt.legend(loc='lower right')
 
 plt.ylim((0,1))
 plt.show()

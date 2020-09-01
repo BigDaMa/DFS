@@ -34,6 +34,8 @@ from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.RBFSamplerOptuna import RBFSamplerOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.SelectPercentileOptuna import SelectPercentileOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.TruncatedSVDOptuna import TruncatedSVDOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.GaussianRandomProjectionOptuna import GaussianRandomProjectionOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.SparseRandomProjectionOptuna import SparseRandomProjectionOptuna
 
 classifier_list = [RandomForestClassifierOptuna(),
                                 AdaBoostClassifierOptuna(),
@@ -63,7 +65,12 @@ preprocessor_list = [IdentityTransformation(),
                                   RandomTreesEmbeddingOptuna(),
                                   RBFSamplerOptuna(),
                                   SelectPercentileOptuna(),
-                                  TruncatedSVDOptuna()]
+                                  TruncatedSVDOptuna(),
+                     
+                                  #new
+                                  GaussianRandomProjectionOptuna(),
+                                  SparseRandomProjectionOptuna()
+                     ]
 
 #preprocessor_list = [IdentityTransformation()]
 
