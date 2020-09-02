@@ -7,6 +7,8 @@ class GaussianRandomProjectionOptuna(GaussianRandomProjection):
 
         self.n_components_fraction = trial.suggest_uniform(self.name + 'n_components_fraction', 0.0, 1.0)
 
+        self.sparse = False
+
     def fit(self, X, y=None):
         self.n_components = max(1, int(self.n_components_fraction * X.shape[1]))
         #print('ncom: ' + str(self.n_components))

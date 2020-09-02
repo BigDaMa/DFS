@@ -14,6 +14,8 @@ class SparseRandomProjectionOptuna(SparseRandomProjection):
 
         self.dense_output = trial.suggest_categorical(self.name + 'dense_output', [True, False])
 
+        self.sparse = not self.dense_output
+
     def fit(self, X, y=None):
         self.n_components = max(1, int(self.n_components_fraction * X.shape[1]))
         return super().fit(X=X, y=y)
