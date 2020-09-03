@@ -526,11 +526,13 @@ for train_ids, test_ids in outer_cv_all:
 	X_AL = copy.deepcopy(X_data[train_ids][:, my_ids])
 	y_AL = copy.deepcopy(strategy_success[train_ids, :])
 
+	predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
+
+	track_test_coverage = []
+
 	for al_iteration in range(100):
 
 		all_current_models = []
-		predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
-
 		#train one random forest per strategy
 		for my_strategy in range(strategy_success.shape[1]):
 			if True:#(my_strategy + 1) in choose_among_strategies:
@@ -584,10 +586,23 @@ for train_ids, test_ids in outer_cv_all:
 		X_AL = np.vstack((X_AL, new_features))
 		y_AL = np.vstack((y_AL, new_labels))
 
+		predictions = np.argmax(predictions_probabilities, axis=1)
+		predictions += 1
+		succcess_test_fold1 = get_success_for_fold_predictions(predictions, test_ids)
+
+		ttcov = np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))
+		print("test coverage: " + str(ttcov))
+
+		track_test_coverage.append(ttcov)
+
+		with open("/tmp/track_test_coverage.txt", "w") as file1:
+			# Writing data to a file
+			file1.write(str(track_test_coverage))
 
 
 
-		####################################################################################################################
+
+	####################################################################################################################
 		####################################################################################################################
 
 
