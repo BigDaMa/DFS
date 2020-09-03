@@ -79,8 +79,7 @@ def my_function(config_id):
 								   min_robustness=mp_global.min_robustness,
 								   max_number_features=mp_global.max_number_features,
 								   max_search_time=mp_global.max_search_time,
-								   log_file='/tmp/experiment' + str(current_run_time_id) + '/run' + str(
-									   run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle',
+								   log_file='/tmp/experiment_uncertainty/run' + str(0) + '/strategy' + str(conf['strategy_id']) + '.pickle',
 								   accuracy_scorer=mp_global.accuracy_scorer
 								   )
 	result['strategy_id'] = conf['strategy_id']
@@ -264,7 +263,7 @@ def uncertainty_sampling(training_dataset_ids, all_current_models):
     ##specifiy data
     run_counter = 0
     current_run_time_id = time.time()
-    path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
+    path = pathlib.Path('/tmp/experiment_uncertainty/run' + str(0))
     path.mkdir(parents=True, exist_ok=True)
 
 
@@ -447,7 +446,7 @@ def uncertainty_sampling(training_dataset_ids, all_current_models):
     run_strategies_times = {}
     run_strategies_success_validation = {}
 
-    rfolder = '/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/'
+    rfolder = '/tmp/experiment_uncertainty/run' + str(0) + '/'
 
     validation_satisfied_by_any_strategy = False
 
