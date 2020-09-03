@@ -595,7 +595,7 @@ for train_ids, test_ids in outer_cv_all:
 
 		track_test_coverage.append(ttcov)
 
-		with open("/tmp/track_test_coverage.txt", "w") as file1:
+		with open("/tmp/track_test_coverage" + str(dataset_id) +".txt", "w") as file1:
 			# Writing data to a file
 			file1.write(str(track_test_coverage))
 
