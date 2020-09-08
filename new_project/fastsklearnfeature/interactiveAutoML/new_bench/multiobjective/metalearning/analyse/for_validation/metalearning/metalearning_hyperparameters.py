@@ -20,6 +20,10 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.RandomFore
 from sklearn.utils.class_weight import compute_sample_weight
 
 import optuna
+import os
+import time
+import multiprocessing
+import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.for_validation.metalearning.my_global_var as mp_global
 
 
 mappnames = {1:'TPE(Variance)',
@@ -41,17 +45,14 @@ mappnames = {1:'TPE(Variance)',
 			 17: 'Complete Set'
 			 }
 
-def objective(trial, X_data_train, strategy_success_train, groups_train):
-	my_classifier = RandomForestClassifierOptuna()
-	my_classifier.init_hyperparameters(trial, X=None, y=None)
 
-	trial.set_user_attr('pipeline', my_classifier)
+def evaluatePipeline(key, return_dict):
+	mp_global.mp_store[key] = {}
 
-	#balanced = trial.suggest_categorical('balanced', [True, False])
-
-	#X_data_train =X_data[train_ids, :]
-	#strategy_success_train = strategy_success[train_ids, :]
-	#groups_train = groups[train_ids]
+	my_classifier = mp_global.mp_store[key]['p']
+	X_data_train = mp_global.mp_store[key]['X_data_train']
+	strategy_success_train = mp_global.mp_store[key]['strategy_success_train']
+	groups_train = mp_global.mp_store[key]['groups_train']
 
 	inner_cv = GroupKFold(n_splits=4).split(X_data_train, strategy_success_train,
 											groups=groups_train)
@@ -85,13 +86,54 @@ def objective(trial, X_data_train, strategy_success_train, groups_train):
 			if strategy_success_train[inner_test_ids[p_i], predictions[p_i]]:
 				data2was_success[current_dataset_id] += 1
 
-	#calculate average relative coverage
+	# calculate average relative coverage
 	my_sum = 0.0
 	for k, v in data2was_success.items():
 		if v > 0:
 			my_sum += float(v) / float(data2was_possible[k])
 
-	return my_sum / float(len(data2was_success))
+	return_dict[key + 'result'] = my_sum / float(len(data2was_success))
+
+
+def objective1(trial, X_data_train, strategy_success_train, groups_train):
+	my_classifier = RandomForestClassifierOptuna()
+	my_classifier.init_hyperparameters(trial, X=None, y=None)
+
+	trial.set_user_attr('pipeline', my_classifier)
+
+	key = 'My_process' + str(time.time()) + "##" + str(np.random.randint(0, 1000))
+
+	mp_global.mp_store[key] = {}
+
+	mp_global.mp_store[key]['p'] = copy.deepcopy(my_classifier)
+	mp_global.mp_store[key]['number_of_cvs'] = 4
+
+
+	mp_global.mp_store[key]['X_data_train'] = X_data_train
+	mp_global.mp_store[key]['strategy_success_train'] = strategy_success_train
+	mp_global.mp_store[key]['groups_train'] = groups_train
+
+	manager = multiprocessing.Manager()
+	return_dict = manager.dict()
+	my_process = multiprocessing.Process(target=evaluatePipeline, name='start' + key, args=(key, return_dict,))
+	my_process.start()
+	my_process.join(10*60)
+
+	# If thread is active
+	while my_process.is_alive():
+		# Terminate foo
+		my_process.terminate()
+		my_process.join()
+
+	del mp_global.mp_store[key]
+
+	result = -np.inf
+	if key + 'result' in return_dict:
+		result = return_dict[key + 'result']
+	return result
+
+
+
 
 
 names_features = ['accuracy',
@@ -643,11 +685,11 @@ for train_ids, test_ids in outer_cv_all:
 	'''
 
 	study = optuna.create_study(direction='maximize')
-	study.optimize(lambda trial: objective(trial,
+	study.optimize(lambda trial: objective1(trial,
 										   X_data_train=X_data[train_ids, :],
 										   strategy_success_train=strategy_success[train_ids, :],
 										   groups_train=groups[train_ids]),
-				   n_trials=10, n_jobs=10)
+				   n_trials=100)
 
 
 
