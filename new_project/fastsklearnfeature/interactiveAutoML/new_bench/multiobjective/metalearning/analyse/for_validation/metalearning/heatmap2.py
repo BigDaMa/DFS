@@ -54,7 +54,9 @@ my_pivot = df.pivot("Strategies", "Datasets", "Coverage")
 			 
 '''
 
-my_pivot = my_pivot.reindex_axis(['Complete Set',
+
+
+my_pivot = my_pivot.reindex(['Complete Set',
 								  'ES(NR)',
 								  'SFS(NR)',
 								  'SBS(NR)',
@@ -64,16 +66,39 @@ my_pivot = my_pivot.reindex_axis(['Complete Set',
 								  'TPE(Fisher)',
 								  'TPE(ReliefF)',
 								  'TPE(MIM)',
-								  'TPE(FCBF)'
+								  'TPE(FCBF)',
 								  'TPE(MCFS)',
 								  'TPE(Variance)',
 								  'TPE($\chi^2$)',
 								  'TPE(NR)',
 								  'SA(NR)',
 								  'NSGA-II(NR)',
-								  'Metalearning'
+								  'Metalearning',
 								  'Oracle'
-								  ], axis=0)
+								  ])
+
+my_pivot = my_pivot.reindex(['Complete Set',
+								  'SBFS(NR)',
+                                  'SBS(NR)',
+								  'RFE(Model)',
+								  'TPE(MCFS)',
+								  'TPE(Variance)',
+							      'TPE(ReliefF)',
+								  'SA(NR)',
+                                  'TPE(NR)',
+								  'TPE(Fisher)',
+                                  'TPE(MIM)',
+							      'TPE(FCBF)',
+								  'TPE($\chi^2$)',
+								  'NSGA-II(NR)',
+								  'ES(NR)',
+								  'SFS(NR)',
+								  'SFFS(NR)',
+								  'Metalearning',
+								  'Oracle'
+								  ])
+
+print(my_pivot)
 
 real_labels = []
 for strategy_i in range(len(my_pivot.axes[0])):

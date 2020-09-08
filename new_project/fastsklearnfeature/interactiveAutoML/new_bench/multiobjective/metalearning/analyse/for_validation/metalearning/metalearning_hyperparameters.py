@@ -16,6 +16,11 @@ import warnings
 warnings.filterwarnings("ignore")
 import openml
 
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.RandomForestClassifierOptuna import RandomForestClassifierOptuna
+from sklearn.utils.class_weight import compute_sample_weight
+
+import optuna
+
 
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
@@ -35,6 +40,59 @@ mappnames = {1:'TPE(Variance)',
 			 16: 'RFE(LR)',
 			 17: 'Complete Set'
 			 }
+
+def objective(trial, X_data_train, strategy_success_train, groups_train):
+	my_classifier = RandomForestClassifierOptuna()
+	my_classifier.init_hyperparameters(trial, X=None, y=None)
+
+	trial.set_user_attr('pipeline', my_classifier)
+
+	#balanced = trial.suggest_categorical('balanced', [True, False])
+
+	#X_data_train =X_data[train_ids, :]
+	#strategy_success_train = strategy_success[train_ids, :]
+	#groups_train = groups[train_ids]
+
+	inner_cv = GroupKFold(n_splits=4).split(X_data_train, strategy_success_train,
+											groups=groups_train)
+
+	# calculate average relative coverage
+
+	data2was_success = {}
+	data2was_possible = {}
+	for inner_train_ids, inner_test_ids in inner_cv:
+		predictions_probabilities = np.zeros((len(inner_test_ids), len(mappnames)))
+		for my_strategy in range(strategy_success.shape[1]):
+			X_res = X_data_train[inner_train_ids]
+			y_res = strategy_success_train[inner_train_ids, my_strategy]
+
+			rf_random = my_classifier
+			rf_random.fit(X_res, y_res)
+
+			my_x_test = X_data_train[inner_test_ids]
+			predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
+
+		predictions = np.argmax(predictions_probabilities, axis=1)
+		for p_i in range(len(predictions)):
+			current_dataset_id = groups_train[inner_test_ids][p_i]
+
+			if np.sum(strategy_success_train[inner_test_ids[p_i], :]) > 0:
+				if not current_dataset_id in data2was_possible:
+					data2was_possible[current_dataset_id] = 0
+					data2was_success[current_dataset_id] = 0
+				data2was_possible[current_dataset_id] += 1
+
+			if strategy_success_train[inner_test_ids[p_i], predictions[p_i]]:
+				data2was_success[current_dataset_id] += 1
+
+	#calculate average relative coverage
+	my_sum = 0.0
+	for k, v in data2was_success.items():
+		if v > 0:
+			my_sum += float(v) / float(data2was_possible[k])
+
+	return my_sum / float(len(data2was_success))
+
 
 names_features = ['accuracy',
 	 'fairness',
@@ -583,6 +641,13 @@ for train_ids, test_ids in outer_cv_all:
 		sample_weights.append(reverse_fraction)
 	'''
 
+	study = optuna.create_study(direction='maximize')
+	study.optimize(lambda trial: objective(trial,
+										   X_data_train=X_data[train_ids, :],
+										   strategy_success_train=strategy_success[train_ids, :],
+										   groups_train=groups[train_ids]),
+				   n_trials=10)
+
 
 
 	if len(test_ids) > 0:
@@ -619,7 +684,8 @@ for train_ids, test_ids in outer_cv_all:
 				X_res = X_data[train_ids][:, my_ids]
 				y_res = strategy_success[train_ids, my_strategy]
 
-				rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+				#rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+				rf_random = study.best_trial.user_attrs['pipeline']
 				#rf_random.fit(X_res, y_res, sample_weight=sample_weights)
 				rf_random.fit(X_res, y_res)
 
