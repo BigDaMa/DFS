@@ -15,7 +15,7 @@ class RandomForestClassifierOptuna(RandomForestClassifier):
         self.max_leaf_nodes = None
         self.min_impurity_decrease = 0.0
         self.bootstrap = trial.suggest_categorical(self.name + "bootstrap", [True, False])
-        self.classes_ = np.unique(y.astype(int))
+        #self.classes_ = 2
 
         #hyperopt config
         self.n_estimators = trial.suggest_int(self.name + "n_estimators", 10, 512, log=True)
