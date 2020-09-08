@@ -87,7 +87,7 @@ def my_function(config_id):
 
 
 def uncertainty_sampling(training_dataset_ids, all_current_models):
-    time_limit = 60 * 60 * 3
+    time_limit = 30*60#60 * 60 * 3
 
     training_dataset_ids = training_dataset_ids.tolist()
 

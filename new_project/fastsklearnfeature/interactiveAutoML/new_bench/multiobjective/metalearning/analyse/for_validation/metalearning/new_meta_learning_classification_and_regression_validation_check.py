@@ -14,8 +14,7 @@ import copy
 from sklearn.pipeline import Pipeline
 import warnings
 warnings.filterwarnings("ignore")
-
-from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.for_validation.metalearning.uncertainty_sampling import uncertainty_sampling
+import openml
 
 
 mappnames = {1:'TPE(Variance)',
@@ -58,8 +57,7 @@ names_features = ['accuracy',
 
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
 #experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
-#experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
-experiment_folders = glob.glob("/home/neutatz/data/dfs_experiments/new_experiments_maybe_final/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 print(experiment_folders)
 
 
@@ -510,6 +508,17 @@ print("\nmodels done :)\n\n")
 
 
 
+
+data2score = {}
+
+store_all_strategies_results = {}
+for my_strategy in range(strategy_success.shape[1]):
+	store_all_strategies_results[my_strategy] = []
+
+import openml
+
+my_string_csv = ''
+
 dataset_id = 0
 for train_ids, test_ids in outer_cv_all:
 
@@ -522,90 +531,71 @@ for train_ids, test_ids in outer_cv_all:
 	test_ids = nn_test_id
 	'''
 
+	test_data_id = np.unique(groups[test_ids])[0]
 
-	X_AL = copy.deepcopy(X_data[train_ids][:, my_ids])
-	y_AL = copy.deepcopy(strategy_success[train_ids, :])
+	my_string_csv += openml.datasets.get_dataset(dataset_id=test_data_id).name + ';'
 
 	predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
 
-	track_test_coverage = []
+	strategy_sum = np.sum(strategy_success[test_ids, :], axis=1)
+	print(str(strategy_sum.shape) + ' ' + str(len(test_ids)))
 
-	for al_iteration in range(10):
+	print('oracle coverage: ' + str(np.sum(strategy_sum > 0) / float(len(test_ids))))
 
-		all_current_models = []
-		#train one random forest per strategy
-		for my_strategy in range(strategy_success.shape[1]):
-			if True:#(my_strategy + 1) in choose_among_strategies:
+	my_string_csv += str(np.sum(strategy_sum > 0) / float(len(test_ids))) + ';'
+
+	print(np.sum(strategy_success[test_ids, :], axis=1))
+
+	#train one random forest per strategy
+	for my_strategy in range(strategy_success.shape[1]):
+		if True:#(my_strategy + 1) in choose_among_strategies:
 
 
-				new_train_ids = []
-				for tid in train_ids:
-					if tid in real_success_ids:
-						new_train_ids.append(tid)
-				train_ids = new_train_ids
+			new_train_ids = []
+			for tid in train_ids:
+				if tid in real_success_ids:
+					new_train_ids.append(tid)
+			train_ids = new_train_ids
 
-				X_res = X_data[train_ids][:, my_ids]
-				y_res = strategy_success[train_ids, my_strategy]
 
-				rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced')
-				rf_random.fit(X_AL, y_AL[:, my_strategy])
-				all_current_models.append(copy.deepcopy(rf_random))
+			'''
+			transformer = Normalizer().fit(X_data[train_ids][:, my_ids])
+			X_scaled = transformer.transform(X_data[train_ids][:, my_ids])
+			X_scaled = transformer.transform(X_data[test_ids][:, my_ids])
+			sm = SMOTE(random_state=42)
+			X_res, y_res = sm.fit_resample(X_scaled, strategy_success[train_ids, my_strategy])
+			'''
+			X_res = X_data[train_ids][:, my_ids]
+			y_res = strategy_success[train_ids, my_strategy]
 
-				#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
+			rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+			rf_random.fit(X_res, y_res)
 
-				my_x_test = X_data[test_ids][:, my_ids]#X_scaled#X_data[test_ids][:, my_ids]
+			#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
 
-				print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, my_x_test, strategy_success[test_ids, my_strategy])))
+			my_x_test = X_data[test_ids][:, my_ids]#X_scaled#X_data[test_ids][:, my_ids]
 
-				my_predictions = rf_random.predict(my_x_test)
-				strategy_folds_f1[my_strategy, dataset_id] = f1_score(strategy_success[test_ids, my_strategy], my_predictions)
-				strategy_folds_precision[my_strategy, dataset_id] = precision_score(strategy_success[test_ids, my_strategy], my_predictions)
-				strategy_folds_recall[my_strategy, dataset_id] = recall_score(strategy_success[test_ids, my_strategy], my_predictions)
+			print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, my_x_test, strategy_success[test_ids, my_strategy])))
 
-				predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
+			my_predictions = rf_random.predict(my_x_test)
+			strategy_folds_f1[my_strategy, dataset_id] = f1_score(strategy_success[test_ids, my_strategy], my_predictions)
+			strategy_folds_precision[my_strategy, dataset_id] = precision_score(strategy_success[test_ids, my_strategy], my_predictions)
+			strategy_folds_recall[my_strategy, dataset_id] = recall_score(strategy_success[test_ids, my_strategy], my_predictions)
 
-				print(mappnames[my_strategy + 1] + ' prob : ' + str(np.mean(predictions_probabilities[:, my_strategy])))
-			else:
-				predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
+			predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
 
-		####################################################################################################################
-		####################################################################################################################
+			print(mappnames[my_strategy + 1] + ' prob : ' + str(np.mean(predictions_probabilities[:, my_strategy])))
 
-		# use these trained models as warm starting for active learning
+			print(mappnames[my_strategy + 1] + ' coverage : ' + str(np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids)) ))
 
-		# run that ML scenario that maximizes the aggregated model uncertainty
-		# get training datasets
-		training_dataset_ids = np.unique(groups[train_ids])
-		print('training data: ' + str(training_dataset_ids))
-		print(len(training_dataset_ids))
+			my_string_csv += str(np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids))) + ';'
 
-		#here starts uncertainty sampling
-
-		new_features, new_labels = uncertainty_sampling(training_dataset_ids, all_current_models)
-
-		X_AL = np.vstack((X_AL, new_features))
-		y_AL = np.vstack((y_AL, new_labels))
-
-		predictions = np.argmax(predictions_probabilities, axis=1)
-		predictions += 1
-		succcess_test_fold1 = get_success_for_fold_predictions(predictions, test_ids)
-
-		ttcov = np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))
-		print("test coverage: " + str(ttcov))
-
-		track_test_coverage.append(ttcov)
-
-		with open("/tmp/track_test_coverage" + str(dataset_id) +".txt", "w") as file1:
-			# Writing data to a file
-			file1.write(str(track_test_coverage))
+		else:
+			predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
 
 
 
-
-	####################################################################################################################
-		####################################################################################################################
-
-
+	#use these
 
 	dataset_id += 1
 
@@ -619,7 +609,24 @@ for train_ids, test_ids in outer_cv_all:
 	#print('mean time:  ' + str(np.mean(runtimes_test_fold)) + ' std: ' + str(np.std(runtimes_test_fold)))
 
 	succcess_test_fold1 = get_success_for_fold_predictions(predictions, test_ids)
+	succcess_test_fold1_test = []
+	for p_i in range(len(predictions)):
+		succcess_test_fold1_test.append(strategy_success[test_ids[p_i], predictions[p_i]-1])
+		assert succcess_test_fold1[p_i] == succcess_test_fold1_test[p_i], 'ojoh'
+
+	for my_strategy in range(strategy_success.shape[1]):
+		store_all_strategies_results[my_strategy].extend(strategy_success[test_ids, my_strategy])
+
+
+
 	print("test coverage: " + str(np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))))
+
+	my_string_csv += str(len(test_ids)) + ','
+
+	my_string_csv += str(np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))) + '\n'
+
+	data2score[openml.datasets.get_dataset(dataset_id=test_data_id).name] = np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))
+	print(data2score)
 
 
 	success_validation = get_success_for_fold_predictions_validation(predictions, test_ids)
@@ -655,6 +662,8 @@ print('\n final validation coverage:  ' + str(np.sum(all_success_in_cv_folds_val
 print("\n final Fastest: " + str(np.sum(all_fastest_strategies) / float(len(all_fastest_strategies))))
 print('\n final successful mean time: ' + str(np.mean(all_successful_times)) + ' std: ' + str(np.std(all_successful_times)))
 
+for my_strategy in range(strategy_success.shape[1]):
+	print(mappnames[my_strategy + 1] + ' coverage: ' + str(np.sum(store_all_strategies_results[my_strategy]) / float(len(store_all_strategies_results[my_strategy]))))
 
 
 for my_strategy in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
@@ -666,3 +675,5 @@ for my_strategy in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8,
 		"{:.2f}".format(np.mean(strategy_folds_f1, axis=1)[my_strategy])) + ' \\pm ' + str(
 		"{:.2f}".format(np.std(strategy_folds_f1, axis=1)[my_strategy])) + '$ \\\\')
 
+
+print(my_string_csv)
