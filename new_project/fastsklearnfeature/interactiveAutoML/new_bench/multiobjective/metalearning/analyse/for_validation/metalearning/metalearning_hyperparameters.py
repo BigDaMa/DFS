@@ -52,7 +52,7 @@ def evaluatePipeline(key, return_dict):
 	strategy_success_train = mp_global.mp_store[key]['strategy_success_train']
 	groups_train = mp_global.mp_store[key]['groups_train']
 
-	inner_cv = GroupKFold(n_splits=4).split(X_data_train, strategy_success_train,
+	inner_cv = GroupKFold(n_splits=10).split(X_data_train, strategy_success_train,
 											groups=groups_train)
 
 	# calculate average relative coverage
@@ -96,6 +96,10 @@ def evaluatePipeline(key, return_dict):
 def objective1(trial, X_data_train, strategy_success_train, groups_train):
 	my_classifier = RandomForestClassifierOptuna()
 	my_classifier.init_hyperparameters(trial, X=None, y=None)
+
+	balanced = trial.suggest_categorical('balanced', [True, False])
+	if balanced:
+		my_classifier.class_weight = "balanced"
 
 	trial.set_user_attr('pipeline', my_classifier)
 
