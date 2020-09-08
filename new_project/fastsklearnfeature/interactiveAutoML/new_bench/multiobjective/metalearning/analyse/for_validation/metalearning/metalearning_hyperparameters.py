@@ -47,8 +47,6 @@ mappnames = {1:'TPE(Variance)',
 
 
 def evaluatePipeline(key, return_dict):
-	mp_global.mp_store[key] = {}
-
 	my_classifier = mp_global.mp_store[key]['p']
 	X_data_train = mp_global.mp_store[key]['X_data_train']
 	strategy_success_train = mp_global.mp_store[key]['strategy_success_train']
