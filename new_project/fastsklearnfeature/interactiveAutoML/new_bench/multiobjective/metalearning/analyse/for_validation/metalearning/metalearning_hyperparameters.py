@@ -691,7 +691,7 @@ for train_ids, test_ids in outer_cv_all:
 										   X_data_train=X_data[train_ids, :],
 										   strategy_success_train=strategy_success[train_ids, :],
 										   groups_train=groups[train_ids]),
-				   n_trials=100, n_jobs=15)
+				   n_trials=100, n_jobs=25)
 
 
 
