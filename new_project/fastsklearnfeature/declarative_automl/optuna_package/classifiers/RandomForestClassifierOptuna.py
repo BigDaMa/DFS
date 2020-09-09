@@ -4,8 +4,12 @@ from fastsklearnfeature.declarative_automl.optuna_package.optuna_utils import id
 
 class RandomForestClassifierOptuna(RandomForestClassifier):
 
-    def init_hyperparameters(self, trial, X, y):
+    def init_hyperparameters(self, trial, X, y, name_space=None):
         self.name = id_name('RandomForestClassifier_')
+
+        if type(name_space) != type(None):
+            self.name += '_' + name_space
+
         self.criterion = trial.suggest_categorical(self.name + "criterion", ["gini", "entropy"])
         self.max_features = trial.suggest_uniform(self.name + "max_features", 0., 1.)
         self.max_depth = None
@@ -18,7 +22,8 @@ class RandomForestClassifierOptuna(RandomForestClassifier):
         #self.classes_ = 2
 
         #hyperopt config
-        self.n_estimators = trial.suggest_int(self.name + "n_estimators", 10, 512, log=True)
+        #self.n_estimators = trial.suggest_int(self.name + "n_estimators", 10, 512, log=True)
+        self.n_estimators = trial.suggest_int(self.name + "n_estimators", 10, 100, log=True)
 
     def generate_hyperparameters(self, space_gen, depending_node=None):
         self.name = id_name('RandomForestClassifier_')
