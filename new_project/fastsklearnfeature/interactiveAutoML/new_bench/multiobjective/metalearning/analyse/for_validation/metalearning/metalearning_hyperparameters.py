@@ -119,7 +119,7 @@ def objective1(trial, X_data_train, strategy_success_train, groups_train):
 	return_dict = manager.dict()
 	my_process = multiprocessing.Process(target=evaluatePipeline, name='start' + key, args=(key, return_dict,))
 	my_process.start()
-	my_process.join(10*60)
+	my_process.join(30*60)
 
 	# If thread is active
 	while my_process.is_alive():
