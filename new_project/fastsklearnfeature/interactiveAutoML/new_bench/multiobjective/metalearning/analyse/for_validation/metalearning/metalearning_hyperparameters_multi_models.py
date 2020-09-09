@@ -427,16 +427,16 @@ names_features.append('nb_model')
 X_data = np.hstack([X_data, make_stakeable(lr_list)])
 names_features.append('lr_model')
 
-'''
+
 X_data = np.hstack([X_data, make_stakeable(log_rows_list)])
 names_features.append('log(rows)')
 
 X_data = np.hstack([X_data, make_stakeable(log_cols_list)])
 names_features.append('log(cols)')
-'''
 
-#X_data = np.hstack([X_data, make_stakeable(log_search_time)])
-#names_features.append('log(time)')
+
+X_data = np.hstack([X_data, make_stakeable(log_search_time)])
+names_features.append('log(time)')
 
 
 
@@ -682,7 +682,7 @@ for train_ids, test_ids in outer_cv_all:
 										   X_data_train=X_data[train_ids, :],
 										   strategy_success_train=strategy_success[train_ids, :],
 										   groups_train=groups[train_ids]),
-				   n_trials=1000, n_jobs=25)
+				   n_trials=2000, n_jobs=25)
 
 
 
