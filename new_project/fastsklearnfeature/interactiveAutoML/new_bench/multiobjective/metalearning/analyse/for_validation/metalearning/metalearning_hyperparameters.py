@@ -52,7 +52,7 @@ def evaluatePipeline(key, return_dict):
 	strategy_success_train = mp_global.mp_store[key]['strategy_success_train']
 	groups_train = mp_global.mp_store[key]['groups_train']
 
-	inner_cv = GroupKFold(n_splits=10).split(X_data_train, strategy_success_train,
+	inner_cv = GroupKFold(n_splits=16).split(X_data_train, strategy_success_train,
 											groups=groups_train)
 
 	# calculate average relative coverage
