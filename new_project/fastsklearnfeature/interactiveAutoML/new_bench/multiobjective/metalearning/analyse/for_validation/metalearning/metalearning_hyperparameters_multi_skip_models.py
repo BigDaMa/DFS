@@ -65,7 +65,7 @@ def evaluatePipeline(key, return_dict):
 			if type(rf_random) != type(None):
 				X_res = X_data_train[inner_train_ids]
 				y_res = strategy_success_train[inner_train_ids, my_strategy]
-				
+
 				rf_random.fit(X_res, y_res)
 
 				my_x_test = X_data_train[inner_test_ids]
@@ -745,28 +745,30 @@ for train_ids, test_ids in outer_cv_all:
 
 				#rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced')
 				rf_random = study.best_trial.user_attrs['pipeline' + str(my_strategy)]
-				#rf_random.fit(X_res, y_res, sample_weight=sample_weights)
-				rf_random.fit(X_res, y_res)
 
-				#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
+				if type(rf_random) != type(None):
+					#rf_random.fit(X_res, y_res, sample_weight=sample_weights)
+					rf_random.fit(X_res, y_res)
 
-				my_x_test = X_data[test_ids][:, my_ids]#X_scaled#X_data[test_ids][:, my_ids]
+					#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
 
-				print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, my_x_test, strategy_success[test_ids, my_strategy])))
+					my_x_test = X_data[test_ids][:, my_ids]#X_scaled#X_data[test_ids][:, my_ids]
 
-				my_predictions = rf_random.predict(my_x_test)
-				strategy_folds_f1[my_strategy, dataset_id] = f1_score(strategy_success[test_ids, my_strategy], my_predictions)
-				strategy_folds_precision[my_strategy, dataset_id] = precision_score(strategy_success[test_ids, my_strategy], my_predictions)
-				strategy_folds_recall[my_strategy, dataset_id] = recall_score(strategy_success[test_ids, my_strategy], my_predictions)
+					print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, my_x_test, strategy_success[test_ids, my_strategy])))
 
-				predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
+					my_predictions = rf_random.predict(my_x_test)
+					strategy_folds_f1[my_strategy, dataset_id] = f1_score(strategy_success[test_ids, my_strategy], my_predictions)
+					strategy_folds_precision[my_strategy, dataset_id] = precision_score(strategy_success[test_ids, my_strategy], my_predictions)
+					strategy_folds_recall[my_strategy, dataset_id] = recall_score(strategy_success[test_ids, my_strategy], my_predictions)
 
-				print(mappnames[my_strategy + 1] + ' prob : ' + str(np.mean(predictions_probabilities[:, my_strategy])))
+					predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
 
-				print(mappnames[my_strategy + 1] + ' coverage : ' + str(np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids)) ))
+					print(mappnames[my_strategy + 1] + ' prob : ' + str(np.mean(predictions_probabilities[:, my_strategy])))
 
-				my_string_csv += str(np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids))) + ';'
-				dicttuple2coverage[(mappnames[my_strategy + 1], openml.datasets.get_dataset(dataset_id=test_data_id).name)] = np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids))
+					print(mappnames[my_strategy + 1] + ' coverage : ' + str(np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids)) ))
+
+					my_string_csv += str(np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids))) + ';'
+					dicttuple2coverage[(mappnames[my_strategy + 1], openml.datasets.get_dataset(dataset_id=test_data_id).name)] = np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids))
 
 			else:
 				predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
