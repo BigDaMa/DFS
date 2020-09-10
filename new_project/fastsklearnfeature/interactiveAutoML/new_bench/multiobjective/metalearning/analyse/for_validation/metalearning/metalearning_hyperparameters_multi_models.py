@@ -24,7 +24,7 @@ import os
 import time
 import multiprocessing
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.for_validation.metalearning.my_global_var as mp_global
-
+from collections.abc import Iterable
 
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
