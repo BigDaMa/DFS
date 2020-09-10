@@ -427,7 +427,7 @@ names_features.append('nb_model')
 X_data = np.hstack([X_data, make_stakeable(lr_list)])
 names_features.append('lr_model')
 
-
+'''
 X_data = np.hstack([X_data, make_stakeable(log_rows_list)])
 names_features.append('log(rows)')
 
@@ -437,6 +437,7 @@ names_features.append('log(cols)')
 
 X_data = np.hstack([X_data, make_stakeable(log_search_time)])
 names_features.append('log(time)')
+'''
 
 
 
@@ -682,7 +683,7 @@ for train_ids, test_ids in outer_cv_all:
 										   X_data_train=X_data[train_ids, :],
 										   strategy_success_train=strategy_success[train_ids, :],
 										   groups_train=groups[train_ids]),
-				   n_trials=2000, n_jobs=25)
+				   n_trials=1000, n_jobs=25)
 
 
 
@@ -754,8 +755,25 @@ for train_ids, test_ids in outer_cv_all:
 
 		dataset_id += 1
 
-		predictions = np.argmax(predictions_probabilities, axis=1)
-		predictions += 1
+		#strategy conflict resolution
+		predictions = np.zeros(len(predictions_probabilities), dtype=int)
+		for row_it in range(len(predictions_probabilities)):
+			winner = np.argwhere(predictions_probabilities[row_it, :] == np.max(predictions_probabilities[row_it, :]))
+			winner += 1
+			if len(winner) > 1:
+				ranked_list = [14, 12, 11, 10, 2, 3, 5, 4, 8, 9, 7, 1, 6, 16, 13, 15, 17]
+
+				rank_i = 0
+				while isinstance(winner, Iterable):
+					if ranked_list[rank_i] in winner:
+						winner = ranked_list[rank_i]
+						break
+					rank_i += 1
+
+			predictions[row_it] = winner
+
+		#predictions = np.argmax(predictions_probabilities, axis=1)
+		#predictions += 1
 		print(predictions.shape)
 		print(predictions)
 		print(np.array(dataset['best_strategy'])[success_ids[test_ids]])
