@@ -70,7 +70,24 @@ def evaluatePipeline(key, return_dict):
 			my_x_test = X_data_train[inner_test_ids]
 			predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
 
-		predictions = np.argmax(predictions_probabilities, axis=1)
+		#predictions = np.argmax(predictions_probabilities, axis=1)
+
+		predictions = np.zeros(len(predictions_probabilities), dtype=int)
+		for row_it in range(len(predictions_probabilities)):
+			winner = np.argwhere(predictions_probabilities[row_it, :] == np.max(predictions_probabilities[row_it, :]))
+			winner += 1
+			if len(winner) > 1:
+				ranked_list = [14, 12, 11, 10, 2, 3, 5, 4, 8, 9, 7, 1, 6, 16, 13, 15, 17]
+
+				rank_i = 0
+				while isinstance(winner, Iterable):
+					if ranked_list[rank_i] in winner:
+						winner = ranked_list[rank_i]
+						break
+					rank_i += 1
+			predictions[row_it] = winner
+		predictions -= 1
+
 		for p_i in range(len(predictions)):
 			current_dataset_id = groups_train[inner_test_ids][p_i]
 
