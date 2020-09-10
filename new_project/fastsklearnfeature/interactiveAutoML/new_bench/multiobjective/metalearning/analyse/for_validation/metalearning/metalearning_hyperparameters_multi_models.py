@@ -70,8 +70,9 @@ def evaluatePipeline(key, return_dict):
 			my_x_test = X_data_train[inner_test_ids]
 			predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
 
-		#predictions = np.argmax(predictions_probabilities, axis=1)
+		predictions = np.argmax(predictions_probabilities, axis=1)
 
+		'''
 		predictions = np.zeros(len(predictions_probabilities), dtype=int)
 		for row_it in range(len(predictions_probabilities)):
 			winner = np.argwhere(predictions_probabilities[row_it, :] == np.max(predictions_probabilities[row_it, :]))
@@ -87,6 +88,7 @@ def evaluatePipeline(key, return_dict):
 					rank_i += 1
 			predictions[row_it] = winner
 		predictions -= 1
+		'''
 
 		for p_i in range(len(predictions)):
 			current_dataset_id = groups_train[inner_test_ids][p_i]
@@ -700,7 +702,7 @@ for train_ids, test_ids in outer_cv_all:
 										   X_data_train=X_data[train_ids, :],
 										   strategy_success_train=strategy_success[train_ids, :],
 										   groups_train=groups[train_ids]),
-				   n_trials=1000, n_jobs=25)
+				   n_trials=500, n_jobs=25)
 
 
 
@@ -772,6 +774,7 @@ for train_ids, test_ids in outer_cv_all:
 
 		dataset_id += 1
 
+		'''
 		#strategy conflict resolution
 		predictions = np.zeros(len(predictions_probabilities), dtype=int)
 		for row_it in range(len(predictions_probabilities)):
@@ -788,9 +791,10 @@ for train_ids, test_ids in outer_cv_all:
 					rank_i += 1
 
 			predictions[row_it] = winner
+		'''
 
-		#predictions = np.argmax(predictions_probabilities, axis=1)
-		#predictions += 1
+		predictions = np.argmax(predictions_probabilities, axis=1)
+		predictions += 1
 		print(predictions.shape)
 		print(predictions)
 		print(np.array(dataset['best_strategy'])[success_ids[test_ids]])
