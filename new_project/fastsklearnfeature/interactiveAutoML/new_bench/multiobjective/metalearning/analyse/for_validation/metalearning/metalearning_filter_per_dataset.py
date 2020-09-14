@@ -281,7 +281,7 @@ log_search_time = []
 for i in range(len(success_ids)):
 	current_id = success_ids[i]
 
-	print(dataset['model'][current_id])
+	#print(dataset['model'][current_id])
 	dt_list.append(dataset['model'][current_id] == 'Decision Tree')
 	nb_list.append(dataset['model'][current_id] == 'Gaussian Naive Bayes')
 	lr_list.append(dataset['model'][current_id] == 'Logistic Regression')
