@@ -14,7 +14,6 @@ import copy
 from sklearn.pipeline import Pipeline
 import warnings
 warnings.filterwarnings("ignore")
-import openml
 
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.RandomForestClassifierOptuna import RandomForestClassifierOptuna
 from sklearn.utils.class_weight import compute_sample_weight
@@ -638,7 +637,7 @@ store_all_strategies_results = {}
 for my_strategy in range(strategy_success.shape[1]):
 	store_all_strategies_results[my_strategy] = []
 
-import openml
+
 
 my_string_csv = ''
 
@@ -698,7 +697,7 @@ for train_ids, test_ids in outer_cv_all:
 	if len(test_ids) > 0:
 		test_data_id = np.unique(groups[test_ids])[0]
 
-		my_string_csv += openml.datasets.get_dataset(dataset_id=test_data_id).name + ';'
+		my_string_csv += test_data_id + ';'
 
 		predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
 
@@ -708,7 +707,7 @@ for train_ids, test_ids in outer_cv_all:
 		print('oracle coverage: ' + str(np.sum(strategy_sum > 0) / float(len(test_ids))))
 
 		dicttuple2coverage[
-			('oracle', openml.datasets.get_dataset(dataset_id=test_data_id).name)] = np.sum(strategy_sum > 0) / float(len(test_ids))
+			('oracle', test_data_id)] = np.sum(strategy_sum > 0) / float(len(test_ids))
 
 		my_string_csv += str(np.sum(strategy_sum > 0) / float(len(test_ids))) + ';'
 
@@ -752,7 +751,7 @@ for train_ids, test_ids in outer_cv_all:
 				print(mappnames[my_strategy + 1] + ' coverage : ' + str(np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids)) ))
 
 				my_string_csv += str(np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids))) + ';'
-				dicttuple2coverage[(mappnames[my_strategy + 1], openml.datasets.get_dataset(dataset_id=test_data_id).name)] = np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids))
+				dicttuple2coverage[(mappnames[my_strategy + 1], test_data_id)] = np.sum(strategy_success[test_ids, my_strategy]) / float(len(test_ids))
 
 			else:
 				predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
@@ -789,9 +788,9 @@ for train_ids, test_ids in outer_cv_all:
 
 		my_string_csv += str(np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))) + '\n'
 		dicttuple2coverage[
-			('metalearning', openml.datasets.get_dataset(dataset_id=test_data_id).name)] = np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))
+			('metalearning', test_data_id)] = np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))
 
-		data2score[openml.datasets.get_dataset(dataset_id=test_data_id).name] = np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))
+		data2score[test_data_id] = np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))
 		print(data2score)
 
 
