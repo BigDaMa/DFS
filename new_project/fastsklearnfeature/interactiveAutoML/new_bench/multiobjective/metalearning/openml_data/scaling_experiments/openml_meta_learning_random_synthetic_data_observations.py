@@ -20,6 +20,8 @@ from sklearn.feature_selection import mutual_info_classif
 from skrebate import ReliefF
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.multiprocessing_global as mp_global
 import diffprivlib.models as models
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.randomforest.PrivateRandomForrest import PrivateRandomForest
+
 
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.fullfeatures import fullfeatures
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.weighted_ranking import weighted_ranking
@@ -35,6 +37,9 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 import hyperopt.pyll.stochastic
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
 
 import numpy as np
 import copy
@@ -51,6 +56,7 @@ from sklearn import preprocessing
 from sklearn.impute import SimpleImputer
 from sklearn.datasets import make_classification
 import os
+from sklearn.metrics import f1_score
 
 def my_function(config_id):
 	conf = mp_global.configurations[config_id]
@@ -71,7 +77,8 @@ def my_function(config_id):
 								   min_robustness=mp_global.min_robustness,
 								   max_number_features=mp_global.max_number_features,
 								   max_search_time=mp_global.max_search_time,
-								   log_file='/tmp/experiment_observations' + str(number_samples) + '/run' + str(run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle')
+								   log_file='/tmp/experiment_observations' + str(number_samples) + '/run' + str(run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle',
+								   accuracy_scorer=mp_global.accuracy_scorer)
 	result['strategy_id'] = conf['strategy_id']
 	return result
 
@@ -168,9 +175,6 @@ k_value_list = []
 configuration_list = []
 scaling_factor_list = []
 
-cv_splitter = StratifiedKFold(5, random_state=42)
-
-auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 
 
 ### generate 100 configurations
@@ -178,6 +182,12 @@ auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=
 
 space = {
 		     ### constraint space
+			 'model':hp.choice('model_choice',
+							[
+								'Logistic Regression',
+								'Gaussian Naive Bayes',
+								'Decision Tree' #, 'Random Forest'
+							]),
 			 'k': hp.choice('k_choice',
 							[
 								(1.0),
@@ -192,7 +202,7 @@ space = {
 			 'robustness': hp.choice('robustness_choice',
 							[
 								(0.0),
-								(hp.uniform('robustness_specified', 0, 1))
+								(hp.uniform('robustness_specified', 0.8, 1))
 							]),
 			 #TODO: set these to default
 			 ### dataset space
@@ -206,7 +216,7 @@ space = {
 
 configurations = []
 try:
-	configurations = pickle.load(open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations.pickle", "rb"))
+	configurations = pickle.load(open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations_models.pickle", "rb"))
 except:
 	while len(configurations) < 100:
 		my_config = hyperopt.pyll.stochastic.sample(space)
@@ -217,7 +227,7 @@ except:
 			continue
 
 
-	pickle.dump(configurations, open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations.pickle", 'wb'))
+	pickle.dump(configurations, open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations_models.pickle", 'wb'))
 
 
 how_many_samples = int(input('enter number of samples please: '))
@@ -239,7 +249,10 @@ for number_samples in [how_many_samples]:#[100, 1000, 10000, 100000]:
 		mp_global.y_test = y_test
 		mp_global.names = []
 		mp_global.sensitive_ids = None
-		mp_global.cv_splitter = cv_splitter
+
+		mp_global.cv_splitter = StratifiedKFold(5, random_state=42)
+		mp_global.accuracy_scorer = make_scorer(f1_score)
+		mp_global.avoid_robustness = False
 
 
 		mp_global.X_validation = X_val
@@ -258,6 +271,21 @@ for number_samples in [how_many_samples]:#[100, 1000, 10000, 100000]:
 		model = LogisticRegression(class_weight='balanced')
 		if type(config['privacy']) != type(None):
 			model = models.LogisticRegression(epsilon=config['privacy'], class_weight='balanced')
+
+		model = None
+		if config['model'] == 'Logistic Regression':
+			model = LogisticRegression(class_weight='balanced')
+			if type(config['privacy']) != type(None):
+				model = models.LogisticRegression(epsilon=config['privacy'],
+												  class_weight='balanced')
+		elif config['model'] == 'Gaussian Naive Bayes':
+			model = GaussianNB()
+			if type(config['privacy']) != type(None):
+				model = models.GaussianNB(epsilon=config['privacy'])
+		elif config['model'] == 'Decision Tree':
+			model = DecisionTreeClassifier(class_weight='balanced')
+			if type(config['privacy']) != type(None):
+				model = PrivateRandomForest(n_estimators=1, epsilon=config['privacy'])
 
 		mp_global.clf = model
 		# define rankings
