@@ -15,6 +15,7 @@ from sklearn.pipeline import Pipeline
 import warnings
 warnings.filterwarnings("ignore")
 import openml
+from collections.abc import Iterable
 
 
 mappnames = {1:'TPE(Variance)',
@@ -157,8 +158,16 @@ for efolder in experiment_folders:
 		break
 
 
+print(np.unique(dataset['dataset_id']))
+print(len(np.unique(dataset['dataset_id'])))
 
+datsdets_all = []
+for check_datasets in range(len(dataset['success_value'])):
+	if np.sum(np.array(list(dataset['success_value'][check_datasets].values()))) > 0:
+		datsdets_all.append(dataset['dataset_id'][check_datasets])
 
+print(np.unique(datsdets_all))
+print(len(np.unique(datsdets_all)))
 
 
 
@@ -200,7 +209,7 @@ print("training size: " + str(len(success_ids)))
 X_data = np.matrix(X_train)[success_ids]
 y_data = np.array(y_train)[success_ids]
 groups = np.array(dataset['dataset_id'])[success_ids]
-outer_cv_all = list(GroupKFold(n_splits=19).split(X_data, None, groups=groups))
+outer_cv_all = list(GroupKFold(n_splits=21).split(X_data, None, groups=groups))
 
 
 strategy_search_times = np.zeros((X_data.shape[0], len(mappnames)))
@@ -652,9 +661,29 @@ for train_ids, test_ids in outer_cv_all:
 
 		dataset_id += 1
 
-		predictions = np.argmax(predictions_probabilities, axis=1)
-		predictions += 1
-		print(predictions.shape)
+
+		predictions = np.zeros(len(predictions_probabilities), dtype=int)
+		for row_it in range(len(predictions_probabilities)):
+			winner = np.argwhere(predictions_probabilities[row_it,:] == np.max(predictions_probabilities[row_it,:]))
+			winner += 1
+			if len(winner) > 1:
+				print(winner)
+				#raise Exception('more than one')
+
+				rannked_list = [14, 12, 11, 10, 2, 3, 5, 4, 8, 9, 7, 1, 6, 16, 13, 15, 17]
+
+				rank_i = 0
+				while isinstance(winner, Iterable):
+					if rannked_list[rank_i] in winner:
+						winner = rannked_list[rank_i]
+						break
+					rank_i += 1
+
+			predictions[row_it] = winner
+
+		#predictions = np.argmax(predictions_probabilities, axis=1)
+		#predictions += 1
+		print('prediction_shape: ' + str(predictions.shape))
 		print(predictions)
 		print(np.array(dataset['best_strategy'])[success_ids[test_ids]])
 
