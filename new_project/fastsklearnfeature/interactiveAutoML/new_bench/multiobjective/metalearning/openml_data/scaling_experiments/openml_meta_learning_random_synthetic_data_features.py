@@ -52,6 +52,13 @@ from sklearn.impute import SimpleImputer
 from sklearn.datasets import make_classification
 import os
 
+from sklearn.metrics import f1_score
+
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.openml_data.private_models.randomforest.PrivateRandomForrest import PrivateRandomForest
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+
 how_many_samples = int(input('enter number of samples please: '))
 
 def my_function(config_id):
@@ -73,7 +80,8 @@ def my_function(config_id):
 								   min_robustness=mp_global.min_robustness,
 								   max_number_features=mp_global.max_number_features,
 								   max_search_time=mp_global.max_search_time,
-								   log_file='/tmp/experiment_features' + str(how_many_samples) + '/run' + str(run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle')
+								   log_file='/tmp/experiment_features' + str(how_many_samples) + '/run' + str(run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle',
+								   accuracy_scorer=mp_global.accuracy_scorer)
 	result['strategy_id'] = conf['strategy_id']
 	return result
 
@@ -180,6 +188,12 @@ auc_scorer = make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=
 
 space = {
 		     ### constraint space
+			 'model':hp.choice('model_choice',
+							[
+								'Logistic Regression',
+								'Gaussian Naive Bayes',
+								'Decision Tree' #, 'Random Forest'
+							]),
 			 'k': hp.choice('k_choice',
 							[
 								(1.0),
@@ -194,7 +208,7 @@ space = {
 			 'robustness': hp.choice('robustness_choice',
 							[
 								(0.0),
-								(hp.uniform('robustness_specified', 0, 1))
+								(hp.uniform('robustness_specified', 0.8, 1))
 							]),
 			 #TODO: set these to default
 			 ### dataset space
@@ -208,7 +222,7 @@ space = {
 
 configurations = []
 try:
-	configurations = pickle.load(open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations.pickle", "rb"))
+	configurations = pickle.load(open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations_modelsf.pickle", "rb"))
 except:
 	while len(configurations) < 100:
 		my_config = hyperopt.pyll.stochastic.sample(space)
@@ -219,7 +233,7 @@ except:
 			continue
 
 
-	pickle.dump(configurations, open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations.pickle", 'wb'))
+	pickle.dump(configurations, open(Config.get('data_path') + "/scaling_configurations_samples/scaling_configurations_modelsf.pickle", 'wb'))
 
 
 for number_features in [how_many_samples]:
@@ -239,7 +253,10 @@ for number_features in [how_many_samples]:
 		mp_global.y_test = y_test
 		mp_global.names = []
 		mp_global.sensitive_ids = None
-		mp_global.cv_splitter = cv_splitter
+
+		mp_global.cv_splitter = StratifiedKFold(5, random_state=42)
+		mp_global.accuracy_scorer = make_scorer(f1_score)
+		mp_global.avoid_robustness = False
 
 
 		mp_global.X_validation = X_val
@@ -255,9 +272,20 @@ for number_features in [how_many_samples]:
 
 		max_search_time = time_limit
 
-		model = LogisticRegression(class_weight='balanced')
-		if type(config['privacy']) != type(None):
-			model = models.LogisticRegression(epsilon=config['privacy'], class_weight='balanced')
+		model = None
+		if config['model'] == 'Logistic Regression':
+			model = LogisticRegression(class_weight='balanced')
+			if type(config['privacy']) != type(None):
+				model = models.LogisticRegression(epsilon=config['privacy'],
+												  class_weight='balanced')
+		elif config['model'] == 'Gaussian Naive Bayes':
+			model = GaussianNB()
+			if type(config['privacy']) != type(None):
+				model = models.GaussianNB(epsilon=config['privacy'])
+		elif config['model'] == 'Decision Tree':
+			model = DecisionTreeClassifier(class_weight='balanced')
+			if type(config['privacy']) != type(None):
+				model = PrivateRandomForest(n_estimators=1, epsilon=config['privacy'])
 
 		mp_global.clf = model
 		# define rankings

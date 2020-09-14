@@ -1,6 +1,4 @@
 from sklearn.metrics import make_scorer
-from sklearn.metrics import roc_auc_score
-from sklearn.linear_model import LogisticRegression
 import pickle
 from sklearn.model_selection import StratifiedKFold
 import warnings
@@ -267,10 +265,6 @@ for number_samples in [how_many_samples]:#[100, 1000, 10000, 100000]:
 		max_number_features = config['k']
 
 		max_search_time = time_limit
-
-		model = LogisticRegression(class_weight='balanced')
-		if type(config['privacy']) != type(None):
-			model = models.LogisticRegression(epsilon=config['privacy'], class_weight='balanced')
 
 		model = None
 		if config['model'] == 'Logistic Regression':
