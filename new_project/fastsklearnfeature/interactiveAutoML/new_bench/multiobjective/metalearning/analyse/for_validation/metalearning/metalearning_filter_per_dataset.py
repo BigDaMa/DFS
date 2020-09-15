@@ -54,14 +54,16 @@ names_features = ['accuracy',
 	 'columns']
 
 
+my_random_state = np.random.RandomState(seed=42)
+
 #get all files from folder
 
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
 #experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
-#experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 
 
-experiment_folders = glob.glob("/home/neutatz/data/dfs_experiments/new_experiments_maybe_final/*/")
+#experiment_folders = glob.glob("/home/neutatz/data/dfs_experiments/new_experiments_maybe_final/*/")
 
 print(experiment_folders)
 
@@ -566,8 +568,8 @@ for run in range(X_data.shape[0]):
 print(dataset_id2count)
 
 
-
-
+fastest_strategy_across_datasets = {}
+fastest_strategy_across_datasets_metalearning = []
 
 
 for train_ids, test_ids in outer_cv_all:
@@ -634,7 +636,7 @@ for train_ids, test_ids in outer_cv_all:
 				X_res = X_data[train_ids][:, my_ids]
 				y_res = strategy_success[train_ids, my_strategy]
 
-				rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+				rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=my_random_state)
 				#rf_random.fit(X_res, y_res, sample_weight=sample_weights)
 				rf_random.fit(X_res, y_res)
 
@@ -671,6 +673,7 @@ for train_ids, test_ids in outer_cv_all:
 		dataset_id += 1
 
 
+
 		predictions = np.zeros(len(predictions_probabilities), dtype=int)
 		for row_it in range(len(predictions_probabilities)):
 			winner = np.argwhere(predictions_probabilities[row_it,:] == np.max(predictions_probabilities[row_it,:]))
@@ -679,7 +682,7 @@ for train_ids, test_ids in outer_cv_all:
 				print(winner)
 				#raise Exception('more than one')
 
-				rannked_list = [14, 12, 11, 10, 2, 3, 5, 4, 8, 9, 7, 1, 6, 16, 13, 15, 17]
+				rannked_list = [14, 12, 11, 10, 2, 3, 8, 5, 9, 4, 1, 7, 6, 16, 13, 15, 17]
 
 				rank_i = 0
 				while isinstance(winner, Iterable):
@@ -689,6 +692,7 @@ for train_ids, test_ids in outer_cv_all:
 					rank_i += 1
 
 			predictions[row_it] = winner
+
 
 		#predictions = np.argmax(predictions_probabilities, axis=1)
 		#predictions += 1
@@ -739,6 +743,26 @@ for train_ids, test_ids in outer_cv_all:
 		for run_i in range(len(succcess_test_fold1)):
 			fastest_fold_here.append(np.array(dataset['best_strategy'])[test_ids][run_i] == predictions[run_i])
 
+		#new fastest
+		check_test_count = 0
+		for tt_item in test_ids:
+			check_test_count += tt_item in real_success_ids
+
+		if check_test_count > 0:
+
+			fastest_strategy_across_datasets_metalearning.append(float(np.sum(np.array(fastest_fold_here))) / float(check_test_count))
+
+			for my_strategy in range(1, strategy_success.shape[1] + 1):
+				current_strategy_fastest_sum = float(np.sum(np.array(dataset['best_strategy'])[test_ids] == my_strategy))
+				current_fastest_fraction = current_strategy_fastest_sum / float(check_test_count)
+
+				if not my_strategy in fastest_strategy_across_datasets:
+					fastest_strategy_across_datasets[my_strategy] = []
+				fastest_strategy_across_datasets[my_strategy].append(current_fastest_fraction)
+
+
+		## calculate fastest of satisfiable scenarios => append per strategy
+
 		print("Fastest: " + str(np.sum(fastest_fold_here) / float(len(fastest_fold_here))))
 
 		all_successful_times.extend(successful_times)
@@ -762,6 +786,11 @@ print('\n final successful mean time: ' + str(np.mean(all_successful_times)) + '
 
 for my_strategy in range(strategy_success.shape[1]):
 	print(mappnames[my_strategy + 1] + ' coverage: ' + str(np.sum(store_all_strategies_results[my_strategy]) / float(len(store_all_strategies_results[my_strategy]))))
+
+
+for my_strategy in range(1, strategy_success.shape[1] + 1):
+	print(mappnames[my_strategy] + ' relative fastest: ' + str(np.average(fastest_strategy_across_datasets[my_strategy])) + " +- " + str(np.std(fastest_strategy_across_datasets[my_strategy])))
+print('meta learning' + ' relative fastest: ' + str(np.average(fastest_strategy_across_datasets_metalearning)) + " +- " + str(np.std(fastest_strategy_across_datasets_metalearning)))
 
 
 for my_strategy in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
