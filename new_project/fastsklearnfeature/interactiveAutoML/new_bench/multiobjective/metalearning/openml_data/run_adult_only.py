@@ -159,11 +159,7 @@ while True:
 								(0.0),
 								(hp.uniform('fairness_specified', 0.8, 1))
 							]),
-			 'privacy': hp.choice('privacy_choice',
-							[
-								(None),
-								(hp.lognormal('privacy_specified', 0, 1))
-							]),
+			 'privacy': None,
 			 'robustness': hp.choice('robustness_choice',
 							[
 								(0.0),
@@ -222,12 +218,6 @@ while True:
 					model = models.GaussianNB(epsilon=most_uncertain_f['privacy_specified'][0])
 			elif most_uncertain_f['model_choice'][0] == 2:
 				model = DecisionTreeClassifier(class_weight='balanced')
-				if most_uncertain_f['privacy_choice'][0]:
-					model = PrivateRandomForest(n_estimators=1, epsilon=most_uncertain_f['privacy_specified'][0])
-			elif most_uncertain_f['model_choice'][0] == 3:
-				model = RandomForestClassifier(n_estimators=100, class_weight='balanced')
-				if most_uncertain_f['privacy_choice'][0]:
-					model = PrivateRandomForest(n_estimators=100, epsilon=most_uncertain_f['privacy_specified'][0])
 
 			print(model)
 
@@ -243,6 +233,7 @@ while True:
 			#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
 			#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
 			rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
+			rankings = []
 
 			mp_global.min_accuracy = min_accuracy
 			mp_global.min_fairness = min_fairness
@@ -273,6 +264,8 @@ while True:
 							   backward_floating_selection,
 							   recursive_feature_elimination,
 							   fullfeatures]
+
+			main_strategies = [fullfeatures]
 
 			#run main strategies
 
