@@ -94,7 +94,8 @@ for s in range(1, len(mappnames) + 1):
 
 
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
-experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
+#experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 
 print(experiment_folders)
 
@@ -129,7 +130,7 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
-number_ml_scenarios = 1200
+number_ml_scenarios = 1500
 
 
 map_constraint_values_per_strategy = {}

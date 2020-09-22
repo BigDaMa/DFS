@@ -81,7 +81,8 @@ map_dataset2name['1018'] = 'IPUMS Census'
 map_dataset2name['38'] = 'Thyroid Disease'
 map_dataset2name['1003'] = 'Primary Tumor'
 map_dataset2name['934'] ='Social Mobility'
-
+map_dataset2name['42565'] ='Students'
+map_dataset2name['42132'] = 'Traffic'
 
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
@@ -134,7 +135,8 @@ def print_constraints_2(features):
 
 #get all files from folder
 
-experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 
 print(experiment_folders)
 
@@ -169,7 +171,7 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
-number_ml_scenarios = 1200
+number_ml_scenarios = 1500
 run_count = 0
 
 satisfied_fairness = []

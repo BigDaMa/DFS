@@ -71,6 +71,7 @@ def print_constraints_2(features):
 
 
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 
 print(experiment_folders)
@@ -173,65 +174,62 @@ def distance_to_constraints_on_validation(exp_results, best_run, info_dict):
 
 strategy_distance_test = {}
 strategy_distance_validation = {}
-
-finished_validation = {}
-finished_test = {}
-
 for s in range(1, len(mappnames) + 1):
 	strategy_distance_test[s] = []
 	strategy_distance_validation[s] = []
 
-	finished_validation[s] = []
-	finished_test[s] = []
 
+model_filter = 'Gaussian Naive Bayes'
 
 number_ml_scenarios = 1500
 
-run_count = 0
 oracle_distance_validation = []
 oracle_distance_test = []
+run_count = 0
 for efolder in experiment_folders:
 	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
 
-			distance_of_this_run_test = []
-			distance_of_this_run_validation = []
-			for s in range(1, len(mappnames) + 1):
-				exp_results = []
-				try:
-					exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
-				except:
-					pass
+			if info_dict['constraint_set_list']['model'] == model_filter:
 
-				min_loss = np.inf
-				best_run = None
+				distance_of_this_run_test = []
+				distance_of_this_run_validation = []
+				for s in range(1, len(mappnames) + 1):
+					exp_results = []
+					try:
+						exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+					except:
+						pass
 
-				for min_r in range(len(exp_results)):
-					if 'loss' in exp_results[min_r] and exp_results[min_r]['loss'] < min_loss:
-						min_loss = exp_results[min_r]['loss']
-						best_run = min_r
+					min_loss = np.inf
+					best_run = None
 
-				my_dist = distance_to_constraints_on_test(exp_results, best_run, info_dict)
-				if not is_successfull_validation_and_test(exp_results):
+					for min_r in range(len(exp_results)):
+						if 'loss' in exp_results[min_r] and exp_results[min_r]['loss'] < min_loss:
+							min_loss = exp_results[min_r]['loss']
+							best_run = min_r
+
+					my_dist = distance_to_constraints_on_test(exp_results, best_run, info_dict)
 					strategy_distance_test[s].append(my_dist)
 					distance_of_this_run_test.append(my_dist)
 
-					finished_validation[s].append(len(exp_results) > 0 and 'Finished' in exp_results[-1] and exp_results[-1]['Finished'])
-
-				#now distance to validation
-				if not is_successfull_validation(exp_results):
+					#now distance to validation
 					my_dist_validation = distance_to_constraints_on_validation(exp_results, best_run, info_dict)
 					strategy_distance_validation[s].append(my_dist_validation)
 					distance_of_this_run_validation.append(my_dist_validation)
 
-					finished_test[s].append(
-						len(exp_results) > 0 and 'Finished' in exp_results[-1] and exp_results[-1]['Finished'])
-			run_count += 1
+
+
+				best_dist_id = np.argmin(np.array(distance_of_this_run_test))
+
+				oracle_distance_validation.append(distance_of_this_run_validation[best_dist_id])
+				oracle_distance_test.append(distance_of_this_run_test[best_dist_id])
+
+				run_count += 1
 		except FileNotFoundError:
 			pass
-
 		if run_count == number_ml_scenarios:
 			break
 	if run_count == number_ml_scenarios:
@@ -244,77 +242,61 @@ for efolder in experiment_folders:
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
-			run_strategies_success_test = {}
-			run_strategies_times = {}
-			run_strategies_success_validation = {}
 
-			validation_satisfied_by_any_strategy = False
+			if info_dict['constraint_set_list']['model'] == model_filter:
 
-			min_time = np.inf
-			best_strategy = 0
-			for s in range(1, len(mappnames) + 1):
-				exp_results = []
-				try:
-					exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
-				except:
-					pass
-				if is_successfull_validation_and_test(exp_results):
-					runtime = exp_results[-1]['final_time']
-					if runtime < min_time:
-						min_time = runtime
-						best_strategy = s
+				run_strategies_success_test = {}
+				run_strategies_times = {}
+				run_strategies_success_validation = {}
 
-					run_strategies_success_test[s] = True
-					run_strategies_times[s] = runtime
-				else:
-					run_strategies_success_test[s] = False
+				validation_satisfied_by_any_strategy = False
 
-					for exp_run in exp_results:
-						if 'Finished' in exp_run and exp_run['Finished']:
-							run_strategies_times[s] = exp_run['final_time']
-							break
-					if not s in run_strategies_times:
-						run_strategies_times[s] = info_dict['constraint_set_list']['search_time']
+				min_time = np.inf
+				best_strategy = 0
+				for s in range(1, len(mappnames) + 1):
+					exp_results = []
+					try:
+						exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+					except:
+						pass
+					if is_successfull_validation_and_test(exp_results):
+						runtime = exp_results[-1]['final_time']
+						if runtime < min_time:
+							min_time = runtime
+							best_strategy = s
 
-				run_strategies_success_validation[s] = is_successfull_validation(exp_results)
-				if run_strategies_success_validation[s]:
-					validation_satisfied_by_any_strategy = True
+						run_strategies_success_test[s] = True
+						run_strategies_times[s] = runtime
+					else:
+						run_strategies_success_test[s] = False
+						#run_strategies_times[s] = runtime
 
-			dataset['success_value'].append(run_strategies_success_test)
-			dataset['success_value_validation'].append(run_strategies_success_validation)
-			dataset['best_strategy'].append(best_strategy)
-			dataset['times_value'].append(run_strategies_times)
-			dataset['validation_satisfied'].append(validation_satisfied_by_any_strategy)
+					run_strategies_success_validation[s] = is_successfull_validation(exp_results)
+					if run_strategies_success_validation[s]:
+						validation_satisfied_by_any_strategy = True
 
-			dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
+				dataset['success_value'].append(run_strategies_success_test)
+				dataset['success_value_validation'].append(run_strategies_success_validation)
+				dataset['best_strategy'].append(best_strategy)
+				dataset['times_value'].append(run_strategies_times)
+				dataset['validation_satisfied'].append(validation_satisfied_by_any_strategy)
 
-			run_count += 1
+				dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
+
+				run_count += 1
 		except FileNotFoundError:
 			pass
+
 		if run_count == number_ml_scenarios:
 			break
 	if run_count == number_ml_scenarios:
 		break
 
 
+#assert len(dataset['success_value']) == number_ml_scenarios
 
+print(len(dataset['success_value']))
 
-
-
-#print(dataset)
-
-print(np.sum(np.array(dataset['best_strategy']) == 0) / float(len(dataset['best_strategy'])))
-print(dataset['best_strategy'])
-print(len(dataset['best_strategy']))
-
-'''
-success_ids = []
-for run in range(len(dataset['best_strategy'])):
-	if dataset['best_strategy'][run] > 0:
-		success_ids.append(run)
-		if len(success_ids) == 1000:
-			break
-'''
 success_ids = np.array(list(range(len(dataset['best_strategy']))))
 
 assert len(dataset['success_value']) == len(dataset['best_strategy'])
@@ -339,7 +321,7 @@ strategy_time = {}
 for s in range(1, len(mappnames) + 1):
 	strategy_time[s] = []
 	for run in success_ids:
-		if not dataset['success_value'][run][s] == True:
+		if dataset['success_value'][run][s] == True:
 			strategy_time[s].append(dataset['times_value'][run][s])
 
 
@@ -348,7 +330,7 @@ print(strategy_time)
 
 np.sum(np.array(dataset['best_strategy']) == 1)
 
-
+print(best_strategy)
 
 
 ##get min_max values
@@ -356,7 +338,7 @@ np.sum(np.array(dataset['best_strategy']) == 1)
 min_average_search_time = np.inf
 max_fastest = -1
 max_coverage_validation = -1
-max_finished_test = -1
+max_coverage_test = -1
 min_distance_validation = np.inf
 min_distance_test = np.inf
 
@@ -366,10 +348,27 @@ def str_float(number):
 
 
 for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
-	recall = np.sum(finished_test[s + 1]) / float(len(finished_test[s + 1]))
+	recall = np.sum(strategy_recall_test[s]) / float(strategy_recall_test.shape[1])
 
-	if max_finished_test < str_float(recall):
-		max_finished_test = str_float(recall)
+	mean_time = np.mean(strategy_time[s+1])
+	std_time = np.std(strategy_time[s+1])
+
+	avg_search_time = mean_time + std_time
+	if min_average_search_time > avg_search_time:
+		min_average_search_time = avg_search_time
+
+
+	fastest = np.sum(np.array(dataset['best_strategy']) == s+1) / float(len(dataset['best_strategy']))
+	if max_fastest < str_float(fastest):
+		max_fastest = str_float(fastest)
+
+	recall_validation = np.sum(strategy_recall_validation[s]) / float(strategy_recall_validation.shape[1])
+	if max_coverage_validation < str_float(recall_validation):
+		max_coverage_validation = str_float(recall_validation)
+
+	recall = np.sum(strategy_recall_test[s]) / float(strategy_recall_test.shape[1])
+	if max_coverage_test < str_float(recall):
+		max_coverage_test = str_float(recall)
 
 	dist_val = str_float(np.mean(strategy_distance_validation[s + 1])) + str_float(np.std(strategy_distance_validation[s + 1]))
 	if min_distance_validation > dist_val:
@@ -383,36 +382,53 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 latex_string = ''
 #for s in range(len(mappnames)):
 for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
+	recall = np.sum(strategy_recall_test[s]) / float(strategy_recall_test.shape[1])
+	recall_validation = np.sum(strategy_recall_validation[s]) / float(strategy_recall_validation.shape[1])
 
-	latex_string += str(mappnames[s + 1])
+	mean_time = np.mean(strategy_time[s+1])
+	std_time = np.std(strategy_time[s+1])
 
-	recall = np.sum(finished_test[s + 1]) / float(len(finished_test[s + 1]))
-
-	'''
-	if max_finished_test == str_float(recall):
-		latex_string += "$\\textbf{" + "{:.2f}".format(recall) + '}$'
+	avg_search_time = mean_time + std_time
+	if avg_search_time == min_average_search_time:
+		latex_string += str(mappnames[s + 1]) + " & $ \\textbf{" + "{:.0f}".format(mean_time) + "} \pm \\textbf{" + "{:.0f}".format(
+			std_time) + '}'
 	else:
-		latex_string += "$" + "{:.2f}".format(recall) + '$'
-	'''
+		latex_string += str(mappnames[s+1]) + " & $" + "{:.0f}".format(mean_time) + " \pm " + "{:.0f}".format(std_time)
 
 
-	dist_val = str_float(np.mean(strategy_distance_validation[s + 1])) + str_float(np.std(strategy_distance_validation[s + 1]))
-	if min_distance_validation == dist_val:
-		latex_string += " & $\\textbf{" + "{:.2f}".format(
-			np.mean(strategy_distance_validation[s + 1])) + "} \pm \\textbf{" + "{:.2f}".format(
-			np.std(strategy_distance_validation[s + 1])) + '}'
+	fastest = np.sum(np.array(dataset['best_strategy']) == s+1) / float(len(dataset['best_strategy']))
+	if max_fastest == str_float(fastest):
+		latex_string += "$ & $\\textbf{" + "{:.2f}".format(fastest) + '}'
 	else:
-		latex_string += " & $" + "{:.2f}".format(np.mean(strategy_distance_validation[s + 1])) + " \pm " + "{:.2f}".format(np.std(strategy_distance_validation[s + 1]))
+		latex_string += "$ & $" + "{:.2f}".format(fastest)
 
-	dist_test = str_float(np.mean(strategy_distance_test[s + 1])) + str_float(np.std(strategy_distance_test[s + 1]))
-	if min_distance_test == dist_test:
-		latex_string += "$ & $\\textbf{" + "{:.2f}".format(np.mean(strategy_distance_test[s + 1])) + "} \pm \\textbf{" + "{:.2f}".format(
-			np.std(strategy_distance_test[s + 1])) + '}'
+	if max_coverage_validation == str_float(recall_validation):
+		latex_string += "$ & $\\textbf{" + "{:.2f}".format(recall_validation) + '}$'
 	else:
-		latex_string += "$ & $" + "{:.2f}".format(np.mean(strategy_distance_test[s + 1])) + " \pm " + "{:.2f}".format(np.std(strategy_distance_test[s + 1]))
+		latex_string += "$ & $" + "{:.2f}".format(recall_validation) + '$'
 
-	latex_string +='$ \\\\ \n'
+	if max_coverage_test == str_float(recall):
+		latex_string += " & $\\textbf{" + "{:.2f}".format(recall) + '}$'
+	else:
+		latex_string += " & $" + "{:.2f}".format(recall) + '$'
+
+	latex_string += '\\\\ \n'
 
 print("\n\n")
+
+
+
+all_runtimes = []
+for run in success_ids:
+	if dataset['best_strategy'][run] > 0:
+		all_runtimes.append(dataset['times_value'][run][dataset['best_strategy'][run]])
+
+oracle_coverage = np.sum(np.array(dataset['best_strategy']) != 0) / float(len(dataset['best_strategy']))
+oracle_coverage_validation = np.sum(dataset['validation_satisfied']) / float(len(dataset['validation_satisfied']))
+
+latex_string += str('Oracle') + " & $" + "{:.0f}".format(np.mean(all_runtimes)) + " \pm " + "{:.0f}".format(np.std(all_runtimes)) + \
+                "$ & $" + "{:.2f}".format(oracle_coverage) + "$" \
+				" & $" + "{:.2f}".format(oracle_coverage_validation) + "$ & $" + "{:.2f}".format(oracle_coverage) + '$' \
+				+ ' \\\\ \n'
 
 print(latex_string)

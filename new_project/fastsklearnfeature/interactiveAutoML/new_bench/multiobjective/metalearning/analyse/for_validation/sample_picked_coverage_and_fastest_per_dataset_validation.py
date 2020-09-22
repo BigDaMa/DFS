@@ -62,6 +62,11 @@ map_dataset2name['38'] = 'Thyroid Disease'
 map_dataset2name['1003'] = 'Primary Tumor'
 map_dataset2name['934'] ='Social Mobility'
 
+map_dataset2name['42565'] = 'Students'
+map_dataset2name['42132'] = 'Traffic'
+
+
+
 
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
@@ -78,7 +83,7 @@ mappnames = {1:'TPE(Variance)',
 			 13: 'SBS(NR)',
 			 14: 'SFFS(NR)',
 			 15: 'SBFS(NR)',
-			 16: 'RFE(LR)',
+			 16: 'RFE(Model)',
 			 17: 'Complete Set'
 			 }
 
@@ -100,7 +105,8 @@ names = ['accuracy',
 
 
 
-experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 
 print(experiment_folders)
 
@@ -137,7 +143,7 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
-number_ml_scenarios = 1200
+number_ml_scenarios = 1500
 
 run_count = 0
 for efolder in experiment_folders:
@@ -283,9 +289,9 @@ print(fastest_representative_datasets)
 
 all_representatives = list(set(coverage_representative_datasets).union(fastest_representative_datasets))
 
-#all_representatives = ['446', '42178', '934', '1240']
-all_representatives = ['1590','42178','934','1240', '31']
-#all_representatives = list(map_dataset2name.keys())
+
+#all_representatives = ['1590','31','42132', '981', '42565']
+all_representatives = list(map_data_2_fastest.keys())
 
 print(all_representatives)
 

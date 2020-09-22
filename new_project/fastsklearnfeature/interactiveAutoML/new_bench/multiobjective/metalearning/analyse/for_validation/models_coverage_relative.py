@@ -24,38 +24,7 @@ import copy
 import glob
 import matplotlib.pyplot as plt
 
-def is_pareto_efficient_simple(costs):
-    """
-    Find the pareto-efficient points
-    :param costs: An (n_points, n_costs) array
-    :return: A (n_points, ) boolean array, indicating whether each point is Pareto efficient
-    """
-    is_efficient = np.ones(costs.shape[0], dtype = bool)
-    for i, c in enumerate(costs):
-        if is_efficient[i]:
-            is_efficient[is_efficient] = np.any(costs[is_efficient]<c, axis=1)  # Keep any point with a lower cost
-            is_efficient[i] = True  # And keep self
-    return is_efficient
 
-'''
-Exhaustive Search & $x \pm y$ && x\\
-Forward Selection & $x \pm y$ && x\\
-Backward Selection & $x \pm y$ && x\\
-Forward Floating Selection & $x \pm y$ && x\\
-Backward Floating Selection & $x \pm y$ && x\\
-Recursive Feature Elimination & $x \pm y$ && x\\
-Hyperopt(KBest(Fisher Score)) & $x \pm y$ && x\\
-Hyperopt(KBest(ReliefF)) & $x \pm y$ && x\\
-Hyperopt(KBest(Mutual Information)) & $x \pm y$ && x\\
-Hyperopt(KBest(FCBF)) & $x \pm y$ && x\\
-Hyperopt(KBest(MCFS)) & $x \pm y$ && x\\
-Hyperopt(KBest(Variance)) & $x \pm y$ && x\\
-Hyperopt(KBest($\chi^2$)) & $x \pm y$ && x\\
-Ranking-free Hyperopt & $x \pm y$ && x\\
-Ranking-free Simulated Annealing & $x \pm y$ && x\\
-Ranking-free NSGA-II & $x \pm y$ && x\\ \midrule
-Meta-learned Strategy Choice & $x \pm y$ && x\\
-'''
 
 map_dataset2name = {}
 map_dataset2name['31'] = 'German Credit'
@@ -86,7 +55,7 @@ map_dataset2name['934'] ='Social Mobility'
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
 			 3:'TPE(FCBF)',
-			 4: 'TPE(Fisher Score)',
+			 4: 'TPE(Fisher)',
 			 5: 'TPE(MIM)',
 			 6: 'TPE(MCFS)',
 			 7: 'TPE(ReliefF)',
@@ -98,44 +67,31 @@ mappnames = {1:'TPE(Variance)',
 			 13: 'SBS(NR)',
 			 14: 'SFFS(NR)',
 			 15: 'SBFS(NR)',
-			 16: 'RFE(Logistic Regression)',
+			 16: 'RFE(Model)',
 			 17: 'Complete Set'
 			 }
 
-names = ['accuracy',
-	 'fairness',
-	 'k_rel',
-	 'k',
-	 'robustness',
-	 'privacy',
-	 'search_time',
-	 'cv_acc - acc',
-	 'cv_fair - fair',
-	 'cv_k - k rel',
-	 'cv_k - k',
-	 'cv_robust - robust',
-     'cv time',
-	 'rows',
-	 'columns']
-
-def print_constraints_2(features):
-
-
-	my_str = ''
-	for i in range(len(names)):
-		my_str += names[i] + ': ' + str(features[i]) + ' '
-	print(my_str)
-
-
-#logs_adult = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_adult.pickle', 'rb'))
-#logs_heart = pickle.load(open('/home/felix/phd/meta_learn/classification/metalearning_data_heart.pickle', 'rb'))
 
 
 
-#get all files from folder
+
+
+map_constraint_values_per_strategy = {}
+map_constraint_values_success = {}
+
+for s in range(1, len(mappnames) + 1):
+	map_constraint_values_per_strategy[s] = {}
+
+	map_constraint_values_per_strategy[s]['Logistic Regression'] = []
+	map_constraint_values_per_strategy[s]['Gaussian Naive Bayes'] = []
+	map_constraint_values_per_strategy[s]['Decision Tree'] = []
+
+
+
 
 
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
 experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 
 print(experiment_folders)
@@ -171,33 +127,96 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
+number_ml_scenarios = 1500
 
-map_data_2_constraints = {}
+
+map_constraint_values_per_strategy = {}
+
+run_count = 0
 for efolder in experiment_folders:
-	run_folders = glob.glob(efolder + "*/")
+	run_folders = sorted(glob.glob(efolder + "*/"))
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
 
+			model = info_dict['constraint_set_list']['model']
+
+			run_strategies_success_test = {}
 			for s in range(1, len(mappnames) + 1):
-
-				if not s in map_data_2_constraints:
-					map_data_2_constraints[s] = []
-
 				exp_results = []
 				try:
 					exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
 				except:
 					pass
+				run_strategies_success_test[s] = is_successfull_validation_and_test(exp_results)
 
-				if not is_successfull_validation_and_test(exp_results):
-					map_data_2_constraints[s].append(len(exp_results) > 0 and 'Finished' in exp_results[-1] and exp_results[-1]['Finished'])
+			if np.sum(list(run_strategies_success_test.values())) > 0:
+				for s in range(1, len(mappnames) + 1):
+					if not s in map_constraint_values_per_strategy:
+						map_constraint_values_per_strategy[s] = {}
+						map_constraint_values_per_strategy[s]['Logistic Regression'] = []
+						map_constraint_values_per_strategy[s]['Gaussian Naive Bayes'] = []
+						map_constraint_values_per_strategy[s]['Decision Tree'] = []
 
 
+					exp_results = []
+					try:
+						exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+					except:
+						pass
 
+					for key in ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree']:
+						if model == key:
+							map_constraint_values_per_strategy[s][key].append(is_successfull_validation_and_test(exp_results))
+
+			run_count += 1
 		except FileNotFoundError:
 			pass
+		if run_count == number_ml_scenarios:
+			break
+	if run_count == number_ml_scenarios:
+		break
 
 
-for k, v in map_data_2_constraints.items():
-	print(str(mappnames[k]) + ' finished fraction: ' + str(np.sum(map_data_2_constraints[k]) / float(len(map_data_2_constraints[k])) ))
+
+
+all_constraints = ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree',]
+
+
+
+
+#times it is set and satisfied / times it is set in total
+
+latex = "\\begin{tabular}{@{}l"
+for c in range(len(all_constraints)):
+	latex += 'c'
+latex += "@{}}\\toprule\nStrategy "
+for c in range(len(all_constraints)):
+	latex += ' & ' + str(all_constraints[c])
+latex += '\\\\ \\midrule \n'
+
+max_coverage_per_constraint = np.zeros(len(all_constraints))
+
+my_format = "{:.2f}"
+for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]):
+	for constraint_i in range(len(all_constraints)):
+		my_value = float(my_format.format(np.sum(map_constraint_values_per_strategy[s][all_constraints[constraint_i]]) / float(len(map_constraint_values_per_strategy[s][all_constraints[constraint_i]]))))
+
+		if my_value > max_coverage_per_constraint[constraint_i]:
+			max_coverage_per_constraint[constraint_i] = my_value
+
+
+
+for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]):
+	latex += mappnames[s]
+	for constraint_i in range(len(all_constraints)):
+		my_value = float(my_format.format(
+			np.sum(map_constraint_values_per_strategy[s][all_constraints[constraint_i]]) / float(
+				len(map_constraint_values_per_strategy[s][all_constraints[constraint_i]]))))
+
+		if my_value == max_coverage_per_constraint[constraint_i]:
+			latex += ' & $\\textbf{' + my_format.format(my_value) + '} $'
+		else:
+			latex += ' & $' + my_format.format(my_value) + ' $'
+	latex += '\\\\ \n'
+print(latex)

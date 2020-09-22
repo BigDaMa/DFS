@@ -14,6 +14,7 @@ import copy
 from sklearn.pipeline import Pipeline
 import warnings
 warnings.filterwarnings("ignore")
+import openml
 
 
 mappnames = {1:'TPE(Variance)',
@@ -55,8 +56,8 @@ names_features = ['accuracy',
 #get all files from folder
 
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
-experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
-
+#experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 print(experiment_folders)
 
 
@@ -64,6 +65,7 @@ dataset = {}
 dataset['best_strategy'] = []
 dataset['features'] = []
 dataset['dataset_id'] = []
+dataset['model'] = []
 dataset['validation_satisfied'] = []
 
 
@@ -94,7 +96,7 @@ def is_successfull_validation(exp_results):
 
 
 
-number_ml_scenarios = 1200
+number_ml_scenarios = 1500
 
 run_count = 0
 for efolder in experiment_folders:
@@ -102,6 +104,10 @@ for efolder in experiment_folders:
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
+
+			#if info_dict['dataset_id'] == '40536' or info_dict['dataset_id'] == '1461':
+				#continue
+
 			run_strategies_success_test = {}
 			run_strategies_times = {}
 			run_strategies_success_validation = {}
@@ -140,6 +146,7 @@ for efolder in experiment_folders:
 			dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
 			dataset['features'].append(info_dict['features'])
 			dataset['dataset_id'].append(info_dict['dataset_id'])
+			dataset['model'].append(info_dict['constraint_set_list']['model'])
 
 			run_count += 1
 		except FileNotFoundError:
@@ -242,21 +249,35 @@ save_data = {}
 
 
 
-'''
+
 
 variance_skew = []
 binary_columns_abs = []
 binary_columns_rel = []
 class_distribution = []
 
+dt_list = []
+nb_list = []
+lr_list = []
+
 for i in range(len(success_ids)):
 	current_id = success_ids[i]
+
+	print(dataset['model'][current_id])
+	dt_list.append(dataset['model'][current_id] == 'Decision Tree')
+	nb_list.append(dataset['model'][current_id] == 'Gaussian Naive Bayes')
+	lr_list.append(dataset['model'][current_id] == 'Logistic Regression')
+
+	'''
 	if not dataset['dataset_id'][current_id] in save_data:
 		X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = get_fair_data1(dataset['dataset_id'][current_id])
 		save_data[dataset['dataset_id'][current_id]] = (X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id)
 	else:
 		X_train, X_test, y_train, y_test, names, sensitive_ids, data_did, sensitive_attribute_id = save_data[dataset['dataset_id'][current_id]]
 	print(X_train.shape)
+	'''
+
+	'''
 
 	
 	var_weights = np.array(variance(X_train,y_train))
@@ -273,6 +294,7 @@ for i in range(len(success_ids)):
 	binary_columns_rel.append(count_binary_col / float(X_train.shape[1]))
 
 	class_distribution.append( min([np.sum(y_train), len(y_train) - np.sum(y_train)]) / float(len(y_train)))
+	'''
 	
 
 
@@ -292,9 +314,15 @@ def make_stakeable(mylist):
 #X_data = np.hstack([X_data, make_stakeable(binary_columns_rel)])
 #names_features.append('binary_columns_rel')
 
-X_data = np.hstack([X_data, make_stakeable(class_distribution)])
-names_features.append('class_distribution')
-'''
+X_data = np.hstack([X_data, make_stakeable(dt_list)])
+names_features.append('dt_model')
+
+X_data = np.hstack([X_data, make_stakeable(nb_list)])
+names_features.append('nb_model')
+
+X_data = np.hstack([X_data, make_stakeable(lr_list)])
+names_features.append('lr_model')
+
 
 
 
@@ -480,6 +508,9 @@ print("\nmodels done :)\n\n")
 
 
 
+
+data2score = {}
+
 dataset_id = 0
 for train_ids, test_ids in outer_cv_all:
 
@@ -492,10 +523,12 @@ for train_ids, test_ids in outer_cv_all:
 	test_ids = nn_test_id
 	'''
 
+	test_data_id = np.unique(groups[test_ids])[0]
+
 	predictions_probabilities = np.zeros((len(test_ids), len(mappnames)))
 
+	#train one random forest per strategy
 	for my_strategy in range(strategy_success.shape[1]):
-
 		if True:#(my_strategy + 1) in choose_among_strategies:
 
 
@@ -516,7 +549,7 @@ for train_ids, test_ids in outer_cv_all:
 			X_res = X_data[train_ids][:, my_ids]
 			y_res = strategy_success[train_ids, my_strategy]
 
-			rf_random = RandomForestClassifier(n_estimators=4000, class_weight='balanced')
+			rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced')
 			rf_random.fit(X_res, y_res)
 
 			#plot_most_important_features(rf_random, names_features, title=mappnames[my_strategy+1])
@@ -536,6 +569,8 @@ for train_ids, test_ids in outer_cv_all:
 		else:
 			predictions_probabilities[:, my_strategy] = np.zeros(len(test_ids))
 
+	#use these
+
 	dataset_id += 1
 
 	predictions = np.argmax(predictions_probabilities, axis=1)
@@ -549,6 +584,9 @@ for train_ids, test_ids in outer_cv_all:
 
 	succcess_test_fold1 = get_success_for_fold_predictions(predictions, test_ids)
 	print("test coverage: " + str(np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))))
+
+	data2score[openml.datasets.get_dataset(dataset_id=test_data_id).name] = np.sum(succcess_test_fold1) / float(len(succcess_test_fold1))
+	print(data2score)
 
 
 	success_validation = get_success_for_fold_predictions_validation(predictions, test_ids)

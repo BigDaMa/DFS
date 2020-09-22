@@ -522,11 +522,11 @@ all_fastest_strategies = []
 
 
 
-strategy_folds_f1 = np.zeros((len(mappnames), len(outer_cv_all))) # strategies x datasets
-strategy_folds_precision= np.zeros((len(mappnames), len(outer_cv_all))) # strategies x datasets
-strategy_folds_recall = np.zeros((len(mappnames), len(outer_cv_all))) # strategies x datasets
+strategy_folds_f1 = {} # strategies x datasets
+strategy_folds_precision= {} # strategies x datasets
+strategy_folds_recall = {} # strategies x datasets
 
-print('strategy size: ' + str(strategy_folds_f1.shape))
+#print('strategy size: ' + str(strategy_folds_f1.shape))
 
 
 #save models
@@ -574,13 +574,13 @@ fastest_strategy_across_datasets_metalearning = []
 
 for train_ids, test_ids in outer_cv_all:
 
-	'''
+
 	new_test_ids = []
 	for tid in test_ids:
 		if tid in real_success_ids:
 			new_test_ids.append(tid)
-	test_ids = copy.deepcopy(new_test_ids)
-	'''
+	#test_ids = copy.deepcopy(new_test_ids)
+
 
 	new_train_ids = []
 	for tid in train_ids:
@@ -647,9 +647,18 @@ for train_ids, test_ids in outer_cv_all:
 				print(mappnames[my_strategy+1] + ': ' + str(f1_scorer(rf_random, my_x_test, strategy_success[test_ids, my_strategy])))
 
 				my_predictions = rf_random.predict(my_x_test)
-				strategy_folds_f1[my_strategy, dataset_id] = f1_score(strategy_success[test_ids, my_strategy], my_predictions)
-				strategy_folds_precision[my_strategy, dataset_id] = precision_score(strategy_success[test_ids, my_strategy], my_predictions)
-				strategy_folds_recall[my_strategy, dataset_id] = recall_score(strategy_success[test_ids, my_strategy], my_predictions)
+
+				if len(new_test_ids) > 0:
+					new_my_predictions = rf_random.predict(X_data[new_test_ids][:, my_ids])
+
+					if not my_strategy in strategy_folds_f1:
+						strategy_folds_f1[my_strategy] = []
+						strategy_folds_precision[my_strategy] = []
+						strategy_folds_recall[my_strategy] = []
+
+					strategy_folds_f1[my_strategy].append(f1_score(strategy_success[new_test_ids, my_strategy], new_my_predictions))
+					strategy_folds_precision[my_strategy].append(precision_score(strategy_success[new_test_ids, my_strategy], new_my_predictions))
+					strategy_folds_recall[my_strategy].append(recall_score(strategy_success[new_test_ids, my_strategy], new_my_predictions))
 
 				predictions_probabilities[:, my_strategy] = rf_random.predict_proba(my_x_test)[:, 1]
 
@@ -795,12 +804,12 @@ print('meta learning' + ' relative fastest: ' + str(np.average(fastest_strategy_
 
 for my_strategy in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
 	print(str(mappnames[my_strategy + 1]) + ' & $' + str(
-		"{:.2f}".format(np.mean(strategy_folds_precision, axis=1)[my_strategy])) + ' \\pm ' + str(
-		"{:.2f}".format(np.std(strategy_folds_precision, axis=1)[my_strategy])) + '$ & $' + str(
-		"{:.2f}".format(np.mean(strategy_folds_recall, axis=1)[my_strategy])) + ' \\pm ' + str(
-		"{:.2f}".format(np.std(strategy_folds_recall, axis=1)[my_strategy])) + '$ & $' + str(
-		"{:.2f}".format(np.mean(strategy_folds_f1, axis=1)[my_strategy])) + ' \\pm ' + str(
-		"{:.2f}".format(np.std(strategy_folds_f1, axis=1)[my_strategy])) + '$ \\\\')
+		"{:.2f}".format(np.mean(strategy_folds_precision[my_strategy]))) + ' \\pm ' + str(
+		"{:.2f}".format(np.std(strategy_folds_precision[my_strategy]))) + '$ & $' + str(
+		"{:.2f}".format(np.mean(strategy_folds_recall[my_strategy]))) + ' \\pm ' + str(
+		"{:.2f}".format(np.std(strategy_folds_recall[my_strategy]))) + '$ & $' + str(
+		"{:.2f}".format(np.mean(strategy_folds_f1[my_strategy]))) + ' \\pm ' + str(
+		"{:.2f}".format(np.std(strategy_folds_f1[my_strategy]))) + '$ \\\\')
 
 
 print(my_string_csv)

@@ -80,6 +80,7 @@ dataset['best_strategy'] = []
 dataset['success_value'] = []
 dataset['times_value'] = []
 dataset['max_search_time'] = []
+dataset['dataset_id'] = []
 
 
 def load_pickle(fname):
@@ -130,6 +131,8 @@ for efolder in experiment_folders:
 			dataset['best_strategy'].append(best_strategy)
 			dataset['times_value'].append(run_strategies_times)
 
+			dataset['dataset_id'].append(info_dict['dataset_id'])
+
 			dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
 
 			run_count += 1
@@ -159,35 +162,44 @@ joined_strategies = []
 
 my_latex = ''
 
-for rounds in range(10):
+for rounds in range(17):
 	best_recall = 0
+	best_std = 0
 	best_combo = []
 	best_name = ""
 	for s in range(1, len(mappnames) + 1):
 		new_joined_strategies = copy.deepcopy(joined_strategies)
 		new_joined_strategies.append(s)
-		current_recall = []
-		for run in success_ids:
-			#if dataset['best_strategy'][run] > 0:
-			found = False
-			for js in new_joined_strategies:
-				if dataset['success_value'][run][js]==True:
-					found = True
-					break
-			current_recall.append(found)
 
-		calc_recall = np.sum(current_recall) / float(len(current_recall))
+		all_recalls = []
+		for dataset_id in np.unique(dataset['dataset_id']):
+			current_recall = []
+			for run in success_ids:
+				if dataset['dataset_id'][run] == dataset_id:
+					if np.sum(list(dataset['success_value'][run].values())) > 0: #Oracle
+						found = False
+						for js in new_joined_strategies:
+							if dataset['best_strategy'][run]==js:
+								found = True
+								break
+						current_recall.append(found)
+			if np.sum(current_recall) > 0:
+				all_recalls.append(np.sum(current_recall) / float(len(current_recall)))
+
+		calc_recall = np.mean(all_recalls)
 		my_string = ''
 		for js in new_joined_strategies:
 			my_string += mappnames[js] + ' + '
 		my_string += str(calc_recall)
+		my_string += ' +- ' + str(np.std(all_recalls))
 		print(my_string)
 
 		if best_recall < calc_recall:
 			best_recall = calc_recall
+			best_std = np.std(all_recalls)
 			best_combo = new_joined_strategies
 			best_name = my_string
-	my_latex += str(len(best_combo)) + "& + " + mappnames[best_combo[-1]] + " & " + "{:.3f}".format(best_recall) + "\\\\ \n"
+	my_latex += str(len(best_combo)) + "& + " + mappnames[best_combo[-1]] + " & $" + "{:.2f}".format(best_recall) + ' \pm ' + "{:.2f}".format(best_std) + "$ \\\\ \n"
 	joined_strategies = best_combo
 	print("\n\n")
 

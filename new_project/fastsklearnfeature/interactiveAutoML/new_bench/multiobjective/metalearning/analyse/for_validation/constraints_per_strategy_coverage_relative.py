@@ -82,9 +82,12 @@ map_constraint_values_success = {}
 for s in range(1, len(mappnames) + 1):
 	map_constraint_values_per_strategy[s] = {}
 
-	map_constraint_values_per_strategy[s]['Logistic Regression'] = []
-	map_constraint_values_per_strategy[s]['Gaussian Naive Bayes'] = []
-	map_constraint_values_per_strategy[s]['Decision Tree'] = []
+	map_constraint_values_per_strategy[s]['accuracy'] = []
+	map_constraint_values_per_strategy[s]['fairness'] = []
+	map_constraint_values_per_strategy[s]['k'] = []
+	map_constraint_values_per_strategy[s]['safety'] = []
+	map_constraint_values_per_strategy[s]['privacy'] = []
+	map_constraint_values_per_strategy[s]['time'] = []
 
 
 
@@ -139,25 +142,48 @@ for efolder in experiment_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
 
-			model = info_dict['constraint_set_list']['model']
+			accuracy = info_dict['constraint_set_list']['accuracy']
+			fairness = info_dict['constraint_set_list']['fairness']
+			k = info_dict['constraint_set_list']['k']
+			safety = info_dict['constraint_set_list']['robustness']
+			privacy = info_dict['constraint_set_list']['privacy']
+			time = info_dict['constraint_set_list']['search_time']
 
+			run_strategies_success_test ={}
 			for s in range(1, len(mappnames) + 1):
-				if not s in map_constraint_values_per_strategy:
-					map_constraint_values_per_strategy[s] = {}
-					map_constraint_values_per_strategy[s]['Logistic Regression'] = []
-					map_constraint_values_per_strategy[s]['Gaussian Naive Bayes'] = []
-					map_constraint_values_per_strategy[s]['Decision Tree'] = []
-
-
 				exp_results = []
 				try:
 					exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
 				except:
 					pass
+				run_strategies_success_test[s] = is_successfull_validation_and_test(exp_results)
 
-				for key in ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree']:
-					if model == key:
-						map_constraint_values_per_strategy[s][key].append(is_successfull_validation_and_test(exp_results))
+			if np.sum(list(run_strategies_success_test.values())) > 0:
+				for s in range(1, len(mappnames) + 1):
+					if not s in map_constraint_values_per_strategy:
+						map_constraint_values_per_strategy[s] = {}
+						map_constraint_values_per_strategy[s]['Fairness'] = []
+						map_constraint_values_per_strategy[s]['k'] = []
+						map_constraint_values_per_strategy[s]['safety'] = []
+						map_constraint_values_per_strategy[s]['privacy'] = []
+
+					exp_results = []
+					try:
+						exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+					except:
+						pass
+
+					if fairness > 0.0:
+						map_constraint_values_per_strategy[s]['Fairness'].append(is_successfull_validation_and_test(exp_results))
+
+					if k < 1.0:
+						map_constraint_values_per_strategy[s]['k'].append(is_successfull_validation_and_test(exp_results))
+
+					if safety > 0.0:
+						map_constraint_values_per_strategy[s]['safety'].append(is_successfull_validation_and_test(exp_results))
+
+					if type(privacy) != type(None):
+						map_constraint_values_per_strategy[s]['privacy'].append(is_successfull_validation_and_test(exp_results))
 
 			run_count += 1
 		except FileNotFoundError:
@@ -170,7 +196,7 @@ for efolder in experiment_folders:
 
 
 
-all_constraints = ['Logistic Regression', 'Gaussian Naive Bayes', 'Decision Tree',]
+all_constraints = ['Fairness', 'k', 'safety', 'privacy',]
 
 
 

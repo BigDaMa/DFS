@@ -346,17 +346,21 @@ for model_name in [0,1,2]:
 	plt.show()
 	'''
 
+	my_latex_fair += '\\nextgroupplot['
+	if model_name == 0:
+		my_latex_fair += 'ylabel=Fairness,'
+	my_latex_fair += '] '
+
 	my_tuple_set = set()
-	my_latex_fair = '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=' + str(name2marker[model_name]) + '] coordinates {'
+	my_latex_fair += '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=' + str(name2marker[model_name]) + '] coordinates {'
 	for i in range(len(datapoints)):
 		current_tuple = (datapoints[i,0], datapoints[i,1],)
 		if not current_tuple in my_tuple_set:
 			my_tuple_set.add(current_tuple)
-			my_latex_fair += '(' + str(datapoints[i,0]) + ',' + str(datapoints[i,1]) + ')'
+			my_latex_fair += '(' + str(datapoints[i,1]) + ',' + str(datapoints[i,0]) + ')'
 	my_latex_fair += '};\n'
 
-	latex_model[model_name] += my_latex_fair
-	latex_model[model_name] += '\\addplot[only marks, color=black, mark=*, mark options={solid, scale=2}] coordinates {(' + str(max_number_features[model_name][0]) + ',' + str(max_number_features[model_name][1]) + ')};\n\n'
+	my_latex_fair += '\\addplot[only marks, color=black, mark=*, mark options={solid, scale=2}] coordinates {(' + str(max_number_features[model_name][1]) + ',' + str(max_number_features[model_name][0]) + ')};\n\n'
 
 
 	print("len: " + str(len(datapoints)) + " vs " + str(len(my_tuple_set)))
@@ -372,22 +376,21 @@ for model_name in [0,1,2]:
 	plt.show()
 	'''
 
-	latex_model[model_name] += '\\nextgroupplot['
-	if model_name == 2:
-		latex_model[model_name] += 'xlabel=Safety,'
-	latex_model[model_name] += 'xmin=0, xmax=1] '
+	my_latex_safety += '\\nextgroupplot['
+	if model_name == 0:
+		my_latex_safety += 'ylabel=Safety,'
+	my_latex_safety += '] '
 
 	my_tuple_set = set()
-	my_latex_safety = '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=' + str(name2marker[model_name]) + '] coordinates {'
+	my_latex_safety += '\\addplot[only marks, color=' + str(name2color[model_name]) + ', mark=' + str(name2marker[model_name]) + '] coordinates {'
 	for i in range(len(datapoints)):
 		current_tuple = (datapoints[i, 2], datapoints[i, 1],)
 		if not current_tuple in my_tuple_set:
 			my_tuple_set.add(current_tuple)
-			my_latex_safety += '(' + str(datapoints[i,2]) + ',' + str(datapoints[i,1]) + ')'
+			my_latex_safety += '(' + str(datapoints[i,1]) + ',' + str(datapoints[i,2]) + ')'
 	my_latex_safety += '};\n'
 
-	latex_model[model_name] += my_latex_safety
-	latex_model[model_name] += '\\addplot[only marks, color=black, mark=*, mark options={solid, scale=2}] coordinates {(' + str(max_number_features[model_name][2]) + ',' + str(max_number_features[model_name][1]) + ')};\n\n'
+	my_latex_safety += '\\addplot[only marks, color=black, mark=*, mark options={solid, scale=2}] coordinates {(' + str(max_number_features[model_name][1]) + ',' + str(max_number_features[model_name][2]) + ')};\n\n'
 
 
 	#print(my_latex)
@@ -443,9 +446,6 @@ for model_name in [0,1,2]:
 	latex_model[model_name] += '\\addplot[only marks, color=black, mark=*, mark options={solid, scale=2}] coordinates {(' + str(max_number_features[model_name][3]) + ',' + str(max_number_features[model_name][1]) + ')};\n\n'
 
 
+print(my_latex_fair)
 
-print(latex_model[0])
-
-print(latex_model[1])
-
-print(latex_model[2])
+print(my_latex_safety)

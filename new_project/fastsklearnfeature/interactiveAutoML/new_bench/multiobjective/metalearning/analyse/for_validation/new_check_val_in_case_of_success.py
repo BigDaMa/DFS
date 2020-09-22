@@ -39,7 +39,7 @@ mappnames = {1:'TPE(Variance)',
 			 13: 'SBS(NR)',
 			 14: 'SFFS(NR)',
 			 15: 'SBFS(NR)',
-			 16: 'RFE(LR)',
+			 16: 'RFE(Model)',
 			 17: 'Complete Set'
 			 }
 
@@ -71,7 +71,10 @@ def print_constraints_2(features):
 
 
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
-experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
+#experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
+
+#experiment_folders = glob.glob("/home/felix/phd2/big_datasets_new/*/")
 
 print(experiment_folders)
 
@@ -178,7 +181,7 @@ for s in range(1, len(mappnames) + 1):
 	strategy_distance_validation[s] = []
 
 
-number_ml_scenarios = 1200
+number_ml_scenarios = 1500
 
 oracle_distance_validation = []
 oracle_distance_test = []
@@ -188,6 +191,9 @@ for efolder in experiment_folders:
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
+
+			#if info_dict['dataset_id'] == '40536' or info_dict['dataset_id'] == '1461':
+			#	continue
 
 			distance_of_this_run_test = []
 			distance_of_this_run_validation = []
@@ -237,6 +243,10 @@ for efolder in experiment_folders:
 	for rfolder in run_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
+
+			#if info_dict['dataset_id'] == '40536' or info_dict['dataset_id'] == '1461':
+			#	continue
+
 			run_strategies_success_test = {}
 			run_strategies_times = {}
 			run_strategies_success_validation = {}
@@ -400,9 +410,9 @@ for s in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) -
 		latex_string += "$ & $" + "{:.2f}".format(recall_validation) + '$'
 
 	if max_coverage_test == str_float(recall):
-		latex_string += " & $\\textbf{" + "{:.2f}".format(recall) + '}$'
+		latex_string += " & $\\textbf{" + "{:.3f}".format(recall) + '}$'
 	else:
-		latex_string += " & $" + "{:.2f}".format(recall) + '$'
+		latex_string += " & $" + "{:.3f}".format(recall) + '$'
 
 	latex_string += '\\\\ \n'
 
@@ -420,7 +430,7 @@ oracle_coverage_validation = np.sum(dataset['validation_satisfied']) / float(len
 
 latex_string += str('Oracle') + " & $" + "{:.0f}".format(np.mean(all_runtimes)) + " \pm " + "{:.0f}".format(np.std(all_runtimes)) + \
                 "$ & $" + "{:.2f}".format(oracle_coverage) + "$" \
-				" & $" + "{:.2f}".format(oracle_coverage_validation) + "$ & $" + "{:.2f}".format(oracle_coverage) + '$' \
+				" & $" + "{:.2f}".format(oracle_coverage_validation) + "$ & $" + "{:.3f}".format(oracle_coverage) + '$' \
 				+ ' \\\\ \n'
 
 print(latex_string)

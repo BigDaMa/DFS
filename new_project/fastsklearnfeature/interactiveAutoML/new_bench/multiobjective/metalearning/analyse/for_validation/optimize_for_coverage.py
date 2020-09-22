@@ -9,8 +9,6 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
-from imblearn.over_sampling import SMOTE
-from sklearn.preprocessing import Normalizer
 from sklearn.model_selection import RandomizedSearchCV
 
 
@@ -36,7 +34,7 @@ mappnames = {1:'TPE(Variance)',
 			 13: 'Backward Selection(no ranking)',
 			 14: 'Forward Floating Selection(no ranking)',
 			 15: 'Backward Floating Selection(no ranking)',
-			 16: 'RFE(Logistic Regression)',
+			 16: 'RFE(Model)',
 			 17: 'Complete Set'
 			 }
 
@@ -59,7 +57,8 @@ names_features = ['accuracy',
 
 #get all files from folder
 
-experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+#experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
 
 print(experiment_folders)
 
@@ -99,7 +98,7 @@ def is_successfull_validation(exp_results):
 
 
 
-number_ml_scenarios = 1200
+number_ml_scenarios = 1500
 
 run_count = 0
 for efolder in experiment_folders:
