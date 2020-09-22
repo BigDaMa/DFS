@@ -5,8 +5,12 @@ import pandas as pd
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.analyse.heatmap.heatmap_util import pivot2latex
 import pickle
 
-#data = pickle.load(open('/home/felix/phd/versions_dfs/new_pairs/current_heat_map_complexity_acc.pickle', "rb"))
-data = pickle.load(open('/home/felix/phd2/heatmaps_pair_constraints/current_heat_map_complexity_acc.pickle', "rb"))
+data = pickle.load(open('/home/felix/phd2/heatmaps_pair_constraints/current_heat_map_complexity_acc_old.pickle', "rb"))
+data_new = pickle.load(open('/home/felix/phd2/heatmaps_pair_constraints/current_heat_map_complexity_acc.pickle', "rb"))
+
+#done
+
+data = {**data , **data_new}
 
 accuracies = []
 max_number_features = []
