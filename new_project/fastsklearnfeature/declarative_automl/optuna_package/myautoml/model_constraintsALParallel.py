@@ -21,6 +21,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model i
 import multiprocessing as mp
 import heapq
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.mp_global_vars as mp_glob
+from sklearn.metrics import f1_score
 
 class NoDaemonProcess(mp.Process):
     # make 'daemon' attribute always return False
@@ -87,8 +88,8 @@ X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold
 
 metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
 
-auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
-
+#auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
+my_scorer=make_scorer(f1_score)
 
 
 total_search_time = 2*60#60*60#10 * 60
@@ -176,13 +177,13 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                       time_search_budget=search_time,
                       space=space,
                       main_memory_budget_gb=memory_limit)
-    search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=auc)
+    search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
 
     best_pipeline = search.get_best_pipeline()
 
     test_score = 0.0
     if type(best_pipeline) != type(None):
-        test_score = auc(search.get_best_pipeline(), X_test, y_test)
+        test_score = my_scorer(search.get_best_pipeline(), X_test, y_test)
 
 
     return test_score, search
@@ -206,7 +207,7 @@ def run_AutoML_global(trial_id):
             # get pipeline for that point
             current_pipeline = my_trial.user_attrs['pipeline']
             # test pipeline
-            test_score = auc(current_pipeline, X_test, y_test)
+            test_score = my_scorer(current_pipeline, X_test, y_test)
 
             # adjust constraint search time
             new_features = copy.deepcopy(study_uncertainty.best_trial.user_attrs['features'])
