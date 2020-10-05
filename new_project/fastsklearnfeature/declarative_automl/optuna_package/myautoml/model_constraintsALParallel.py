@@ -22,6 +22,20 @@ import multiprocessing as mp
 import heapq
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.mp_global_vars as mp_glob
 
+class NoDaemonProcess(mp.Process):
+    # make 'daemon' attribute always return False
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
+# because the latter is only a wrapper function, not a proper class.
+class MyPool(mp.pool.Pool):
+    Process = NoDaemonProcess
+
+
 metafeature_names_new = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilityMean', 'ClassProbabilityMin', 'ClassProbabilitySTD',
      'DatasetRatio', 'InverseDatasetRatio', 'LogDatasetRatio', 'LogInverseDatasetRatio', 'LogNumberOfFeatures',
      'LogNumberOfInstances', 'NumberOfCategoricalFeatures', 'NumberOfClasses', 'NumberOfFeatures',
@@ -379,7 +393,7 @@ while True:
     for keyy in k_keys_sorted_by_values:
         mp_glob.my_trials.append(data2most_uncertain[keyy][0])
 
-    with mp.Pool(processes=topk) as pool:
+    with MyPool(processes=topk) as pool:
         results = pool.map(run_AutoML_global, range(topk))
 
     all_losses = []
