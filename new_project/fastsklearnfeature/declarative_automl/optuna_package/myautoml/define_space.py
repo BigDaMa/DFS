@@ -37,6 +37,9 @@ from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.GaussianRandomProjectionOptuna import GaussianRandomProjectionOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.feature_preprocessing.SparseRandomProjectionOptuna import SparseRandomProjectionOptuna
 
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.private.PrivateLogisticRegressionOptuna import PrivateLogisticRegressionOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.private.PrivateGaussianNBOptuna import PrivateGaussianNBOptuna
+
 classifier_list = [RandomForestClassifierOptuna(),
                                 AdaBoostClassifierOptuna(),
                                 BernoulliNBOptuna(),
@@ -52,6 +55,8 @@ classifier_list = [RandomForestClassifierOptuna(),
                                 SGDClassifierOptuna(),
                                 SVCOptuna()
                                 ]
+
+private_classifier_list = [PrivateLogisticRegressionOptuna(), PrivateGaussianNBOptuna()]
 
 #classifier_list = [RandomForestClassifierOptuna()]
 

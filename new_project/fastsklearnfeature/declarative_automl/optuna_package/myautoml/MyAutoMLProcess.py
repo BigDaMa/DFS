@@ -103,7 +103,7 @@ class MyAutoML:
                  study=None,
                  main_memory_budget_gb=4,
                  sample_fraction=1.0,
-
+                 differential_privacy_epsilon=None
                  ):
         self.cv = cv
         self.time_search_budget = time_search_budget
@@ -112,6 +112,7 @@ class MyAutoML:
         self.number_of_cvs = number_of_cvs
 
         self.classifier_list = myspace.classifier_list
+        self.private_classifier_list = myspace.private_classifier_list
         self.preprocessor_list = myspace.preprocessor_list
         self.scaling_list = myspace.scaling_list
         self.categorical_encoding_list = myspace.categorical_encoding_list
@@ -123,6 +124,7 @@ class MyAutoML:
         self.study = study
         self.main_memory_budget_gb = main_memory_budget_gb
         self.sample_fraction = sample_fraction
+        self.differential_privacy_epsilon = differential_privacy_epsilon
 
         self.random_key = str(time.time()) + '-' + str(np.random.randint(0,1000))
 
@@ -167,7 +169,12 @@ class MyAutoML:
                 preprocessor = self.space.suggest_categorical('preprocessor', self.preprocessor_list)
                 preprocessor.init_hyperparameters(self.space, X, y)
 
-                classifier = self.space.suggest_categorical('classifier', self.classifier_list)
+
+                if type(self.differential_privacy_epsilon) == type(None):
+                    classifier = self.space.suggest_categorical('classifier', self.classifier_list)
+                else:
+                    classifier = self.space.suggest_categorical('private_classifier', self.private_classifier_list)
+
                 classifier.init_hyperparameters(self.space, X, y)
 
                 balanced = False
@@ -304,7 +311,10 @@ if __name__ == "__main__":
     for pre, _, node in RenderTree(space.parameter_tree):
         print("%s%s: %s" % (pre, node.name, node.status))
 
-    search = MyAutoML(cv=2, n_jobs=1, time_search_budget=5*60, space=space, main_memory_budget_gb=1.0)
+    search = MyAutoML(cv=2, n_jobs=1,
+                      time_search_budget=10*60,
+                      space=space,
+                      main_memory_budget_gb=1.0)
 
     begin = time.time()
 
@@ -312,6 +322,9 @@ if __name__ == "__main__":
 
     from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import show_progress
     show_progress(search, X_test, y_test, auc)
+
+    importances = optuna.importance.get_param_importances(search.study)
+    print(importances)
 
 
 

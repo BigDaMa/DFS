@@ -10,6 +10,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.data_preprocessing.Sim
 class SpaceGenerator:
     def __init__(self):
         self.classifier_list = myspace.classifier_list
+        self.private_classifier_list = myspace.private_classifier_list
         self.preprocessor_list = myspace.preprocessor_list
         self.scaling_list = myspace.scaling_list
         self.categorical_encoding_list = myspace.categorical_encoding_list
@@ -32,6 +33,11 @@ class SpaceGenerator:
         for c_i in range(len(self.classifier_list)):
             classifier = self.classifier_list[c_i]
             classifier.generate_hyperparameters(self.space, category_classifier[c_i])
+
+        category_private_classifier = self.space.generate_cat('private_classifier', self.private_classifier_list, self.private_classifier_list[0])
+        for c_i in range(len(self.private_classifier_list)):
+            private_classifier = self.private_classifier_list[c_i]
+            private_classifier.generate_hyperparameters(self.space, category_private_classifier[c_i])
 
         category_scaler = self.space.generate_cat('scaler', self.scaling_list, self.scaling_list[0])
         for s_i in range(len(self.scaling_list)):

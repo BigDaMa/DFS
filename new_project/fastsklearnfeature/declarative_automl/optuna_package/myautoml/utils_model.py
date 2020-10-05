@@ -14,7 +14,6 @@ import copy
 from optuna.trial import FrozenTrial
 from anytree import RenderTree
 from sklearn.ensemble import RandomForestRegressor
-from optuna.samplers.random import RandomSampler
 import matplotlib.pyplot as plt
 import pickle
 import operator
