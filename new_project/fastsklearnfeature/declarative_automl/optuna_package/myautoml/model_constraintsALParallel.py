@@ -203,27 +203,31 @@ def run_AutoML_global(trial_id):
 
     for my_trial in current_search.study.trials:
         if 'time_since_start' in my_trial.user_attrs and 'pipeline' in my_trial.user_attrs and my_trial.value >= 0.0:
-            current_time_used = my_trial.user_attrs['time_since_start']
-            # get pipeline for that point
-            current_pipeline = my_trial.user_attrs['pipeline']
-            # test pipeline
-            test_score = my_scorer(current_pipeline, X_test, y_test)
+            try:
+                current_time_used = my_trial.user_attrs['time_since_start']
+                # get pipeline for that point
+                current_pipeline = my_trial.user_attrs['pipeline']
+                # test pipeline
+                test_score = my_scorer(current_pipeline, X_test, y_test)
 
-            # adjust constraint search time
-            new_features = copy.deepcopy(study_uncertainty.best_trial.user_attrs['features'])
-            print('new features: ' + str(new_features.shape))
-            new_features[0, search_time_id] = current_time_used
+                # adjust constraint search time
+                new_features = copy.deepcopy(study_uncertainty.best_trial.user_attrs['features'])
+                new_features[0, search_time_id] = current_time_used
 
-            # todo we need to adjust more constraints once we add more
+                # todo we need to adjust more constraints once we add more
 
-            feature_list.append(new_features)
-            target_list.append(test_score)
+                feature_list.append(new_features)
+                target_list.append(test_score)
+            except:
+                pass
 
     if len(feature_list) == 0:
         feature_list.append(copy.deepcopy(mp_glob.my_trials[trial_id].user_attrs['features']))
         target_list.append(0.0)
 
-    return {'feature_l': feature_list, 'target_l': target_list, 'loss': np.square(target_list[-1] - mp_glob.my_trials[trial_id].user_attrs['predicted_target'])}
+    return {'feature_l': feature_list,
+            'target_l': target_list,
+            'loss': np.square(target_list[-1] - mp_glob.my_trials[trial_id].user_attrs['predicted_target'])}
 
 
 def run_AutoML_score_only(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
