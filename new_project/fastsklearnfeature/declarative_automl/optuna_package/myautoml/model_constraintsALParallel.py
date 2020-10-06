@@ -263,7 +263,10 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
 
 
 def run_AutoML_global(trial_id):
-    _, current_search = run_AutoML(mp_glob.my_trials[trial_id])
+    try:
+        _, current_search = run_AutoML(mp_glob.my_trials[trial_id])
+    except:
+        current_search = None
 
     X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data(
         study_uncertainty.best_trial.params['dataset_id'],
@@ -274,25 +277,26 @@ def run_AutoML_global(trial_id):
     feature_list = []
     target_list = []
 
-    for my_trial in current_search.study.trials:
-        if 'time_since_start' in my_trial.user_attrs and 'pipeline' in my_trial.user_attrs and my_trial.value >= 0.0:
-            try:
-                current_time_used = my_trial.user_attrs['time_since_start']
-                # get pipeline for that point
-                current_pipeline = my_trial.user_attrs['pipeline']
-                # test pipeline
-                test_score = my_scorer(current_pipeline, X_test, y_test)
+    if type(current_search) != type(None):
+        for my_trial in current_search.study.trials:
+            if 'time_since_start' in my_trial.user_attrs and 'pipeline' in my_trial.user_attrs and my_trial.value >= 0.0:
+                try:
+                    current_time_used = my_trial.user_attrs['time_since_start']
+                    # get pipeline for that point
+                    current_pipeline = my_trial.user_attrs['pipeline']
+                    # test pipeline
+                    test_score = my_scorer(current_pipeline, X_test, y_test)
 
-                # adjust constraint search time
-                new_features = copy.deepcopy(study_uncertainty.best_trial.user_attrs['features'])
-                new_features[0, search_time_id] = current_time_used
+                    # adjust constraint search time
+                    new_features = copy.deepcopy(study_uncertainty.best_trial.user_attrs['features'])
+                    new_features[0, search_time_id] = current_time_used
 
-                # todo we need to adjust more constraints once we add more
+                    # todo we need to adjust more constraints once we add more
 
-                feature_list.append(new_features)
-                target_list.append(test_score)
-            except:
-                pass
+                    feature_list.append(new_features)
+                    target_list.append(test_score)
+                except:
+                    pass
 
     if len(feature_list) == 0:
         feature_list.append(copy.deepcopy(mp_glob.my_trials[trial_id].user_attrs['features']))
