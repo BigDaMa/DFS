@@ -351,7 +351,7 @@ def optimize_uncertainty(trial):
 
         privacy_limit = None
         if trial.suggest_categorical('use_privacy_constraint', [True, False]):
-            privacy_limit = trial.suggest_loguniform('privacy_constraint', 0, 1)
+            privacy_limit = trial.suggest_loguniform('privacy_constraint', 0.0001, 10)
 
         cv = 1
         number_of_cvs = 1
