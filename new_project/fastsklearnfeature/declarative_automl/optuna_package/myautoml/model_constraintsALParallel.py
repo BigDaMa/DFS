@@ -123,9 +123,9 @@ my_openml_datasets.remove(test_holdout_dataset_id)
 
 
 
-def ifNull(value):
+def ifNull(value, constant_value=0):
     if type(value) == type(None):
-        return 0
+        return constant_value
     else:
         return value
 
@@ -231,7 +231,7 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                                           evaluation_time,
                                           memory_limit, cv,
                                           number_of_cvs,
-                                          ifNull(privacy_limit),
+                                          ifNull(privacy_limit, constant_value=1000),
                                           ifNull(hold_out_fraction),
                                           sample_fraction]
 
@@ -381,7 +381,7 @@ def optimize_uncertainty(trial):
                                       memory_limit,
                                       cv,
                                       number_of_cvs,
-                                      ifNull(privacy_limit),
+                                      ifNull(privacy_limit, constant_value=1000),
                                       ifNull(hold_out_fraction),
                                       sample_fraction]
 
