@@ -23,7 +23,7 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
         log_global_memory_constraint = np.log(X[:, feature_names.index('global_memory_constraint')])
 
 
-
+        '''
         return np.hstack((X,
                           product_cvs,
                           product_hold_out_test,
@@ -32,6 +32,7 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
                           log_global_search_time_constraint,
                           log_global_evaluation_time_constraint,
                           log_global_memory_constraint))
+        '''
 
     def get_new_feature_names(self, feature_names):
         self.feature_names_new = copy.deepcopy(feature_names)
