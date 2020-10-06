@@ -22,6 +22,7 @@ import multiprocessing as mp
 import heapq
 import fastsklearnfeature.declarative_automl.optuna_package.myautoml.mp_global_vars as mp_glob
 from sklearn.metrics import f1_score
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.feature_transformation.FeatureTransformations import FeatureTransformations
 
 class NoDaemonProcess(mp.Process):
     # make 'daemon' attribute always return False
@@ -83,10 +84,8 @@ def get_data(data_id, randomstate=42):
 test_holdout_dataset_id = 31
 search_time_frozen = 120
 
-X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
-
-
-metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
+#X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
+#metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
 
 #auc=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)
 my_scorer=make_scorer(f1_score)
@@ -104,8 +103,21 @@ mspace = mgen.generate_params()
 my_list = list(mspace.name2node.keys())
 my_list.sort()
 
-my_list_constraints = ['global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint', 'global_cv', 'global_number_cv']
+my_list_constraints = ['global_search_time_constraint',
+                       'global_evaluation_time_constraint',
+                       'global_memory_constraint',
+                       'global_cv',
+                       'global_number_cv',
+                       'privacy',
+                       'hold_out_fraction',
+                       'sample_fraction']
 
+
+def ifNull(value):
+    if type(value) == type(None):
+        return 0
+    else:
+        return value
 
 def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
     space = None
@@ -122,15 +134,35 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
         search_time = trial.suggest_int('global_search_time_constraint', 10, total_search_time, log=False)
 
         # how much time for each evaluation
-        evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time, log=False)
+        evaluation_time = search_time
+        if trial.suggest_categorical('use_evaluation_time_constraint', [True, False]):
+            evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time, log=False)
 
         # how much memory is allowed
-        memory_limit = trial.suggest_uniform('global_memory_constraint', 1.5, 4)
+        memory_limit = 4
+        if trial.suggest_categorical('use_search_memory_constraint', [True, False]):
+            memory_limit = trial.suggest_uniform('global_memory_constraint', 1.5, 4)
+
+        #how much privacy is required
+        privacy_limit = None
+        if trial.suggest_categorical('use_privacy_constraint', [True, False]):
+            privacy_limit = trial.suggest_loguniform('privacy_constraint', 0, 1)
+
 
         # how many cvs should be used
-        cv = trial.suggest_int('global_cv', 2, 20, log=False) #todo: calculate minimum number of splits based on y
+        cv = 1
+        number_of_cvs = 1
+        hold_out_fraction = None
+        if trial.suggest_categorical('use_hold_out', [True, False]):
+            hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0, 1)
+        else:
+            cv = trial.suggest_int('global_cv', 2, 20, log=False) #todo: calculate minimum number of splits based on y
+            number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
 
-        number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+        sample_fraction = 1.0
+        if trial.suggest_categorical('use_sampling', [True, False]):
+            sample_fraction = trial.suggest_uniform('sample_fraction', 0, 1)
+
 
         dataset_id = trial.suggest_categorical('dataset_id', my_openml_datasets)
 
@@ -141,10 +173,31 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
 
         #make this a hyperparameter
         search_time = trial.params['global_search_time_constraint']
-        evaluation_time = trial.params['global_evaluation_time_constraint']
-        memory_limit = trial.params['global_memory_constraint']
-        cv = trial.params['global_cv']
-        number_of_cvs = trial.params['global_number_cv']
+
+        evaluation_time = search_time
+        if 'global_evaluation_time_constraint' in trial.params:
+            evaluation_time = trial.params['global_evaluation_time_constraint']
+
+        memory_limit = 4
+        if 'global_memory_constraint' in trial.params:
+            memory_limit = trial.params['global_memory_constraint']
+
+        privacy_limit = None
+        if 'privacy_constraint' in trial.params:
+            privacy_limit = trial.params['privacy_constraint']
+
+        cv = 1
+        number_of_cvs = 1
+        hold_out_fraction = None
+        if 'global_cv' in trial.params:
+            cv = trial.params['global_cv']
+            number_of_cvs = trial.params['global_number_cv']
+        else:
+            hold_out_fraction = trial.params['hold_out_fraction']
+
+        sample_fraction = 1.0
+        if 'sample_fraction' in trial.params:
+            sample_fraction = trial.params['sample_fraction']
 
         if 'dataset_id' in trial.params:
             dataset_id = trial.params['dataset_id'] #get same random seed
@@ -164,10 +217,17 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
         X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data(dataset_id, randomstate=my_random_seed)
 
         if not isinstance(trial, FrozenTrial):
-            my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
+            my_list_constraints_values = [search_time,
+                                          evaluation_time,
+                                          memory_limit, cv,
+                                          number_of_cvs,
+                                          privacy_limit,
+                                          ifNull(hold_out_fraction),
+                                          sample_fraction]
 
             metafeature_values = data2features(X_train, y_train, categorical_indicator)
             features = space2features(space, my_list_constraints_values, metafeature_values)
+            features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
             trial.set_user_attr('features', features)
 
     search = MyAutoML(cv=cv,
@@ -176,7 +236,10 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                       evaluation_budget=evaluation_time,
                       time_search_budget=search_time,
                       space=space,
-                      main_memory_budget_gb=memory_limit)
+                      main_memory_budget_gb=memory_limit,
+                      differential_privacy_epsilon=privacy_limit,
+                      hold_out_fraction=hold_out_fraction,
+                      sample_fraction=sample_fraction)
     search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
 
     best_pipeline = search.get_best_pipeline()
@@ -264,10 +327,34 @@ def optimize_uncertainty(trial):
         trial.set_user_attr('space', copy.deepcopy(space))
 
         search_time = trial.suggest_int('global_search_time_constraint', 10, total_search_time, log=False)
-        evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time, log=False)
-        memory_limit = trial.suggest_uniform('global_memory_constraint', 1.5, 4)
-        cv = trial.suggest_int('global_cv', 2, 20, log=False)
-        number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+
+
+        if trial.suggest_categorical('use_evaluation_time_constraint', [True, False]):
+            evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time, log=False)
+        else:
+            evaluation_time = search_time
+
+        if trial.suggest_categorical('use_search_memory_constraint', [True, False]):
+            memory_limit = trial.suggest_uniform('global_memory_constraint', 1.5, 4)
+        else:
+            memory_limit = 4
+
+        privacy_limit = None
+        if trial.suggest_categorical('use_privacy_constraint', [True, False]):
+            privacy_limit = trial.suggest_loguniform('privacy_constraint', 0, 1)
+
+        cv = 1
+        number_of_cvs = 1
+        hold_out_fraction = None
+        if trial.suggest_categorical('use_hold_out', [True, False]):
+            hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0, 1)
+        else:
+            cv = trial.suggest_int('global_cv', 2, 20, log=False)  # todo: calculate minimum number of splits based on y
+            number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+
+        sample_fraction = 1.0
+        if trial.suggest_categorical('use_sampling', [True, False]):
+            sample_fraction = trial.suggest_uniform('sample_fraction', 0, 1)
 
         dataset_id = trial.suggest_categorical('dataset_id', my_openml_datasets)
 
@@ -279,12 +366,18 @@ def optimize_uncertainty(trial):
         trial.set_user_attr('data_random_seed', my_random_seed)
 
         #add metafeatures of data
-
-
-        my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
+        my_list_constraints_values = [search_time,
+                                      evaluation_time,
+                                      memory_limit,
+                                      cv,
+                                      number_of_cvs,
+                                      privacy_limit,
+                                      ifNull(hold_out_fraction),
+                                      sample_fraction]
 
         metafeature_values = data2features(X_train, y_train, categorical_indicator)
         features = space2features(space, my_list_constraints_values, metafeature_values)
+        features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
 
         trial.set_user_attr('features', features)
 
@@ -301,6 +394,7 @@ def optimize_uncertainty(trial):
         print(str(e) + 'except dataset _ uncertainty: ' + str(dataset_id) + '\n\n')
         return 0.0
 
+'''
 def optimize_accuracy_under_constraints(trial, metafeature_values_hold): #todo: transfer use features directly
     try:
         gen = SpaceGenerator()
@@ -317,13 +411,14 @@ def optimize_accuracy_under_constraints(trial, metafeature_values_hold): #todo: 
 
         my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
         features = space2features(space, my_list_constraints_values, metafeature_values_hold)
+        features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
         trial.set_user_attr('features', features)
 
         return predict_range(model, features)
     except Exception as e:
         print(str(e) + 'except dataset _ accuracy: ' + '\n\n')
         return 0.0
-
+'''
 
 
 #random sampling 10 iterations
@@ -358,6 +453,8 @@ feature_names = copy.deepcopy(my_list)
 feature_names.extend(copy.deepcopy(my_list_constraints))
 feature_names.extend(copy.deepcopy(metafeature_names_new))
 
+feature_names_new = FeatureTransformations().get_new_feature_names(feature_names)
+
 
 search_time_id = feature_names.index('global_search_time_constraint')
 print('search:' + str(search_time_id))
@@ -375,7 +472,7 @@ while True:
     model = RandomForestRegressor()
     model.fit(X_meta, y_meta)
 
-    assert X_meta.shape[1] == len(feature_names), 'errpr'
+    assert X_meta.shape[1] == len(feature_names_new), 'errpr'
 
     with open('/tmp/my_great_model.p', "wb") as pickle_model_file:
         pickle.dump(model, pickle_model_file)
@@ -451,4 +548,4 @@ while True:
 
     print('Shape: ' + str(X_meta.shape))
 
-    plot_most_important_features(model, feature_names, verbose=verbose)
+    plot_most_important_features(model, feature_names_new, verbose=verbose)

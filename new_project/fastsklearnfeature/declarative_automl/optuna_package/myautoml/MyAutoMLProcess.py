@@ -52,6 +52,7 @@ def evaluatePipeline(key, return_dict):
         X = mp_global.mp_store[key]['X']
         y = mp_global.mp_store[key]['y']
         main_memory_budget_gb = mp_global.mp_store[key]['main_memory_budget_gb']
+        hold_out_fraction = mp_global.mp_store[key]['hold_out_fraction']
 
         size = int(main_memory_budget_gb * 1024.0 * 1024.0 * 1024.0)
         resource.setrlimit(resource.RLIMIT_AS, (size, resource.RLIM_INFINITY))
@@ -69,15 +70,26 @@ def evaluatePipeline(key, return_dict):
 
 
         scores = []
-        for cv_num in range(number_of_cvs):
-            my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(time.time())).split(X, y)
-            #my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(42)).split(X, y)
-            for train_ids, test_ids in my_splits:
-                if balanced:
-                    p.fit(X[train_ids, :], y[train_ids], classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y[train_ids]))
-                else:
-                    p.fit(X[train_ids, :], y[train_ids])
-                scores.append(scorer(p, X[test_ids, :], pd.DataFrame(y[test_ids])))
+
+
+        if type(hold_out_fraction) == type(None):
+            for cv_num in range(number_of_cvs):
+                my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(time.time())).split(X, y)
+                #my_splits = StratifiedKFold(n_splits=cv, shuffle=True, random_state=int(42)).split(X, y)
+                for train_ids, test_ids in my_splits:
+                    if balanced:
+                        p.fit(X[train_ids, :], y[train_ids], classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y[train_ids]))
+                    else:
+                        p.fit(X[train_ids, :], y[train_ids])
+                    scores.append(scorer(p, X[test_ids, :], pd.DataFrame(y[test_ids])))
+        else:
+            X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=42, stratify=y,
+                                                                  test_size=hold_out_fraction)
+            if balanced:
+                p.fit(X_train, y_train, classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y_train))
+            else:
+                p.fit(X_train, y_train)
+            scores.append(scorer(p, X_test, pd.DataFrame(y_test)))
 
         return_dict[key + 'result'] = np.mean(scores)
 
@@ -96,6 +108,7 @@ def evaluatePipeline(key, return_dict):
 class MyAutoML:
     def __init__(self, cv=5,
                  number_of_cvs=1,
+                 hold_out_fraction=None,
                  evaluation_budget=np.inf,
                  time_search_budget=10*60,
                  n_jobs=1,
@@ -110,6 +123,7 @@ class MyAutoML:
         self.n_jobs = n_jobs
         self.evaluation_budget = evaluation_budget
         self.number_of_cvs = number_of_cvs
+        self.hold_out_fraction = hold_out_fraction
 
         self.classifier_list = myspace.classifier_list
         self.private_classifier_list = myspace.private_classifier_list
@@ -215,6 +229,7 @@ class MyAutoML:
                 mp_global.mp_store[key]['X'] = X
                 mp_global.mp_store[key]['y'] = y
                 mp_global.mp_store[key]['main_memory_budget_gb'] = self.main_memory_budget_gb
+                mp_global.mp_store[key]['hold_out_fraction'] = self.hold_out_fraction
 
                 try:
                     mp_global.mp_store[key]['study_best_value'] = self.study.best_value
@@ -314,7 +329,8 @@ if __name__ == "__main__":
     search = MyAutoML(cv=2, n_jobs=1,
                       time_search_budget=10*60,
                       space=space,
-                      main_memory_budget_gb=1.0)
+                      #main_memory_budget_gb=1.0,
+                      hold_out_fraction=0.5)
 
     begin = time.time()
 
