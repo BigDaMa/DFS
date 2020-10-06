@@ -12,11 +12,6 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
 
         number_of_evaluations = np.divide(X[:, feature_names.index('global_search_time_constraint')], X[:, feature_names.index('global_evaluation_time_constraint')])
 
-        print('product_cvs: ' + str(product_cvs.shape))
-        print('product_hold_out_test: ' + str(product_hold_out_test.shape))
-        print('product_sampled_data: ' + str(product_sampled_data.shape))
-        print('number_of_evaluations: ' + str(number_of_evaluations.shape))
-
         #logs 'global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint'
         log_global_search_time_constraint = np.log(X[:, feature_names.index('global_search_time_constraint')])
         log_global_evaluation_time_constraint = np.log(X[:, feature_names.index('global_evaluation_time_constraint')])
@@ -25,13 +20,13 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
 
 
         return np.hstack((X,
-                          product_cvs,
-                          product_hold_out_test,
-                          product_sampled_data,
-                          number_of_evaluations,
-                          log_global_search_time_constraint,
-                          log_global_evaluation_time_constraint,
-                          log_global_memory_constraint))
+                          product_cvs.reshape((1, 1)),
+                          product_hold_out_test.reshape((1, 1)),
+                          product_sampled_data.reshape((1, 1)),
+                          number_of_evaluations.reshape((1, 1)),
+                          log_global_search_time_constraint.reshape((1, 1)),
+                          log_global_evaluation_time_constraint.reshape((1, 1)),
+                          log_global_memory_constraint.reshape((1, 1))))
 
 
     def get_new_feature_names(self, feature_names):
