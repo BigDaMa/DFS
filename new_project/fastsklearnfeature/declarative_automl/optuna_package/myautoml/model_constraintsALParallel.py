@@ -231,7 +231,7 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                                           evaluation_time,
                                           memory_limit, cv,
                                           number_of_cvs,
-                                          privacy_limit,
+                                          ifNull(privacy_limit),
                                           ifNull(hold_out_fraction),
                                           sample_fraction]
 
@@ -381,7 +381,7 @@ def optimize_uncertainty(trial):
                                       memory_limit,
                                       cv,
                                       number_of_cvs,
-                                      privacy_limit,
+                                      ifNull(privacy_limit),
                                       ifNull(hold_out_fraction),
                                       sample_fraction]
 
