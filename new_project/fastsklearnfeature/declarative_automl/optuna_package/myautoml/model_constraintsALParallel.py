@@ -156,7 +156,7 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
         #how much privacy is required
         privacy_limit = None
         if trial.suggest_categorical('use_privacy_constraint', [True, False]):
-            privacy_limit = trial.suggest_loguniform('privacy_constraint', 0, 1)
+            privacy_limit = trial.suggest_loguniform('privacy_constraint', 0.0001, 10)
 
 
         # how many cvs should be used
