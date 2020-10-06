@@ -331,7 +331,7 @@ study = optuna.create_study(direction='maximize', sampler=RandomSampler(seed=42)
 
 
 #first random sampling
-study.optimize(run_AutoML_score_only, n_trials=4, n_jobs=2)
+study.optimize(run_AutoML_score_only, n_trials=4, n_jobs=1)
 
 print('done')
 
