@@ -13,9 +13,9 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
         number_of_evaluations = np.divide(X[:, feature_names.index('global_search_time_constraint')], X[:, feature_names.index('global_evaluation_time_constraint')])
 
         #logs 'global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint'
-        log_global_search_time_constraint = np.log(X[:, feature_names.index('global_search_time_constraint')])
-        log_global_evaluation_time_constraint = np.log(X[:, feature_names.index('global_evaluation_time_constraint')])
-        log_global_memory_constraint = np.log(X[:, feature_names.index('global_memory_constraint')])
+        #log_global_search_time_constraint = np.log(X[:, feature_names.index('global_search_time_constraint')])
+        #log_global_evaluation_time_constraint = np.log(X[:, feature_names.index('global_evaluation_time_constraint')])
+        #log_global_memory_constraint = np.log(X[:, feature_names.index('global_memory_constraint')])
 
 
 
@@ -24,9 +24,10 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
                           product_hold_out_test.reshape((1, 1)),
                           product_sampled_data.reshape((1, 1)),
                           number_of_evaluations.reshape((1, 1)),
-                          log_global_search_time_constraint.reshape((1, 1)),
-                          log_global_evaluation_time_constraint.reshape((1, 1)),
-                          log_global_memory_constraint.reshape((1, 1))))
+                          #log_global_search_time_constraint.reshape((1, 1)),
+                          #log_global_evaluation_time_constraint.reshape((1, 1)),
+                          #log_global_memory_constraint.reshape((1, 1))
+                        ))
 
 
     def get_new_feature_names(self, feature_names):
@@ -35,9 +36,9 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
         self.feature_names_new.append('hold_out_test_instances')
         self.feature_names_new.append('sampled_instances')
         self.feature_names_new.append('number_of_evaluations')
-        self.feature_names_new.append('log_global_search_time_constraint')
-        self.feature_names_new.append('log_global_evaluation_time_constraint')
-        self.feature_names_new.append('log_global_memory_constraint')
+        #self.feature_names_new.append('log_global_search_time_constraint')
+        #self.feature_names_new.append('log_global_evaluation_time_constraint')
+        #self.feature_names_new.append('log_global_memory_constraint')
         return self.feature_names_new
 
 
