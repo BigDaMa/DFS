@@ -12,6 +12,11 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
 
         number_of_evaluations = X[:, feature_names.index('global_search_time_constraint')] / X[:, feature_names.index('global_evaluation_time_constraint')]
 
+        print('product_cvs: ' + str(product_cvs.shape))
+        print('product_hold_out_test: ' + str(product_hold_out_test.shape))
+        print('product_sampled_data: ' + str(product_sampled_data.shape))
+        print('number_of_evaluations: ' + str(number_of_evaluations.shape))
+
         #logs 'global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint'
         log_global_search_time_constraint = np.log(X[:, feature_names.index('global_search_time_constraint')])
         log_global_evaluation_time_constraint = np.log(X[:, feature_names.index('global_evaluation_time_constraint')])
