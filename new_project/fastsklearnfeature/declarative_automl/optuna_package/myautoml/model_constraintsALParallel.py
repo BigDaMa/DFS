@@ -46,6 +46,29 @@ metafeature_names_new = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilit
      'PercentageOfInstancesWithMissingValues', 'PercentageOfMissingValues', 'RatioNominalToNumerical',
      'RatioNumericalToNominal', 'SymbolsMax', 'SymbolsMean', 'SymbolsMin', 'SymbolsSTD', 'SymbolsSum']
 
+mgen = SpaceGenerator()
+mspace = mgen.generate_params()
+
+my_list = list(mspace.name2node.keys())
+my_list.sort()
+
+my_list_constraints = ['global_search_time_constraint',
+                       'global_evaluation_time_constraint',
+                       'global_memory_constraint',
+                       'global_cv',
+                       'global_number_cv',
+                       'privacy',
+                       'hold_out_fraction',
+                       'sample_fraction']
+
+feature_names = copy.deepcopy(my_list)
+feature_names.extend(copy.deepcopy(my_list_constraints))
+feature_names.extend(copy.deepcopy(metafeature_names_new))
+
+feature_names_new = FeatureTransformations().get_new_feature_names(feature_names)
+
+
+
 def data2features(X_train, y_train, categorical_indicator):
     metafeatures = calculate_all_metafeatures_with_labels(X_train, y_train, categorical=categorical_indicator,
                                                           dataset_name='data')
@@ -97,20 +120,7 @@ my_openml_datasets = [3, 4, 13, 15, 24, 25, 29, 31, 37, 38, 40, 43, 44, 49, 50, 
 my_openml_datasets.remove(test_holdout_dataset_id)
 
 
-mgen = SpaceGenerator()
-mspace = mgen.generate_params()
 
-my_list = list(mspace.name2node.keys())
-my_list.sort()
-
-my_list_constraints = ['global_search_time_constraint',
-                       'global_evaluation_time_constraint',
-                       'global_memory_constraint',
-                       'global_cv',
-                       'global_number_cv',
-                       'privacy',
-                       'hold_out_fraction',
-                       'sample_fraction']
 
 
 def ifNull(value):
