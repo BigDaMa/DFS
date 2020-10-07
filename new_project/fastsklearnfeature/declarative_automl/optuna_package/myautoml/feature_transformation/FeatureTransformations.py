@@ -5,18 +5,19 @@ import copy
 class FeatureTransformations(BaseEstimator, TransformerMixin):
 
     def transform(self, X, feature_names):
-        #add product of global_cv and global_number_cv
+        #products
         product_cvs = np.multiply(X[:, feature_names.index('global_cv')], X[:, feature_names.index('global_number_cv')])
         product_hold_out_test = np.multiply(np.multiply(X[:, feature_names.index('hold_out_fraction')], X[:, feature_names.index('NumberOfInstances')]), X[:, feature_names.index('sample_fraction')])
         product_sampled_data = np.multiply(X[:, feature_names.index('NumberOfInstances')], X[:, feature_names.index('sample_fraction')])
 
         number_of_evaluations = np.divide(X[:, feature_names.index('global_search_time_constraint')], X[:, feature_names.index('global_evaluation_time_constraint')])
 
-        #logs 'global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint'
+        #logs
         log_global_search_time_constraint = np.log(X[:, feature_names.index('global_search_time_constraint')])
         log_global_evaluation_time_constraint = np.log(X[:, feature_names.index('global_evaluation_time_constraint')])
         log_global_memory_constraint = np.log(X[:, feature_names.index('global_memory_constraint')])
-
+        log_privacy = np.log(X[:, feature_names.index('privacy')])
+        log_sampled_instances = np.log(product_sampled_data)
 
 
         return np.hstack((X,
@@ -26,7 +27,9 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
                           number_of_evaluations.reshape((1, 1)),
                           log_global_search_time_constraint.reshape((1, 1)),
                           log_global_evaluation_time_constraint.reshape((1, 1)),
-                          log_global_memory_constraint.reshape((1, 1))
+                          log_global_memory_constraint.reshape((1, 1)),
+                          log_privacy.reshape((1, 1)),
+                          log_sampled_instances.reshape((1, 1))
                         ))
 
 
@@ -36,9 +39,11 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
         self.feature_names_new.append('hold_out_test_instances')
         self.feature_names_new.append('sampled_instances')
         self.feature_names_new.append('number_of_evaluations')
-        self.feature_names_new.append('log_global_search_time_constraint')
-        self.feature_names_new.append('log_global_evaluation_time_constraint')
-        self.feature_names_new.append('log_global_memory_constraint')
+        self.feature_names_new.append('log_search_time_constraint')
+        self.feature_names_new.append('log_evaluation_time_constraint')
+        self.feature_names_new.append('log_search_memory_constraint')
+        self.feature_names_new.append('log_privacy_constraint')
+        self.feature_names_new.append('log_sampled_instances')
         return self.feature_names_new
 
 

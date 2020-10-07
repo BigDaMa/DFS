@@ -13,6 +13,8 @@ from fastsklearnfeature.declarative_automl.optuna_package.classifiers.QuadraticD
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.PassiveAggressiveOptuna import PassiveAggressiveOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.KNeighborsClassifierOptuna import KNeighborsClassifierOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.classifiers.HistGradientBoostingClassifierOptuna import HistGradientBoostingClassifierOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.private.PrivateLogisticRegressionOptuna import PrivateLogisticRegressionOptuna
+from fastsklearnfeature.declarative_automl.optuna_package.classifiers.private.PrivateGaussianNBOptuna import PrivateGaussianNBOptuna
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.Space_GenerationTree import SpaceGenerator
 from sklearn.model_selection import StratifiedKFold
 import pandas as pd
@@ -25,7 +27,6 @@ import fastsklearnfeature.declarative_automl.optuna_package.myautoml.define_spac
 import pickle
 import os
 import glob
-
 from dataclasses import dataclass
 
 @dataclass
@@ -195,7 +196,9 @@ class MyAutoML:
                 if isinstance(classifier, KNeighborsClassifierOptuna) or \
                         isinstance(classifier, QuadraticDiscriminantAnalysisOptuna) or \
                         isinstance(classifier, PassiveAggressiveOptuna) or \
-                        isinstance(classifier, HistGradientBoostingClassifierOptuna):
+                        isinstance(classifier, HistGradientBoostingClassifierOptuna) or \
+                        isinstance(classifier, PrivateLogisticRegressionOptuna) or \
+                        isinstance(classifier, PrivateGaussianNBOptuna):
                     balanced = False
                 else:
                     balanced = self.space.suggest_categorical('balanced', [True, False])

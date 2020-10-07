@@ -289,7 +289,7 @@ def run_AutoML_global(trial_id):
 
                     # adjust constraint search time
                     new_features = copy.deepcopy(study_uncertainty.best_trial.user_attrs['features'])
-                    new_features[0, search_time_id] = current_time_used
+                    new_features[0, feature_names_new.index('global_search_time_constraint')] = current_time_used
 
                     # todo we need to adjust more constraints once we add more
 
@@ -470,11 +470,6 @@ feature_names.extend(copy.deepcopy(metafeature_names_new))
 feature_names_new = FeatureTransformations().get_new_feature_names(feature_names)
 
 
-search_time_id = feature_names.index('global_search_time_constraint')
-print('search:' + str(search_time_id))
-print(len(feature_names))
-
-
 pruned_accuray_results = []
 
 verbose = False
@@ -483,10 +478,10 @@ loss_over_time = []
 
 while True:
 
-    model = RandomForestRegressor()
+    model = RandomForestRegressor(n_estimators=500)
     model.fit(X_meta, y_meta)
 
-    assert X_meta.shape[1] == len(feature_names_new), 'errpr'
+    assert X_meta.shape[1] == len(feature_names_new), 'error'
 
     with open('/tmp/my_great_model.p', "wb") as pickle_model_file:
         pickle.dump(model, pickle_model_file)
