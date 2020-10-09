@@ -17,9 +17,8 @@ from sklearn.ensemble import RandomForestRegressor
 import matplotlib.pyplot as plt
 import pickle
 import operator
-
-my_list_constraints = ['global_search_time_constraint', 'global_evaluation_time_constraint', 'global_memory_constraint', 'global_cv', 'global_number_cv']
-
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.feature_transformation.FeatureTransformations import FeatureTransformations
+import multiprocessing as mp
 
 metafeature_names_new = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilityMean', 'ClassProbabilityMin', 'ClassProbabilitySTD',
      'DatasetRatio', 'InverseDatasetRatio', 'LogDatasetRatio', 'LogInverseDatasetRatio', 'LogNumberOfFeatures',
@@ -28,6 +27,43 @@ metafeature_names_new = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilit
      'NumberOfMissingValues', 'NumberOfNumericFeatures', 'PercentageOfFeaturesWithMissingValues',
      'PercentageOfInstancesWithMissingValues', 'PercentageOfMissingValues', 'RatioNominalToNumerical',
      'RatioNumericalToNominal', 'SymbolsMax', 'SymbolsMean', 'SymbolsMin', 'SymbolsSTD', 'SymbolsSum']
+
+my_list_constraints = ['global_search_time_constraint',
+                       'global_evaluation_time_constraint',
+                       'global_memory_constraint',
+                       'global_cv',
+                       'global_number_cv',
+                       'privacy',
+                       'hold_out_fraction',
+                       'sample_fraction']
+
+mgen = SpaceGenerator()
+mspace = mgen.generate_params()
+
+my_list = list(mspace.name2node.keys())
+my_list.sort()
+
+class NoDaemonProcess(mp.Process):
+    # make 'daemon' attribute always return False
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
+# because the latter is only a wrapper function, not a proper class.
+class MyPool(mp.pool.Pool):
+    Process = NoDaemonProcess
+
+
+def get_feature_names():
+    feature_names = copy.deepcopy(my_list)
+    feature_names.extend(copy.deepcopy(my_list_constraints))
+    feature_names.extend(copy.deepcopy(metafeature_names_new))
+
+    feature_names_new = FeatureTransformations().get_new_feature_names(feature_names)
+    return feature_names, feature_names_new
 
 def data2features(X_train, y_train, categorical_indicator):
     metafeatures = calculate_all_metafeatures_with_labels(X_train, y_train, categorical=categorical_indicator,
@@ -63,7 +99,7 @@ def get_data(data_id, randomstate=42):
 
 def plot_most_important_features(rf_random, names_features, title='importance', verbose=True, k=25):
 
-    assert len(rf_random.feature_importances_) == len(names_features), 'mismatch'
+    #assert len(rf_random.feature_importances_) == len(names_features), 'mismatch'
 
     importances = {}
     for name_i in range(len(names_features)):
@@ -99,14 +135,7 @@ def plot_most_important_features(rf_random, names_features, title='importance', 
         plt.savefig('/tmp/feature_importance.png')
         plt.clf()
 
-def predict_range(model, X):
-    y_pred = model.predict(X)
-
-    y_pred[y_pred > 1.0] = 1.0
-    y_pred[y_pred < 0.0] = 0.0
-    return y_pred
-
-def space2features(space, my_list_constraints_values, metafeature_values, my_list):
+def space2features(space, my_list_constraints_values, metafeature_values):
     tuple_param = np.zeros((1, len(my_list)))
     tuple_constraints = np.zeros((1, len(my_list_constraints)))
     t = 0
@@ -114,11 +143,28 @@ def space2features(space, my_list_constraints_values, metafeature_values, my_lis
         tuple_param[t, parameter_i] = space.name2node[my_list[parameter_i]].status
 
     for constraint_i in range(len(my_list_constraints)):
-        tuple_constraints[t, constraint_i] = my_list_constraints_values[constraint_i]
+        tuple_constraints[t, constraint_i] = my_list_constraints_values[constraint_i] #current_trial.params[my_list_constraints[constraint_i]]
 
     return np.hstack((tuple_param, tuple_constraints, metafeature_values))
 
-def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_time_frozen, model, my_list, memory_budget_gb):
+def predict_range(model, X):
+    y_pred = model.predict(X)
+
+    y_pred[y_pred > 1.0] = 1.0
+    y_pred[y_pred < 0.0] = 0.0
+    return y_pred
+
+def ifNull(value, constant_value=0):
+    if type(value) == type(None):
+        return constant_value
+    else:
+        return value
+
+def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_time, model,
+                                        memory_limit=4,
+                                        privacy_limit=None,
+                                        evaluation_time=None,
+                                        hold_out_fraction=None):
     try:
         gen = SpaceGenerator()
         space = gen.generate_params()
@@ -126,14 +172,45 @@ def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_t
 
         trial.set_user_attr('space', copy.deepcopy(space))
 
-        search_time = search_time_frozen#trial.suggest_int('global_search_time_constraint', 10, search_time_frozen, log=False)
-        evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time, log=False)
-        memory_limit = memory_budget_gb
-        cv = trial.suggest_int('global_cv', 2, 20, log=False)
-        number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+        if type(evaluation_time) == type(None):
+            evaluation_time = search_time
+            if trial.suggest_categorical('use_evaluation_time_constraint', [True, False]):
+                evaluation_time = trial.suggest_int('global_evaluation_time_constraint', 10, search_time, log=False)
+        else:
+            trial.set_user_attr('evaluation_time', evaluation_time)
 
-        my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
-        features = space2features(space, my_list_constraints_values, metafeature_values_hold, my_list)
+        # how many cvs should be used
+        cv = 1
+        number_of_cvs = 1
+        if type(hold_out_fraction) == type(None):
+            hold_out_fraction = None
+            if trial.suggest_categorical('use_hold_out', [True, False]):
+                hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0, 1)
+            else:
+                cv = trial.suggest_int('global_cv', 2, 20, log=False)  # todo: calculate minimum number of splits based on y
+                number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+        else:
+            trial.set_user_attr('hold_out_fraction', hold_out_fraction)
+
+
+        sample_fraction = 1.0
+        #if trial.suggest_categorical('use_sampling', [True, False]):
+        #    sample_fraction = trial.suggest_uniform('sample_fraction', 0, 1)
+
+
+
+        my_list_constraints_values = [search_time,
+                                      evaluation_time,
+                                      memory_limit,
+                                      cv,
+                                      number_of_cvs,
+                                      ifNull(privacy_limit, constant_value=1000),
+                                      ifNull(hold_out_fraction),
+                                      sample_fraction]
+
+        features = space2features(space, my_list_constraints_values, metafeature_values_hold)
+        feature_names, _ = get_feature_names()
+        features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
         trial.set_user_attr('features', features)
 
         return predict_range(model, features)
@@ -141,35 +218,40 @@ def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_t
         print(str(e) + 'except dataset _ accuracy: ' + '\n\n')
         return 0.0
 
-def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None, my_scorer=None, search_time=None, memory_limit=None, cv=None, number_of_cvs=None):
+def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None, my_scorer=None,
+               search_time=None,
+               memory_limit=None
+               ):
     space = trial.user_attrs['space']
 
     print(trial.params)
 
-    #make this a hyperparameter
-    evaluation_time = trial.params['global_evaluation_time_constraint']
-
-    if type(cv) == type(None):
-        cv = trial.params['global_cv']
-    if type(number_of_cvs) == type(None):
-        number_of_cvs = trial.params['global_number_cv']
-
-    if 'dataset_id' in trial.params:
-        dataset_id = trial.params['dataset_id'] #get same random seed
+    if 'evaluation_time' in trial.user_attrs:
+        evaluation_time = trial.user_attrs['evaluation_time']
     else:
-        dataset_id = 31
+        evaluation_time = search_time
+        if 'global_evaluation_time_constraint' in trial.params:
+            evaluation_time = trial.params['global_evaluation_time_constraint']
 
+    privacy_limit = None
+    if 'privacy_constraint' in trial.params:
+        privacy_limit = trial.params['privacy_constraint']
 
-    if type(X_train) == type(None):
+    cv = 1
+    number_of_cvs = 1
+    if 'hold_out_fraction' in trial.user_attrs:
+        hold_out_fraction = trial.user_attrs['hold_out_fraction']
+    else:
+        hold_out_fraction = None
+        if 'global_cv' in trial.params:
+            cv = trial.params['global_cv']
+            number_of_cvs = trial.params['global_number_cv']
+        if 'hold_out_fraction' in trial.params:
+            hold_out_fraction = trial.params['hold_out_fraction']
 
-        X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data(dataset_id, randomstate=int(time.time()))
-
-        if not isinstance(trial, FrozenTrial):
-            my_list_constraints_values = [search_time, evaluation_time, memory_limit, cv, number_of_cvs]
-
-            metafeature_values = data2features(X_train, y_train, categorical_indicator)
-            features = space2features(space, my_list_constraints_values, metafeature_values)
-            trial.set_user_attr('features', features)
+    sample_fraction = 1.0
+    if 'sample_fraction' in trial.params:
+        sample_fraction = trial.params['sample_fraction']
 
     search = MyAutoML(cv=cv,
                       number_of_cvs=number_of_cvs,
@@ -177,7 +259,11 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                       evaluation_budget=evaluation_time,
                       time_search_budget=search_time,
                       space=space,
-                      main_memory_budget_gb=memory_limit)
+                      main_memory_budget_gb=memory_limit,
+                      differential_privacy_epsilon=privacy_limit,
+                      hold_out_fraction=hold_out_fraction,
+                      sample_fraction=sample_fraction
+                      )
     search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
 
     best_pipeline = search.get_best_pipeline()
