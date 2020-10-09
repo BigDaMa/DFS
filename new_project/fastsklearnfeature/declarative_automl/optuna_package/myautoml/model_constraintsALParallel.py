@@ -35,8 +35,6 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model i
 #test data
 
 test_holdout_dataset_id = 31
-search_time_frozen = 120
-
 #X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
 #metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
 
@@ -54,7 +52,7 @@ feature_names, feature_names_new = get_feature_names()
 
 def generate_parameters(trial):
     # which constraints to use
-    search_time = trial.suggest_int('global_search_time_constraint', 10, total_search_time, log=False)
+    search_time = trial.suggest_int('global_search_time_constraint', 10, max(10, total_search_time), log=False)
 
     # how much time for each evaluation
     evaluation_time = search_time
@@ -79,7 +77,9 @@ def generate_parameters(trial):
         hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0, 1)
     else:
         cv = trial.suggest_int('global_cv', 2, 20, log=False)  # todo: calculate minimum number of splits based on y
-        number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+        number_of_cvs = 1
+        if trial.suggest_categorical('use_multiple_cvs', [True, False]):
+            number_of_cvs = trial.suggest_int('global_number_cv', 2, 10, log=False)
 
     sample_fraction = 1.0
     if trial.suggest_categorical('use_sampling', [True, False]):
@@ -128,7 +128,8 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
         hold_out_fraction = None
         if 'global_cv' in trial.params:
             cv = trial.params['global_cv']
-            number_of_cvs = trial.params['global_number_cv']
+            if 'global_number_cv' in trial.params:
+                number_of_cvs = trial.params['global_number_cv']
         else:
             hold_out_fraction = trial.params['hold_out_fraction']
 

@@ -188,7 +188,9 @@ def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_t
                 hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0, 1)
             else:
                 cv = trial.suggest_int('global_cv', 2, 20, log=False)  # todo: calculate minimum number of splits based on y
-                number_of_cvs = trial.suggest_int('global_number_cv', 1, 10, log=False)
+                number_of_cvs = 1
+                if trial.suggest_categorical('use_multiple_cvs', [True, False]):
+                    number_of_cvs = trial.suggest_int('global_number_cv', 2, 10, log=False)
         else:
             trial.set_user_attr('hold_out_fraction', hold_out_fraction)
 
@@ -245,7 +247,8 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
         hold_out_fraction = None
         if 'global_cv' in trial.params:
             cv = trial.params['global_cv']
-            number_of_cvs = trial.params['global_number_cv']
+            if 'global_number_cv' in trial.params:
+                number_of_cvs = trial.params['global_number_cv']
         if 'hold_out_fraction' in trial.params:
             hold_out_fraction = trial.params['hold_out_fraction']
 

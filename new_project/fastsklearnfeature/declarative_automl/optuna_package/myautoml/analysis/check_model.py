@@ -49,7 +49,7 @@ for minutes_to_search in range(1,20):
                                                                            model=model,
                                                                            memory_limit=memory_budget,
                                                                            #evaluation_time=int(0.1*search_time_frozen),
-                                                                           hold_out_fraction=0.33
+                                                                           #hold_out_fraction=0.33
                                                                            ), n_trials=500, n_jobs=4)
 
     space = study_prune.best_trial.user_attrs['space']
@@ -82,9 +82,9 @@ for minutes_to_search in range(1,20):
 
     gen = SpaceGenerator()
     space = gen.generate_params()
-
     for pre, _, node in RenderTree(space.parameter_tree):
-        print("%s%s: %s" % (pre, node.name, node.status))
+        if node.status == True:
+            print("%s%s" % (pre, node.name))
 
     search = MyAutoML(n_jobs=1,
                       time_search_budget=search_time_frozen,
