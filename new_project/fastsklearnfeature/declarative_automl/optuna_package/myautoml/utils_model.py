@@ -222,7 +222,8 @@ def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_t
 
 def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None, my_scorer=None,
                search_time=None,
-               memory_limit=None
+               memory_limit=None,
+               privacy_limit=None
                ):
     space = trial.user_attrs['space']
 
@@ -234,10 +235,6 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
         evaluation_time = search_time
         if 'global_evaluation_time_constraint' in trial.params:
             evaluation_time = trial.params['global_evaluation_time_constraint']
-
-    privacy_limit = None
-    if 'privacy_constraint' in trial.params:
-        privacy_limit = trial.params['privacy_constraint']
 
     cv = 1
     number_of_cvs = 1
