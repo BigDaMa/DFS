@@ -26,11 +26,13 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.feature_trans
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_data
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import data2features
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import space2features
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import predict_range
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import MyPool
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_feature_names
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import ifNull
 
+def predict_range(model, X):
+    y_pred = model.predict(X)
+    return y_pred
 
 #test data
 
