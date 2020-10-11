@@ -184,13 +184,16 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                           differential_privacy_epsilon=privacy_limit,
                           hold_out_fraction=hold_out_fraction,
                           sample_fraction=sample_fraction)
-        search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-
-        best_pipeline = search.get_best_pipeline()
 
         test_score = 0.0
-        if type(best_pipeline) != type(None):
-            test_score = my_scorer(search.get_best_pipeline(), X_test, y_test)
+        try:
+            search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
+
+            best_pipeline = search.get_best_pipeline()
+            if type(best_pipeline) != type(None):
+                test_score = my_scorer(search.get_best_pipeline(), X_test, y_test)
+        except:
+            pass
         dynamic_params.append(test_score)
 
         # default params
@@ -209,8 +212,8 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                           hold_out_fraction=0.33
                           )
 
-        best_result = search_static.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
         try:
+            best_result = search_static.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
             test_score_default = my_scorer(search_static.get_best_pipeline(), X_test, y_test)
         except:
             test_score_default = 0.0
