@@ -42,7 +42,7 @@ _, feature_names = get_feature_names()
 dynamic_approach = []
 static_approach = []
 
-for minutes_to_search in range(1,5):
+for minutes_to_search in range(1, 5):
 
     current_dynamic = []
     current_static = []

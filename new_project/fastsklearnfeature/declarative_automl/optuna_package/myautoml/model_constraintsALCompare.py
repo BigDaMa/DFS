@@ -197,15 +197,15 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
         dynamic_params.append(test_score)
 
         # default params
-        gen = SpaceGenerator()
-        space = gen.generate_params()
-        for pre, _, node in RenderTree(space.parameter_tree):
+        gen_new = SpaceGenerator()
+        space_new = gen_new.generate_params()
+        for pre, _, node in RenderTree(space_new.parameter_tree):
             if node.status == True:
                 print("%s%s" % (pre, node.name))
 
         search_static = MyAutoML(n_jobs=1,
                           time_search_budget=search_time,
-                          space=space,
+                          space=space_new,
                           evaluation_budget=int(0.1 * search_time),
                           main_memory_budget_gb=memory_limit,
                           differential_privacy_epsilon=privacy_limit,

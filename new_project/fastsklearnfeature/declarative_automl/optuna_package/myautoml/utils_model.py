@@ -150,8 +150,8 @@ def space2features(space, my_list_constraints_values, metafeature_values):
 def predict_range(model, X):
     y_pred = model.predict(X)
 
-    y_pred[y_pred > 1.0] = 1.0
-    y_pred[y_pred < 0.0] = 0.0
+    #y_pred[y_pred > 1.0] = 1.0
+    #y_pred[y_pred < 0.0] = 0.0
     return y_pred
 
 def ifNull(value, constant_value=0):
