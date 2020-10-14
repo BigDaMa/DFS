@@ -23,7 +23,6 @@ my_scorer=make_scorer(f1_score)
 
 
 test_holdout_dataset_id = 31#1590#1218#4134#31#1139#31#1138#31
-memory_budget = 3.0
 privacy = None
 
 X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
@@ -42,14 +41,18 @@ _, feature_names = get_feature_names()
 dynamic_approach = []
 static_approach = []
 
-for minutes_to_search in range(1, 6):
+minutes_to_search = 5
+memory_budget = 4
+
+#for minutes_to_search in range(1, 6):
+for privacy in [0.01]:
 
     current_dynamic = []
     current_static = []
 
     search_time_frozen = minutes_to_search * 60
 
-    for repeat in range(5):
+    for repeat in range(1):
 
         study_prune = optuna.create_study(direction='maximize')
         study_prune.optimize(lambda trial: optimize_accuracy_under_constraints(trial=trial,

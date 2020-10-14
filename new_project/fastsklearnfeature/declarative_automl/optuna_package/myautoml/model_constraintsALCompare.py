@@ -64,7 +64,7 @@ def generate_parameters(trial):
     # how much memory is allowed
     memory_limit = 4
     if trial.suggest_categorical('use_search_memory_constraint', [True, False]):
-        memory_limit = trial.suggest_uniform('global_memory_constraint', 1.5, 4)
+        memory_limit = trial.suggest_loguniform('global_memory_constraint', 0.00000000000001, 4)
 
     # how much privacy is required
     privacy_limit = None

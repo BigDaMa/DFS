@@ -237,13 +237,13 @@ class MyAutoML:
                 try:
                     mp_global.mp_store[key]['study_best_value'] = self.study.best_value
                 except ValueError:
-                    mp_global.mp_store[key]['study_best_value'] = -np.inf
+                    mp_global.mp_store[key]['study_best_value'] = -1 * (time.time() - start_total)
 
                 already_used_time = time.time() - self.start_fitting
 
                 if already_used_time + 2 >= self.time_search_budget:  # already over budget
                     time.sleep(2)
-                    return -np.inf
+                    return -1 * (time.time() - start_total)
 
                 remaining_time = np.min([self.evaluation_budget, self.time_search_budget - already_used_time])
 
@@ -261,7 +261,7 @@ class MyAutoML:
 
                 del mp_global.mp_store[key]
 
-                result = -np.inf
+                result = -1 * (time.time() - start_total)
                 if key + 'result' in return_dict:
                     result = return_dict[key + 'result']
 
@@ -285,7 +285,7 @@ class MyAutoML:
                 return result
             except Exception as e:
                 print(str(e) + '\n\n')
-                return -np.inf
+                return -1 * (time.time() - start_total)
 
         if type(self.study) == type(None):
             self.study = optuna.create_study(direction='maximize')
@@ -330,9 +330,9 @@ if __name__ == "__main__":
         print("%s%s: %s" % (pre, node.name, node.status))
 
     search = MyAutoML(cv=2, n_jobs=1,
-                      time_search_budget=10*60,
+                      time_search_budget=2*60,
                       space=space,
-                      #main_memory_budget_gb=1.0,
+                      main_memory_budget_gb=0.00000000000001,
                       hold_out_fraction=0.5)
 
     begin = time.time()
