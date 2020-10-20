@@ -14,6 +14,9 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.compose import ColumnTransformer
 from fastsklearnfeature.vision_paper.NewOneHot import NewOneHot
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
 
 
 def df2data(df, train_index=None, test_index=None, target_attribute='Income', target_encoder=None):
@@ -24,9 +27,10 @@ def df2data(df, train_index=None, test_index=None, target_attribute='Income', ta
     df = df.drop(columns=[target_attribute])
 
     categorical_features = np.where(df.dtypes == object)[0]
+    cat_pip = Pipeline(steps=[('impute', SimpleImputer(strategy='constant', fill_value='unknown_value')), ('one', OneHotEncoder(handle_unknown='ignore', sparse=False))])
     pipeline = ColumnTransformer(
         transformers=[
-            ('cat', NewOneHot(), categorical_features)
+            ('cat', cat_pip, categorical_features)
         ], remainder='passthrough'
     )
     X = df.values
@@ -62,7 +66,7 @@ scorer = autosklearn.metrics.make_scorer(
         sklearn.metrics.f1_score
     )
 
-cls_clean = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=1*60,
+cls_clean = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=60*60,
                                                   resampling_strategy='cv',
                                                   resampling_strategy_arguments={'folds': 10},
                                                              metric=scorer)
@@ -72,7 +76,7 @@ predictions = cls_clean.predict(X_test_clean.copy())
 print('clean: ' + str(f1_score(y_test_clean, predictions)))
 
 
-cls = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=1*60,
+cls = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=60*60,
                                                        resampling_strategy='cv',
                                                        resampling_strategy_arguments={'folds': 10},
                                                        metric=scorer)

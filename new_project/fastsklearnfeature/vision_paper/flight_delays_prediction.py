@@ -14,6 +14,9 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 from sklearn.model_selection import GroupKFold
 import copy
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
 
 from fastsklearnfeature.vision_paper.NewOneHot import NewOneHot
 
@@ -46,9 +49,11 @@ def df_to_ML_task(df, train_index=None, test_index=None):
     df = df.drop(columns=['act_arr_time'])
 
     categorical_features = np.where(df.dtypes == object)[0]
+    cat_pip = Pipeline(steps=[('impute', SimpleImputer(strategy='constant', fill_value='unknown_value')),
+                              ('one', OneHotEncoder(handle_unknown='ignore', sparse=False))])
     pipeline = ColumnTransformer(
         transformers=[
-            ('cat', NewOneHot(), categorical_features)
+            ('cat', cat_pip, categorical_features)
         ], remainder='passthrough'
     )
 
@@ -108,7 +113,7 @@ scorer = autosklearn.metrics.make_scorer(
         sklearn.metrics.f1_score
     )
 
-cls = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=1*60,
+cls = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=60*60,
                                                   resampling_strategy=GroupKFold,
                                                   resampling_strategy_arguments={'n_splits': 10, 'groups': np.array(group_train_new)},
                                                        metric=scorer)
@@ -118,7 +123,7 @@ predictions = cls.predict(X_test_dirty.copy())
 #print('dirty: ' + str(r2_score(y_test_clean, predictions)))
 print('dirty: ' + str(f1_score(y_test_clean, predictions)))
 
-cls_clean = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=1*60,
+cls_clean = autosklearn.classification.AutoSklearnClassifier(time_left_for_this_task=60*60,
                                                   resampling_strategy=GroupKFold,
                                                   resampling_strategy_arguments={'n_splits': 10, 'groups': group_train_clean}, metric=scorer)
 cls_clean.fit(X_train_clean.copy(), y_train_clean.copy())
