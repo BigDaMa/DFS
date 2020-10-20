@@ -28,6 +28,7 @@ import pickle
 import os
 import glob
 from dataclasses import dataclass
+import sys
 
 @dataclass
 class StopWhenOptimumReachedCallback:
@@ -55,23 +56,51 @@ def evaluatePipeline(key, return_dict):
         main_memory_budget_gb = mp_global.mp_store[key]['main_memory_budget_gb']
         hold_out_fraction = mp_global.mp_store[key]['hold_out_fraction']
 
+        training_time_limit = mp_global.mp_store[key]['training_time_limit']
+        inference_time_limit = mp_global.mp_store[key]['inference_time_limit']
+        pipeline_size_limit = mp_global.mp_store[key]['pipeline_size_limit']
+        adversarial_robustness_constraint = mp_global.mp_store[key]['adversarial_robustness_constraint']
+
         size = int(main_memory_budget_gb * 1024.0 * 1024.0 * 1024.0)
         resource.setrlimit(resource.RLIMIT_AS, (size, resource.RLIM_INFINITY))
 
+        #todo: cancel fitting if over time
         start_training = time.time()
-
         if balanced:
             p.fit(X, y, classifier__sample_weight=compute_sample_weight(class_weight='balanced', y=y))
         else:
             p.fit(X, y)
+
         training_time = time.time() - start_training
+        return_dict[key + 'result' + '_training_time'] = training_time
+        if type(training_time_limit) != type(None) and training_time > training_time_limit:
+            return_dict[key + 'result'] = -1 * (training_time - training_time_limit) #return the difference to satisfying the constraint
+            return
+
+        dumped_obj = pickle.dumps(p)
+        pipeline_size = sys.getsizeof(dumped_obj)
+        return_dict[key + 'result' + '_pipeline_size'] = pipeline_size
+        if type(pipeline_size_limit) != type(None) and pipeline_size > pipeline_size_limit:
+            return_dict[key + 'result'] = -1 * (pipeline_size - pipeline_size_limit)  # return the difference to satisfying the constraint
+            return
+
+        inference_times = []
+        for i in range(10):
+            random_id = np.random.randint(low=0, high=X.shape[0])
+            start_inference = time.time()
+            p.predict(X[[random_id]])
+            inference_times.append(time.time() - start_inference)
+        return_dict[key + 'result' + '_inference_time'] = np.mean(inference_times)
+        if type(inference_time_limit) != type(None) and np.mean(inference_times) > inference_time_limit:
+            return_dict[key + 'result'] = -1 * (np.mean(inference_times) - inference_time_limit)  # return the difference to satisfying the constraint
+            return
+
 
         trained_pipeline = copy.deepcopy(p)
 
 
 
         scores = []
-
 
         if type(hold_out_fraction) == type(None):
             for cv_num in range(number_of_cvs):
@@ -117,7 +146,11 @@ class MyAutoML:
                  study=None,
                  main_memory_budget_gb=4,
                  sample_fraction=1.0,
-                 differential_privacy_epsilon=None
+                 differential_privacy_epsilon=None,
+                 training_time_limit=None,
+                 inference_time_limit=None,
+                 pipeline_size_limit=None,
+                 adversarial_robustness_constraint=None
                  ):
         self.cv = cv
         self.time_search_budget = time_search_budget
@@ -140,6 +173,11 @@ class MyAutoML:
         self.main_memory_budget_gb = main_memory_budget_gb
         self.sample_fraction = sample_fraction
         self.differential_privacy_epsilon = differential_privacy_epsilon
+
+        self.training_time_limit = training_time_limit
+        self.inference_time_limit = inference_time_limit
+        self.pipeline_size_limit = pipeline_size_limit
+        self.adversarial_robustness_constraint = adversarial_robustness_constraint
 
         self.random_key = str(time.time()) + '-' + str(np.random.randint(0,1000))
 
@@ -233,6 +271,10 @@ class MyAutoML:
                 mp_global.mp_store[key]['y'] = y
                 mp_global.mp_store[key]['main_memory_budget_gb'] = self.main_memory_budget_gb
                 mp_global.mp_store[key]['hold_out_fraction'] = self.hold_out_fraction
+                mp_global.mp_store[key]['training_time_limit'] = self.training_time_limit
+                mp_global.mp_store[key]['inference_time_limit'] = self.inference_time_limit
+                mp_global.mp_store[key]['pipeline_size_limit'] = self.pipeline_size_limit
+                mp_global.mp_store[key]['adversarial_robustness_constraint'] = self.adversarial_robustness_constraint
 
                 try:
                     mp_global.mp_store[key]['study_best_value'] = self.study.best_value
@@ -264,6 +306,13 @@ class MyAutoML:
                 result = -1 * (time.time() - start_total)
                 if key + 'result' in return_dict:
                     result = return_dict[key + 'result']
+
+                if key + 'result' + '_training_time' in return_dict:
+                    trial.set_user_attr('training_time', return_dict[key + 'result' + '_training_time'])
+                if key + 'result' + '_pipeline_size' in return_dict:
+                    trial.set_user_attr('pipeline_size', return_dict[key + 'result' + '_pipeline_size'])
+                if key + 'result' + '_inference_time' in return_dict:
+                    trial.set_user_attr('inference_time', return_dict[key + 'result' + '_inference_time'])
 
                 trial.set_user_attr('evaluation_time', time.time() - start_total)
                 trial.set_user_attr('time_since_start', time.time() - self.start_fitting)
@@ -332,8 +381,9 @@ if __name__ == "__main__":
     search = MyAutoML(cv=2, n_jobs=1,
                       time_search_budget=2*60,
                       space=space,
-                      main_memory_budget_gb=0.00000000000001,
-                      hold_out_fraction=0.5)
+                      main_memory_budget_gb=4,
+                      hold_out_fraction=0.5,
+                      training_time_limit=0.1)
 
     begin = time.time()
 
