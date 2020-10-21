@@ -35,7 +35,10 @@ my_list_constraints = ['global_search_time_constraint',
                        'global_number_cv',
                        'privacy',
                        'hold_out_fraction',
-                       'sample_fraction']
+                       'sample_fraction',
+                       'training_time_limit',
+                       'inference_time_limit',
+                       'pipeline_size_limit']
 
 mgen = SpaceGenerator()
 mspace = mgen.generate_params()

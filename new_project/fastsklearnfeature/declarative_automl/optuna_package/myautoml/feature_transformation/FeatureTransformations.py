@@ -11,7 +11,7 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
         product_hold_out_training = np.multiply(np.multiply((1.0 - X[:, feature_names.index('hold_out_fraction')]), X[:, feature_names.index('NumberOfInstances')]), X[:, feature_names.index('sample_fraction')])
         product_sampled_data = np.multiply(X[:, feature_names.index('NumberOfInstances')], X[:, feature_names.index('sample_fraction')])
 
-        number_of_evaluations = np.divide(X[:, feature_names.index('global_search_time_constraint')], X[:, feature_names.index('global_evaluation_time_constraint')])
+        number_of_evaluations = np.divide(X[:, feature_names.index('global_evaluation_time_constraint')], X[:, feature_names.index('global_search_time_constraint')])
 
         #logs
         log_global_search_time_constraint = np.log(X[:, feature_names.index('global_search_time_constraint')])
@@ -19,6 +19,9 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
         log_global_memory_constraint = np.log(X[:, feature_names.index('global_memory_constraint')])
         log_privacy = np.log(X[:, feature_names.index('privacy')])
         log_sampled_instances = np.log(product_sampled_data)
+
+        has_privacy_constraint = X[:, feature_names.index('privacy')] < 1000
+        has_evaluation_time_constraint = X[:, feature_names.index('global_evaluation_time_constraint')] < X[:, feature_names.index('global_search_time_constraint')]
 
 
         return np.hstack((X,
@@ -31,7 +34,9 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
                           log_global_evaluation_time_constraint.reshape((1, 1)),
                           log_global_memory_constraint.reshape((1, 1)),
                           log_privacy.reshape((1, 1)),
-                          log_sampled_instances.reshape((1, 1))
+                          log_sampled_instances.reshape((1, 1)),
+                          has_privacy_constraint.reshape((1, 1)),
+                          has_evaluation_time_constraint.reshape((1, 1))
                         ))
 
 
