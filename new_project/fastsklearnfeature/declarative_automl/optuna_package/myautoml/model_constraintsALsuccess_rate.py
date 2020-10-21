@@ -291,7 +291,7 @@ while True:
 
     assert X_meta.shape[1] == len(feature_names_new), 'error'
 
-    with open('/tmp/my_great_model.p', "wb") as pickle_model_file:
+    with open('/tmp/my_great_model_success_rate.p', "wb") as pickle_model_file:
         pickle.dump(model, pickle_model_file)
 
     #random sampling 10 iterations
