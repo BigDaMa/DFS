@@ -52,6 +52,8 @@ class FeatureTransformations(BaseEstimator, TransformerMixin):
         self.feature_names_new.append('log_search_memory_constraint')
         self.feature_names_new.append('log_privacy_constraint')
         self.feature_names_new.append('log_sampled_instances')
+        self.feature_names_new.append('has_privacy_constraint')
+        self.feature_names_new.append('has_evaluation_time_constraint')
         return self.feature_names_new
 
 

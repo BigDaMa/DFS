@@ -29,6 +29,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model i
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import MyPool
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_feature_names
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import ifNull
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import generate_parameters
 
 def predict_range(model, X):
     y_pred = model.predict(X)
@@ -50,59 +51,6 @@ for t_v in test_holdout_dataset_id:
 
 feature_names, feature_names_new = get_feature_names()
 
-def generate_parameters(trial):
-    # which constraints to use
-    search_time = trial.suggest_int('global_search_time_constraint', 10, max(10, total_search_time), log=False)
-
-    # how much time for each evaluation
-    evaluation_time = search_time
-    if trial.suggest_categorical('use_evaluation_time_constraint', [True, False]):
-        evaluation_time = trial.suggest_int('global_evaluation_time_constraint', min(10, search_time), search_time, log=False)
-
-    # how much memory is allowed
-    memory_limit = 4
-    if trial.suggest_categorical('use_search_memory_constraint', [True, False]):
-        memory_limit = trial.suggest_loguniform('global_memory_constraint', 0.00000000000001, 4)
-
-    # how much privacy is required
-    privacy_limit = None
-    if trial.suggest_categorical('use_privacy_constraint', [True, False]):
-        privacy_limit = trial.suggest_loguniform('privacy_constraint', 0.0001, 10)
-
-    training_time_limit = search_time
-    if trial.suggest_categorical('use_training_time_constraint', [True, False]):
-        training_time_limit = trial.suggest_loguniform('training_time_constraint', 0.005, search_time)
-
-    inference_time_limit = 60
-    if trial.suggest_categorical('use_inference_time_constraint', [True, False]):
-        inference_time_limit = trial.suggest_loguniform('inference_time_constraint', 0.0004, 60)
-
-    pipeline_size_limit = 350000000
-    if trial.suggest_categorical('use_pipeline_size_constraint', [True, False]):
-        pipeline_size_limit = trial.suggest_loguniform('pipeline_size_constraint', 2000, 350000000)
-
-
-    # how many cvs should be used
-    cv = 1
-    number_of_cvs = 1
-    hold_out_fraction = None
-    if trial.suggest_categorical('use_hold_out', [True, False]):
-        hold_out_fraction = trial.suggest_uniform('hold_out_fraction', 0, 1)
-    else:
-        cv = trial.suggest_int('global_cv', 2, 20, log=False)  # todo: calculate minimum number of splits based on y
-        number_of_cvs = 1
-        if trial.suggest_categorical('use_multiple_cvs', [True, False]):
-            number_of_cvs = trial.suggest_int('global_number_cv', 2, 10, log=False)
-
-    sample_fraction = 1.0
-    if trial.suggest_categorical('use_sampling', [True, False]):
-        sample_fraction = trial.suggest_uniform('sample_fraction', 0, 1)
-
-    dataset_id = trial.suggest_categorical('dataset_id', my_openml_datasets)
-
-    return search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, dataset_id
-
-
 
 def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
     space = None
@@ -115,7 +63,7 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
 
         trial.set_user_attr('space', copy.deepcopy(space))
 
-        search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, dataset_id = generate_parameters(trial)
+        search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, dataset_id = generate_parameters(trial, total_search_time, my_openml_datasets)
 
     else:
         space = trial.user_attrs['space']
@@ -285,8 +233,7 @@ def optimize_uncertainty(trial):
 
         trial.set_user_attr('space', copy.deepcopy(space))
 
-        search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, dataset_id = generate_parameters(
-            trial)
+        search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, dataset_id = generate_parameters(trial, total_search_time, my_openml_datasets)
 
         my_random_seed = int(time.time())
 
