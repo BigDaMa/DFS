@@ -31,6 +31,9 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model i
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import ifNull
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import generate_parameters
 
+from sklearn.model_selection import GroupKFold
+from sklearn.model_selection import GridSearchCV
+
 def predict_range(model, X):
     y_pred = model.predict(X)
     return y_pred
@@ -238,6 +241,7 @@ def optimize_uncertainty(trial, dataset_id):
 
         trial.set_user_attr('features', features)
 
+        model = mp_glob.ml_model
         trial.set_user_attr('predicted_target', model.predict(features))
 
         predictions = []
@@ -298,6 +302,7 @@ while True:
 
     assert X_meta.shape[1] == len(feature_names_new), 'error'
 
+    model = None
     if len(np.unique(group_meta)) > topk:
         gkf = GroupKFold(n_splits=topk)
         cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [1000]}, cv=gkf, refit=True,
@@ -325,6 +330,10 @@ while True:
 
         with open('/tmp/felix_group_success.p', "wb") as pickle_model_file:
             pickle.dump(group_meta, pickle_model_file)
+    else:
+        model = RandomForestRegressor(n_estimators=1000)
+        model.fit(X_meta, y_meta)
+    mp_glob.ml_model = model
 
     sampled_datasets = np.random.choice(a=my_openml_datasets, size=topk, replace=False)
     with MyPool(processes=topk) as pool:

@@ -263,6 +263,8 @@ def optimize_uncertainty(trial, dataset_id):
         features = space2features(space, my_list_constraints_values, metafeature_values)
         features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
 
+        model = mp_glob.ml_model
+
         trial.set_user_attr('features', features)
         trial.set_user_attr('predicted_target', model.predict(features))
 
@@ -323,6 +325,7 @@ while True:
 
     assert X_meta.shape[1] == len(feature_names_new), 'error'
 
+    model = None
     if len(np.unique(group_meta)) > topk:
         gkf = GroupKFold(n_splits=topk)
         cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [1000]}, cv=gkf, refit=True, scoring='r2')
@@ -349,6 +352,10 @@ while True:
 
         with open('/tmp/felix_group_compare.p', "wb") as pickle_model_file:
             pickle.dump(group_meta, pickle_model_file)
+    else:
+        model = RandomForestRegressor(n_estimators=1000)
+        model.fit(X_meta, y_meta)
+    mp_glob.ml_model = model
 
     sampled_datasets = np.random.choice(a=my_openml_datasets, size=topk, replace=False)
     with MyPool(processes=topk) as pool:
