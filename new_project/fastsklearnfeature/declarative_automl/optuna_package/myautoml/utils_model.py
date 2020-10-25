@@ -170,10 +170,14 @@ def ifNull(value, constant_value=0):
 
 
 def optimize_accuracy_under_constraints2(trial, metafeature_values_hold, search_time, model_compare, model_success,
-                                        memory_limit=4,
+                                        memory_limit=10,
                                         privacy_limit=None,
                                         evaluation_time=None,
-                                        hold_out_fraction=None):
+                                        hold_out_fraction=None,
+                                        training_time_limit=None,
+                                        inference_time_limit=None,
+                                        pipeline_size_limit=None
+                                        ):
     try:
         gen = SpaceGenerator()
         space = gen.generate_params()
@@ -205,8 +209,8 @@ def optimize_accuracy_under_constraints2(trial, metafeature_values_hold, search_
 
 
         sample_fraction = 1.0
-        #if trial.suggest_categorical('use_sampling', [True, False]):
-        #    sample_fraction = trial.suggest_uniform('sample_fraction', 0, 1)
+        if trial.suggest_categorical('use_sampling', [True, False]):
+            sample_fraction = trial.suggest_uniform('sample_fraction', 0, 1)
 
 
 
@@ -217,7 +221,10 @@ def optimize_accuracy_under_constraints2(trial, metafeature_values_hold, search_
                                       number_of_cvs,
                                       ifNull(privacy_limit, constant_value=1000),
                                       ifNull(hold_out_fraction),
-                                      sample_fraction]
+                                      sample_fraction,
+                                      ifNull(training_time_limit, constant_value=search_time),
+                                      ifNull(inference_time_limit, constant_value=60),
+                                      ifNull(pipeline_size_limit, constant_value=350000000)]
 
         features = space2features(space, my_list_constraints_values, metafeature_values_hold)
         feature_names, _ = get_feature_names()
@@ -230,7 +237,7 @@ def optimize_accuracy_under_constraints2(trial, metafeature_values_hold, search_
         return 0.0
 
 
-def generate_parameters(trial, total_search_time, my_openml_datasets):
+def generate_parameters(trial, total_search_time, my_openml_datasets, sample_data=True):
     # which constraints to use
     search_time = trial.suggest_int('global_search_time_constraint', 10, max(10, total_search_time), log=False)
 
@@ -240,9 +247,9 @@ def generate_parameters(trial, total_search_time, my_openml_datasets):
         evaluation_time = trial.suggest_int('global_evaluation_time_constraint', min(10, search_time), search_time, log=False)
 
     # how much memory is allowed
-    memory_limit = 4
+    memory_limit = 10
     if trial.suggest_categorical('use_search_memory_constraint', [True, False]):
-        memory_limit = trial.suggest_loguniform('global_memory_constraint', 0.00000000000001, 4)
+        memory_limit = trial.suggest_loguniform('global_memory_constraint', 0.00000000000001, 10)
 
     # how much privacy is required
     privacy_limit = None
@@ -278,7 +285,9 @@ def generate_parameters(trial, total_search_time, my_openml_datasets):
     if trial.suggest_categorical('use_sampling', [True, False]):
         sample_fraction = trial.suggest_uniform('sample_fraction', 0, 1)
 
-    dataset_id = trial.suggest_categorical('dataset_id', my_openml_datasets)
+    dataset_id = None
+    if sample_data:
+        dataset_id = trial.suggest_categorical('dataset_id', my_openml_datasets)
 
     return search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, dataset_id
 
@@ -286,7 +295,7 @@ def generate_parameters(trial, total_search_time, my_openml_datasets):
 
 
 def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_time, model,
-                                        memory_limit=4,
+                                        memory_limit=10,
                                         privacy_limit=None,
                                         evaluation_time=None,
                                         hold_out_fraction=None):
@@ -348,7 +357,10 @@ def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_t
 def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None, my_scorer=None,
                search_time=None,
                memory_limit=None,
-               privacy_limit=None
+               privacy_limit=None,
+               training_time_limit=None,
+               inference_time_limit=None,
+               pipeline_size_limit=None
                ):
     space = trial.user_attrs['space']
 
@@ -387,7 +399,10 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                       main_memory_budget_gb=memory_limit,
                       differential_privacy_epsilon=privacy_limit,
                       hold_out_fraction=hold_out_fraction,
-                      sample_fraction=sample_fraction
+                      sample_fraction=sample_fraction,
+                      training_time_limit=training_time_limit,
+                      inference_time_limit=inference_time_limit,
+                      pipeline_size_limit=pipeline_size_limit
                       )
     search.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
 

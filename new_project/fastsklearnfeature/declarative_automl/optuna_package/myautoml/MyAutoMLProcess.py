@@ -128,6 +128,7 @@ def evaluatePipeline(key, return_dict):
                 pickle.dump(trained_pipeline, pickle_pipeline_file)
 
     except Exception as e:
+        return_dict[key + 'result'] = -1 * np.inf
         print(p)
         print(str(e) + '\n\n')
 
@@ -279,7 +280,7 @@ class MyAutoML:
                 try:
                     mp_global.mp_store[key]['study_best_value'] = self.study.best_value
                 except ValueError:
-                    mp_global.mp_store[key]['study_best_value'] = -1 * (time.time() - start_total)
+                    mp_global.mp_store[key]['study_best_value'] = -np.inf
 
                 already_used_time = time.time() - self.start_fitting
 
@@ -334,7 +335,7 @@ class MyAutoML:
                 return result
             except Exception as e:
                 print(str(e) + '\n\n')
-                return -1 * (time.time() - start_total)
+                return -1 * np.inf
 
         if type(self.study) == type(None):
             self.study = optuna.create_study(direction='maximize')

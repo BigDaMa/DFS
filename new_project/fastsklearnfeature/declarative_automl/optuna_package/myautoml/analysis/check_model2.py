@@ -21,111 +21,127 @@ from anytree import RenderTree
 
 my_scorer=make_scorer(f1_score)
 
+#test_holdout_dataset_ids = [1134, 1495, 41147, 316, 1085, 1046, 1111, 55, 1116, 448, 1458, 162, 1101, 1561, 1061, 1506, 1235, 4135, 151, 51, 41138, 40645, 1510, 1158, 312, 38, 52, 1216, 41007, 1130]
 
-test_holdout_dataset_id = 31#1590#1218#4134#31#1139#31#1138#31
-memory_budget = 3.0
+test_holdout_dataset_ids = [316, 1085, 1046, 1111, 55, 1116, 448, 1458, 162, 1101, 1561, 1061, 1506, 1235, 4135, 151, 51, 41138, 40645, 1510, 1158, 312, 38, 52, 1216, 41007, 1130]
+
+
+
+memory_budget = 8.0
 privacy = None
 
-X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
-metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
+results_dict = {}
 
-try:
-    model_compare = pickle.load(open('/home/felix/phd2/picture_progress/newest_comparison_model/my_great_model.p', "rb"))
-    model_success = pickle.load(open('/home/felix/phd2/picture_progress/my_great_model.p', "rb"))
-except:
-    model = pickle.load(open('/tmp/my_great_model.p', "rb"))
-#model = pickle.load(open('/home/felix/phd2/my_meta_model/my_great_model.p', "rb")
+for test_holdout_dataset_id in test_holdout_dataset_ids:
 
-_, feature_names = get_feature_names()
+    X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
+    metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
 
-#plot_most_important_features(model, feature_names, k=len(feature_names))
+    #try:
+    model_compare = pickle.load(open('/home/felix/phd2/picture_progress/new_compare/my_great_model_compare.p', "rb"))
+    model_success = pickle.load(open('/home/felix/phd2/picture_progress/new_success/my_great_model_success_rate.p', "rb"))
+    #except:
+        #model = pickle.load(open('/tmp/my_great_model.p', "rb"))
+    #model = pickle.load(open('/home/felix/phd2/my_meta_model/my_great_model.p', "rb")
 
-dynamic_approach = []
-static_approach = []
+    _, feature_names = get_feature_names()
 
-for minutes_to_search in range(1, 6):
+    #plot_most_important_features(model, feature_names, k=len(feature_names))
 
-    current_dynamic = []
-    current_static = []
+    dynamic_approach = []
+    static_approach = []
 
-    search_time_frozen = minutes_to_search * 60
+    for minutes_to_search in range(1, 6):
 
-    for repeat in range(5):
+        current_dynamic = []
+        current_static = []
 
-        study_prune = optuna.create_study(direction='maximize')
-        study_prune.optimize(lambda trial: optimize_accuracy_under_constraints2(trial=trial,
-                                                                               metafeature_values_hold=metafeature_values_hold,
-                                                                               search_time=search_time_frozen,
-                                                                               model_compare=model_compare,
-                                                                               model_success=model_success,
-                                                                               memory_limit=memory_budget,
-                                                                               privacy_limit=privacy,
-                                                                               #evaluation_time=int(0.1*search_time_frozen),
-                                                                               #hold_out_fraction=0.33
-                                                                               ), n_trials=500, n_jobs=4)
+        search_time_frozen = minutes_to_search * 60
 
-        space = study_prune.best_trial.user_attrs['space']
+        for repeat in range(5):
 
+            study_prune = optuna.create_study(direction='maximize')
+            study_prune.optimize(lambda trial: optimize_accuracy_under_constraints2(trial=trial,
+                                                                                   metafeature_values_hold=metafeature_values_hold,
+                                                                                   search_time=search_time_frozen,
+                                                                                   model_compare=model_compare,
+                                                                                   model_success=model_success,
+                                                                                   memory_limit=memory_budget,
+                                                                                   privacy_limit=privacy,
+                                                                                   #evaluation_time=int(0.1*search_time_frozen),
+                                                                                   #hold_out_fraction=0.33
+                                                                                   ), n_trials=500, n_jobs=4)
 
-
-        for pre, _, node in RenderTree(space.parameter_tree):
-            if node.status == True:
-                print("%s%s" % (pre, node.name))
-
-        result, search = run_AutoML(study_prune.best_trial,
-                                                     X_train=X_train_hold,
-                                                     X_test=X_test_hold,
-                                                     y_train=y_train_hold,
-                                                     y_test=y_test_hold,
-                                                     categorical_indicator=categorical_indicator_hold,
-                                                     my_scorer=my_scorer,
-                                                     search_time=search_time_frozen,
-                                                     memory_limit=memory_budget,
-                                                     privacy_limit=privacy
-                                     )
-
-        from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import show_progress
-        #show_progress(search, X_test_hold, y_test_hold, my_scorer)
-
-        print("test result: " + str(result))
-        current_dynamic.append(result)
-
-        print('dynamic: ' + str(current_dynamic))
-        print('static: ' + str(current_static))
+            space = study_prune.best_trial.user_attrs['space']
 
 
-        gen_new = SpaceGenerator()
-        space_new = gen_new.generate_params()
-        for pre, _, node in RenderTree(space_new.parameter_tree):
-            if node.status == True:
-                print("%s%s" % (pre, node.name))
 
-        search = MyAutoML(n_jobs=1,
-                          time_search_budget=search_time_frozen,
-                          space=space_new,
-                          evaluation_budget=int(0.1 * search_time_frozen),
-                          main_memory_budget_gb=memory_budget,
-                          differential_privacy_epsilon=privacy,
-                          hold_out_fraction=0.33
-                          )
+            for pre, _, node in RenderTree(space.parameter_tree):
+                if node.status == True:
+                    print("%s%s" % (pre, node.name))
 
-        best_result = search.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
+            try:
+                result, search = run_AutoML(study_prune.best_trial,
+                                                             X_train=X_train_hold,
+                                                             X_test=X_test_hold,
+                                                             y_train=y_train_hold,
+                                                             y_test=y_test_hold,
+                                                             categorical_indicator=categorical_indicator_hold,
+                                                             my_scorer=my_scorer,
+                                                             search_time=search_time_frozen,
+                                                             memory_limit=memory_budget,
+                                                             privacy_limit=privacy
+                                             )
+            except:
+                result = 0
 
-        #show_progress(search, X_test_hold, y_test_hold, my_scorer)
-        try:
-            test_score = my_scorer(search.get_best_pipeline(), X_test_hold, y_test_hold)
-        except:
-            test_score = 0.0
-        current_static.append(test_score)
+            from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import show_progress
+            #show_progress(search, X_test_hold, y_test_hold, my_scorer)
 
-        print("result: " + str(best_result) + " test: " + str(test_score))
+            print("test result: " + str(result))
+            current_dynamic.append(result)
 
-        print('dynamic: ' + str(current_dynamic))
-        print('static: ' + str(current_static))
+            print('dynamic: ' + str(current_dynamic))
+            print('static: ' + str(current_static))
 
-    dynamic_approach.append(current_dynamic)
-    static_approach.append(current_static)
 
-    print('dynamic: ' + str(dynamic_approach))
-    print('static: ' + str(static_approach))
+            gen_new = SpaceGenerator()
+            space_new = gen_new.generate_params()
+            for pre, _, node in RenderTree(space_new.parameter_tree):
+                if node.status == True:
+                    print("%s%s" % (pre, node.name))
 
+            try:
+                search = MyAutoML(n_jobs=1,
+                                  time_search_budget=search_time_frozen,
+                                  space=space_new,
+                                  evaluation_budget=int(0.1 * search_time_frozen),
+                                  main_memory_budget_gb=memory_budget,
+                                  differential_privacy_epsilon=privacy,
+                                  hold_out_fraction=0.33
+                                  )
+
+                best_result = search.fit(X_train_hold, y_train_hold, categorical_indicator=categorical_indicator_hold, scorer=my_scorer)
+
+
+                test_score = my_scorer(search.get_best_pipeline(), X_test_hold, y_test_hold)
+            except:
+                test_score = 0.0
+            current_static.append(test_score)
+
+            print("result: " + str(best_result) + " test: " + str(test_score))
+
+            print('dynamic: ' + str(current_dynamic))
+            print('static: ' + str(current_static))
+
+        dynamic_approach.append(current_dynamic)
+        static_approach.append(current_static)
+
+        print('dynamic: ' + str(dynamic_approach))
+        print('static: ' + str(static_approach))
+
+        results_dict[test_holdout_dataset_id] = {}
+        results_dict[test_holdout_dataset_id]['dynamic'] = dynamic_approach
+        results_dict[test_holdout_dataset_id]['static'] = static_approach
+
+        pickle.dump(results_dict, open('/home/felix/phd2/picture_progress/all_test_datasets/all_results.p', 'wb+'))

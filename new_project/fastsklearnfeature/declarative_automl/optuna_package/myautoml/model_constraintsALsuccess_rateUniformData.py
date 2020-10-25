@@ -30,7 +30,6 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model i
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_feature_names
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import ifNull
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import generate_parameters
-import numpy
 
 def predict_range(model, X):
     y_pred = model.predict(X)
@@ -51,7 +50,6 @@ for t_v in test_holdout_dataset_id:
 
 
 feature_names, feature_names_new = get_feature_names()
-
 
 def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
     space = None
@@ -113,9 +111,9 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
             sample_fraction = trial.params['sample_fraction']
 
         if 'dataset_id' in trial.params:
-            dataset_id = trial.params['dataset_id'] #get same random seed
+            dataset_id = trial.params['dataset_id']
         else:
-            dataset_id = 31
+            dataset_id = trial.user_attrs['dataset_id']
 
     for pre, _, node in RenderTree(space.parameter_tree):
         if node.status == True:
@@ -148,7 +146,6 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
 
 
     dynamic_params = []
-    static_params = []
     for random_i in range(5):
         search = MyAutoML(cv=cv,
                           number_of_cvs=number_of_cvs,
@@ -175,35 +172,13 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
             pass
         dynamic_params.append(test_score)
 
-        # default params
-        gen_new = SpaceGenerator()
-        space_new = gen_new.generate_params()
-        for pre, _, node in RenderTree(space_new.parameter_tree):
-            if node.status == True:
-                print("%s%s" % (pre, node.name))
+    count_success = 0
+    for i_run in range(len(dynamic_params)):
+        if dynamic_params[i_run] > 0.0:
+            count_success += 1
+    success_rate = float(count_success) / float(len(dynamic_params))
 
-        search_static = MyAutoML(n_jobs=1,
-                          time_search_budget=search_time,
-                          space=space_new,
-                          evaluation_budget=int(0.1 * search_time),
-                          main_memory_budget_gb=memory_limit,
-                          differential_privacy_epsilon=privacy_limit,
-                          hold_out_fraction=0.33,
-                          training_time_limit=training_time_limit,
-                          inference_time_limit=inference_time_limit,
-                          pipeline_size_limit=pipeline_size_limit
-                          )
-
-        try:
-            best_result = search_static.fit(X_train, y_train, categorical_indicator=categorical_indicator, scorer=my_scorer)
-            test_score_default = my_scorer(search_static.get_best_pipeline(), X_test, y_test)
-        except:
-            test_score_default = 0.0
-        static_params.append(test_score_default)
-
-    comparison = np.mean(dynamic_params) - np.mean(static_params)
-
-    return comparison, search
+    return success_rate, search
 
 
 def run_AutoML_global(trial_id):
@@ -226,7 +201,7 @@ def run_AutoML_score_only(trial, X_train=None, X_test=None, y_train=None, y_test
     return test_score
 
 
-def optimize_uncertainty(trial):
+def optimize_uncertainty(trial, dataset_id):
     try:
         gen = SpaceGenerator()
         space = gen.generate_params()
@@ -234,7 +209,7 @@ def optimize_uncertainty(trial):
 
         trial.set_user_attr('space', copy.deepcopy(space))
 
-        search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, dataset_id = generate_parameters(trial, total_search_time, my_openml_datasets)
+        search_time, evaluation_time, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, cv, number_of_cvs, hold_out_fraction, sample_fraction, _ = generate_parameters(trial, total_search_time, my_openml_datasets)
 
         my_random_seed = int(time.time())
 
@@ -242,6 +217,7 @@ def optimize_uncertainty(trial):
                                                                                             randomstate=my_random_seed)
 
         trial.set_user_attr('data_random_seed', my_random_seed)
+        trial.set_user_attr('dataset_id', dataset_id)
 
         #add metafeatures of data
         my_list_constraints_values = [search_time,
@@ -275,6 +251,10 @@ def optimize_uncertainty(trial):
         print(str(e) + 'except dataset _ uncertainty: ' + str(dataset_id) + '\n\n')
         return 0.0
 
+def run_uncertainty_sampling(dataset_id):
+    study_uncertainty = optuna.create_study(direction='maximize')
+    study_uncertainty.optimize(lambda t: optimize_uncertainty(t, dataset_id), n_trials=100, n_jobs=1)  # todo: maybe wrap it into a process so it wont be killed by out of memory
+    return study_uncertainty.best_trial
 
 
 #random sampling 10 iterations
@@ -309,47 +289,46 @@ print(X_meta.shape)
 
 
 pruned_accuray_results = []
-
 verbose = False
-
 loss_over_time = []
+cv_over_time = []
+topk = 20
 
 while True:
 
-    model = RandomForestRegressor(n_estimators=1000, n_jobs=10)
-    model.fit(X_meta, y_meta)
-
     assert X_meta.shape[1] == len(feature_names_new), 'error'
 
-    with open('/tmp/my_great_model_compare.p', "wb") as pickle_model_file:
-        pickle.dump(model, pickle_model_file)
+    if len(np.unique(group_meta)) > topk:
+        gkf = GroupKFold(n_splits=topk)
+        cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [1000]}, cv=gkf, refit=True,
+                                 scoring='r2')
+        cross_val.fit(X_meta, y_meta, groups=group_meta)
+        model = cross_val.best_estimator_
+        cv_over_time.append(cross_val.best_score_)
 
-    with open('/tmp/felix_X.p', "wb") as pickle_model_file:
-        pickle.dump(X_meta, pickle_model_file)
+        plt.plot(range(len(cv_over_time)), cv_over_time)
+        plt.savefig('/tmp/cv_over_time_success.png')
+        plt.clf()
 
-    with open('/tmp/felix_y.p', "wb") as pickle_model_file:
-        pickle.dump(y_meta, pickle_model_file)
+        print('Shape: ' + str(X_meta.shape))
 
-    with open('/tmp/felix_group.p', "wb") as pickle_model_file:
-        pickle.dump(group_meta, pickle_model_file)
+        plot_most_important_features(model, feature_names_new, verbose=verbose)
 
-    #random sampling 10 iterations
-    study_uncertainty = optuna.create_study(direction='maximize')
-    study_uncertainty.optimize(optimize_uncertainty, n_trials=100, n_jobs=1) #todo: maybe wrap it into a process so it wont be killed by out of memory
+        with open('/tmp/my_great_model_success.p', "wb") as pickle_model_file:
+            pickle.dump(model, pickle_model_file)
 
-    #get most uncertain for k datasets and run k runs in parallel
-    topk=20
-    data2most_uncertain = {}
-    for u_trial in study_uncertainty.trials:
-        u_dataset = u_trial.params['dataset_id']
-        u_value = u_trial.value
-        data2most_uncertain[u_dataset] = (u_trial, u_value)
+        with open('/tmp/felix_X_success.p', "wb") as pickle_model_file:
+            pickle.dump(X_meta, pickle_model_file)
 
-    k_keys_sorted_by_values = heapq.nlargest(topk, data2most_uncertain, key=lambda s: data2most_uncertain[s][1])
+        with open('/tmp/felix_y_success.p', "wb") as pickle_model_file:
+            pickle.dump(y_meta, pickle_model_file)
 
-    mp_glob.my_trials = []
-    for keyy in k_keys_sorted_by_values:
-        mp_glob.my_trials.append(data2most_uncertain[keyy][0])
+        with open('/tmp/felix_group_success.p', "wb") as pickle_model_file:
+            pickle.dump(group_meta, pickle_model_file)
+
+    sampled_datasets = np.random.choice(a=my_openml_datasets, size=topk, replace=False)
+    with MyPool(processes=topk) as pool:
+        mp_glob.my_trials = pool.map(run_uncertainty_sampling, sampled_datasets)
 
     with MyPool(processes=topk) as pool:
         results = pool.map(run_AutoML_global, range(topk))
@@ -359,16 +338,5 @@ while True:
         for f_progress in range(len(result_p['feature_l'])):
             X_meta = np.vstack((X_meta, result_p['feature_l'][f_progress]))
             y_meta.append(result_p['target_l'][f_progress])
+            group_meta.append(result_p['group_l'])
         all_losses.append(result_p['loss'])
-
-
-    print('mean_loss: ' + str(np.mean(all_losses)))
-    loss_over_time.append(np.mean(all_losses))
-
-    plt.plot(range(len(loss_over_time)), loss_over_time)
-    plt.savefig('/tmp/loss_over_time.png')
-    plt.clf()
-
-    print('Shape: ' + str(X_meta.shape))
-
-    plot_most_important_features(model, feature_names_new, verbose=verbose)

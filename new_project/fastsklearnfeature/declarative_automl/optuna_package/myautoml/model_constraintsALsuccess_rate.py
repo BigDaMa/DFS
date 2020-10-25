@@ -76,7 +76,7 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
         if 'global_evaluation_time_constraint' in trial.params:
             evaluation_time = trial.params['global_evaluation_time_constraint']
 
-        memory_limit = 4
+        memory_limit = 10
         if 'global_memory_constraint' in trial.params:
             memory_limit = trial.params['global_memory_constraint']
 
