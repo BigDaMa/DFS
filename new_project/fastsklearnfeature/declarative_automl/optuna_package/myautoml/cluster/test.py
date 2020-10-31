@@ -22,7 +22,7 @@ if not os.path.isfile("/tmp/feature_matrix.p"):
 
     metadata_matrix = []
     for dataset_id in my_openml_datasets:
-        X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data(dataset_id, randomstate=42)
+        X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data(str(dataset_id), randomstate=42)
         metadata_matrix.append(data2features(X_train, y_train, categorical_indicator)[0])
 
     pickle.dump(metadata_matrix, open("/tmp/feature_matrix.p", "wb"))

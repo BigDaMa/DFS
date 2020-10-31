@@ -21,9 +21,9 @@ from anytree import RenderTree
 
 my_scorer=make_scorer(f1_score)
 
-#test_holdout_dataset_ids = [1134, 1495, 41147, 316, 1085, 1046, 1111, 55, 1116, 448, 1458, 162, 1101, 1561, 1061, 1506, 1235, 4135, 151, 51, 41138, 40645, 1510, 1158, 312, 38, 52, 1216, 41007, 1130]
+test_holdout_dataset_ids = [1134, 1495, 41147, 316, 1085, 1046, 1111, 55, 1116, 448, 1458, 162, 1101, 1561, 1061, 1506, 1235, 4135, 151, 51, 41138, 40645, 1510, 1158, 312, 38, 52, 1216, 41007, 1130]
 
-test_holdout_dataset_ids = [316, 1085, 1046, 1111, 55, 1116, 448, 1458, 162, 1101, 1561, 1061, 1506, 1235, 4135, 151, 51, 41138, 40645, 1510, 1158, 312, 38, 52, 1216, 41007, 1130]
+#test_holdout_dataset_ids = [316, 1085, 1046, 1111, 55, 1116, 448, 1458, 162, 1101, 1561, 1061, 1506, 1235, 4135, 151, 51, 41138, 40645, 1510, 1158, 312, 38, 52, 1216, 41007, 1130]
 
 
 
@@ -38,11 +38,16 @@ for test_holdout_dataset_id in test_holdout_dataset_ids:
     metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
 
     #try:
-    model_compare = pickle.load(open('/home/felix/phd2/picture_progress/new_compare/my_great_model_compare.p', "rb"))
-    model_success = pickle.load(open('/home/felix/phd2/picture_progress/new_success/my_great_model_success_rate.p', "rb"))
+    #AL dataset sampling
+    #model_compare = pickle.load(open('/home/felix/phd2/picture_progress/new_compare/my_great_model_compare.p', "rb"))
+    #model_success = pickle.load(open('/home/felix/phd2/picture_progress/new_success/my_great_model_success_rate.p', "rb"))
     #except:
         #model = pickle.load(open('/tmp/my_great_model.p', "rb"))
     #model = pickle.load(open('/home/felix/phd2/my_meta_model/my_great_model.p', "rb")
+
+    #uniform dataset sampling
+    model_compare = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/my_great_model_compare.p', "rb"))
+    model_success = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/my_great_model_success.p', "rb"))
 
     _, feature_names = get_feature_names()
 

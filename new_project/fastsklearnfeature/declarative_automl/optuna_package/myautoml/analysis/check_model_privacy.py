@@ -14,7 +14,7 @@ import pickle
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_data
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import data2features
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import plot_most_important_features
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import optimize_accuracy_under_constraints
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import optimize_accuracy_under_constraints2
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import run_AutoML
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_feature_names
 from anytree import RenderTree
@@ -28,11 +28,8 @@ privacy = None
 X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
 metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
 
-try:
-    model = pickle.load(open('/home/felix/phd2/picture_progress/my_great_model.p', "rb"))
-except:
-    model = pickle.load(open('/tmp/my_great_model.p', "rb"))
-#model = pickle.load(open('/home/felix/phd2/my_meta_model/my_great_model.p', "rb")
+model_compare = pickle.load(open('/home/felix/phd2/picture_progress/new_compare/my_great_model_compare.p', "rb"))
+model_success = pickle.load(open('/home/felix/phd2/picture_progress/new_success/my_great_model_success_rate.p', "rb"))
 
 _, feature_names = get_feature_names()
 
@@ -42,23 +39,24 @@ dynamic_approach = []
 static_approach = []
 
 minutes_to_search = 5
-memory_budget = 4
+memory_budget = 8
 
 #for minutes_to_search in range(1, 6):
-for privacy in [0.01]:
+for privacy in [0.001, 0.01, 0.1, 1.0, 10.0]:
 
     current_dynamic = []
     current_static = []
 
     search_time_frozen = minutes_to_search * 60
 
-    for repeat in range(1):
+    for repeat in range(5):
 
         study_prune = optuna.create_study(direction='maximize')
-        study_prune.optimize(lambda trial: optimize_accuracy_under_constraints(trial=trial,
+        study_prune.optimize(lambda trial: optimize_accuracy_under_constraints2(trial=trial,
                                                                                metafeature_values_hold=metafeature_values_hold,
                                                                                search_time=search_time_frozen,
-                                                                               model=model,
+                                                                               model_compare=model_compare,
+                                                                               model_success=model_success,
                                                                                memory_limit=memory_budget,
                                                                                privacy_limit=privacy,
                                                                                #evaluation_time=int(0.1*search_time_frozen),

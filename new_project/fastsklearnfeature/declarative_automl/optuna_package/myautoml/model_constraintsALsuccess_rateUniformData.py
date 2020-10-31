@@ -293,7 +293,6 @@ print(X_meta.shape)
 
 pruned_accuray_results = []
 verbose = False
-loss_over_time = []
 cv_over_time = []
 topk = 20#20
 
@@ -305,7 +304,7 @@ while True:
     if len(np.unique(group_meta)) > topk:
         gkf = GroupKFold(n_splits=topk)
         cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [1000]}, cv=gkf, refit=True,
-                                 scoring='r2')
+                                 scoring='neg_mean_squared_error', n_jobs=topk)
         cross_val.fit(X_meta, y_meta, groups=group_meta)
         model = cross_val.best_estimator_
         cv_over_time.append(cross_val.best_score_)
@@ -342,10 +341,8 @@ while True:
     with MyPool(processes=topk) as pool:
         results = pool.map(run_AutoML_global, range(topk))
 
-    all_losses = []
     for result_p in results:
         for f_progress in range(len(result_p['feature_l'])):
             X_meta = np.vstack((X_meta, result_p['feature_l'][f_progress]))
             y_meta.append(result_p['target_l'][f_progress])
             group_meta.append(result_p['group_l'])
-        all_losses.append(result_p['loss'])

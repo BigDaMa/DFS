@@ -30,6 +30,8 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model i
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_feature_names
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import ifNull
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import generate_parameters
+from sklearn.model_selection import GroupKFold
+from sklearn.model_selection import GridSearchCV
 
 def predict_range(model, X):
     y_pred = model.predict(X)
@@ -193,7 +195,8 @@ def run_AutoML_global(trial_id):
 
     return {'feature_l': feature_list,
             'target_l': target_list,
-            'loss': np.square(target_list[-1] - mp_glob.my_trials[trial_id].user_attrs['predicted_target'])}
+            'loss': np.square(target_list[-1] - mp_glob.my_trials[trial_id].user_attrs['predicted_target']),
+            'group_l': copy.deepcopy(mp_glob.my_trials[trial_id].params['dataset_id'])}
 
 
 def run_AutoML_score_only(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
@@ -248,7 +251,7 @@ def optimize_uncertainty(trial):
         return stddev_pred[0]
     except Exception as e:
         print(str(e) + 'except dataset _ uncertainty: ' + str(dataset_id) + '\n\n')
-        return 0.0
+        return -1 * np.inf
 
 
 
@@ -265,6 +268,7 @@ print('done')
 all_trials = study.get_trials()
 X_meta = []
 y_meta = []
+group_meta = []
 
 for t in range(len(study.get_trials())):
     current_trial = all_trials[t]
@@ -273,38 +277,60 @@ for t in range(len(study.get_trials())):
     else:
         y_meta.append(0.0)
     X_meta.append(current_trial.user_attrs['features'])
+    group_meta.append(current_trial.params['dataset_id'])
 
 X_meta = np.vstack(X_meta)
 print(X_meta.shape)
 
 
 pruned_accuray_results = []
-
 verbose = False
-
-loss_over_time = []
+cv_over_time = []
+topk = 20#20
 
 while True:
 
-    model = RandomForestRegressor(n_estimators=1000, n_jobs=10)
-    model.fit(X_meta, y_meta)
-
     assert X_meta.shape[1] == len(feature_names_new), 'error'
 
-    with open('/tmp/my_great_model_success_rate.p', "wb") as pickle_model_file:
-        pickle.dump(model, pickle_model_file)
+    model = None
+    if len(np.unique(group_meta)) > topk:
+        gkf = GroupKFold(n_splits=topk)
+        cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [1000]}, cv=gkf, refit=True,
+                                 scoring='r2', n_jobs=topk)
+        cross_val.fit(X_meta, y_meta, groups=group_meta)
+        model = cross_val.best_estimator_
+        cv_over_time.append(cross_val.best_score_)
+
+        with open('/tmp/my_great_model_success.p', "wb") as pickle_model_file:
+            pickle.dump(model, pickle_model_file)
+
+        with open('/tmp/felix_X_success.p', "wb") as pickle_model_file:
+            pickle.dump(X_meta, pickle_model_file)
+
+        with open('/tmp/felix_y_success.p', "wb") as pickle_model_file:
+            pickle.dump(y_meta, pickle_model_file)
+
+        with open('/tmp/felix_group_success.p', "wb") as pickle_model_file:
+            pickle.dump(group_meta, pickle_model_file)
+
+        with open('/tmp/felix_cv_success.p', "wb") as pickle_model_file:
+            pickle.dump(cv_over_time, pickle_model_file)
+    else:
+        model = RandomForestRegressor(n_estimators=1000)
+        model.fit(X_meta, y_meta)
+    mp_glob.ml_model = model
 
     #random sampling 10 iterations
     study_uncertainty = optuna.create_study(direction='maximize')
-    study_uncertainty.optimize(optimize_uncertainty, n_trials=100, n_jobs=1) #todo: maybe wrap it into a process so it wont be killed by out of memory
+    study_uncertainty.optimize(optimize_uncertainty, n_trials=100, n_jobs=1)
 
     #get most uncertain for k datasets and run k runs in parallel
-    topk=20
     data2most_uncertain = {}
     for u_trial in study_uncertainty.trials:
         u_dataset = u_trial.params['dataset_id']
         u_value = u_trial.value
-        data2most_uncertain[u_dataset] = (u_trial, u_value)
+        if u_value >= 0:
+            data2most_uncertain[u_dataset] = (u_trial, u_value)
 
     k_keys_sorted_by_values = heapq.nlargest(topk, data2most_uncertain, key=lambda s: data2most_uncertain[s][1])
 
@@ -315,21 +341,9 @@ while True:
     with MyPool(processes=topk) as pool:
         results = pool.map(run_AutoML_global, range(topk))
 
-    all_losses = []
     for result_p in results:
         for f_progress in range(len(result_p['feature_l'])):
             X_meta = np.vstack((X_meta, result_p['feature_l'][f_progress]))
             y_meta.append(result_p['target_l'][f_progress])
-        all_losses.append(result_p['loss'])
+            group_meta.append(result_p['group_l'])
 
-
-    print('mean_loss: ' + str(np.mean(all_losses)))
-    loss_over_time.append(np.mean(all_losses))
-
-    plt.plot(range(len(loss_over_time)), loss_over_time)
-    plt.savefig('/tmp/loss_over_time.png')
-    plt.clf()
-
-    print('Shape: ' + str(X_meta.shape))
-
-    plot_most_important_features(model, feature_names_new, verbose=verbose)

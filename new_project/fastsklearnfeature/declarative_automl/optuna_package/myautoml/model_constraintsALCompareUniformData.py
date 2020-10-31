@@ -326,7 +326,7 @@ while True:
     model = None
     if len(np.unique(group_meta)) > topk:
         gkf = GroupKFold(n_splits=topk)
-        cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [1000]}, cv=gkf, refit=True, scoring='r2')
+        cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [1000]}, cv=gkf, refit=True, scoring='r2', n_jobs=topk)
         cross_val.fit(X_meta, y_meta, groups=group_meta)
         model = cross_val.best_estimator_
         cv_over_time.append(cross_val.best_score_)
