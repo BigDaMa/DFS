@@ -28,7 +28,8 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
 
     for configuration in search_configs:
         new_pipeline = copy.deepcopy(pipeline)
-        new_pipeline.set_params(**configuration)
+        if len(configuration) > 0:
+            new_pipeline.set_params(**configuration)
         new_pipeline.fit(X_train, pd.DataFrame(y_train))
 
         validation_number_features = float(np.sum(new_pipeline.named_steps['selection']._get_support_mask())) / float(X_train.shape[1])
