@@ -25,7 +25,7 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import 
 from sklearn.model_selection import train_test_split
 from fastsklearnfeature.interactiveAutoML.feature_selection.fcbf_package import my_fisher_score
 from functools import partial
-from hyperopt import fmin, hp, tpe, Trials, STATUS_OK
+from hyperopt import fmin, hp, tpe, Trials, STATUS_OK, rand
 
 from sklearn.feature_selection import mutual_info_classif
 from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
@@ -251,10 +251,15 @@ while True:
 		     'search_time': hp.uniform('search_time_specified', 10, time_limit), # in seconds
 			}
 
+
+	my_random_state = np.random.RandomState(seed=42)
+
+
+
 	trials = Trials()
 	i = 1
 	while True:
-		fmin(objective, space=space, algo=tpe.suggest, max_evals=i, trials=trials, show_progressbar=False)
+		fmin(objective, space=space, algo=rand.suggest, max_evals=i, trials=trials, show_progressbar=False, rstate=my_random_state)
 		i += 1
 
 		if trials.trials[-1]['result']['loss'] == np.inf:
@@ -263,6 +268,9 @@ while True:
 
 		#break, once convergence tolerance is reached and generate new dataset
 		last_trial = trials.trials[-1]
+
+		print(last_trial)
+
 		most_uncertain_f = last_trial['misc']['vals']
 		#print(most_uncertain_f)
 
