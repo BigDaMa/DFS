@@ -22,22 +22,22 @@ def map_hyper2vals(hyper):
 		new_vals[k] = [v]
 	return new_vals
 
-def TPE(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file = None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), avoid_robustness=False):
+def TPE(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file = None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), avoid_robustness=False, model_hyperparameters=None):
 	return hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions=[],
 									   clf=clf, min_accuracy=min_accuracy, min_fairness=min_fairness,
 									   min_robustness=min_robustness, max_number_features=max_number_features,
 									   max_search_time=max_search_time, log_file=log_file,
-									   algo=tpe.suggest, accuracy_scorer=accuracy_scorer, avoid_robustness=avoid_robustness)
+									   algo=tpe.suggest, accuracy_scorer=accuracy_scorer, avoid_robustness=avoid_robustness, model_hyperparameters=model_hyperparameters)
 
 
 def simulated_annealing(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions=[], clf=None, min_accuracy=0.0,
-			min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), avoid_robustness=False):
+			min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), avoid_robustness=False, model_hyperparameters=None):
 
-	return hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions=[], clf=clf, min_accuracy=min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, log_file=log_file, algo=hyperopt.anneal.suggest, accuracy_scorer=accuracy_scorer, avoid_robustness=avoid_robustness)
+	return hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions=[], clf=clf, min_accuracy=min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, log_file=log_file, algo=hyperopt.anneal.suggest, accuracy_scorer=accuracy_scorer, avoid_robustness=avoid_robustness, model_hyperparameters=model_hyperparameters)
 
 
 
-def hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file=None, algo=tpe.suggest, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), avoid_robustness=False):
+def hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features = None, max_search_time=np.inf, log_file=None, algo=tpe.suggest, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), avoid_robustness=False, model_hyperparameters=None):
 	min_loss = np.inf
 	start_time = time.time()
 
@@ -87,7 +87,7 @@ def hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_tr
 			return stored_results[str(hps)]
 
 		stored_results[str(hps)] = run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accuracy_scorer, sensitive_ids,
-						min_fairness, min_accuracy, min_robustness, max_number_features, model_hyperparameters=None, start_time=start_time, avoid_robustness=avoid_robustness)
+						min_fairness, min_accuracy, min_robustness, max_number_features, model_hyperparameters=model_hyperparameters, start_time=start_time, avoid_robustness=avoid_robustness)
 
 		stored_results[str(hps)]['updated_parameters'] = hps
 

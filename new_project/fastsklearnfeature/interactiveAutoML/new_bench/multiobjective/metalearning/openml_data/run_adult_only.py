@@ -62,6 +62,7 @@ import os
 from sklearn.metrics import f1_score
 from sklearn.metrics import r2_score
 import pathlib
+import copy
 
 
 def my_function(config_id):
@@ -85,7 +86,8 @@ def my_function(config_id):
 								   max_search_time=mp_global.max_search_time,
 								   log_file='/tmp/experiment' + str(current_run_time_id) + '/run' + str(
 									   run_counter) + '/strategy' + str(conf['strategy_id']) + '.pickle',
-								   accuracy_scorer=mp_global.accuracy_scorer
+								   accuracy_scorer=mp_global.accuracy_scorer,
+								   model_hyperparameters=mp_global.model_hyperparameters
 								   )
 	result['strategy_id'] = conf['strategy_id']
 	return result
@@ -159,7 +161,11 @@ while True:
 								(0.0),
 								(hp.uniform('fairness_specified', 0.8, 1))
 							]),
-			 'privacy': None,
+			 'privacy': hp.choice('privacy_choice',
+							[
+								(None),
+								(hp.lognormal('privacy_specified', 0, 1))
+							]),
 			 'robustness': hp.choice('robustness_choice',
 							[
 								(0.0),
@@ -173,7 +179,7 @@ while True:
 		if trials.trials[-1]['result']['loss'] == np.inf:
 			break
 
-		for model_choice in [2,1,0]:
+		for model_choice in [0]:#[2,1,0]:
 
 			# create folder to store files:
 			path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
@@ -184,11 +190,6 @@ while True:
 			#break, once convergence tolerance is reached and generate new dataset
 			last_trial = trials.trials[-1]
 			most_uncertain_f = last_trial['misc']['vals']
-
-			most_uncertain_f['model_choice'] = {}
-			most_uncertain_f['model_choice'][0] = model_choice
-			#print(most_uncertain_f)
-
 
 			min_accuracy = most_uncertain_f['accuracy_specified'][0]
 			min_fairness = 0.0
@@ -207,9 +208,15 @@ while True:
 			# maybe run multiple times to smooth stochasticity
 
 			model = None
-			print(most_uncertain_f)
 			if model_choice == 0:
 				model = LogisticRegression(class_weight='balanced')
+				mp_global.model_hyperparameters = {'C': [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]}
+				if most_uncertain_f['privacy_choice'][0]:
+					model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0],
+													  class_weight='balanced')
+					mp_global.model_hyperparameters['epsilon']= [most_uncertain_f['privacy_specified'][0]]
+
+
 			elif model_choice == 1:
 				model = GaussianNB()
 			elif model_choice == 2:
@@ -229,6 +236,8 @@ while True:
 			#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
 			#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
 			rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
+
+			#rankings = []
 
 			mp_global.min_accuracy = min_accuracy
 			mp_global.min_fairness = min_fairness
@@ -275,7 +284,7 @@ while True:
 
 
 			#6#17
-			with ProcessPool(max_workers=17) as pool:
+			with ProcessPool(max_workers=20) as pool:
 				future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 				iterator = future.result()
@@ -291,17 +300,12 @@ while True:
 					except Exception as error:
 						print("function raised %s" % error)
 						print(error.traceback)  # Python's traceback of remote process
-			'''
-			for iii in range(len(mp_global.configurations)):
-				my_function(iii)
-			'''
-
 
 			# pickle everything and store it
 			one_big_object = {}
 			one_big_object['dataset_id'] = key
 			one_big_object['constraint_set_list'] = trials.trials[-1]['result']['constraints']
-			one_big_object['constraint_set_list']['model'] = model_choice
+			one_big_object['constraint_set_list']['model'] = copy.deepcopy(model_choice)
 
 			with open('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/run_info.pickle',
 					  'wb') as f_log:

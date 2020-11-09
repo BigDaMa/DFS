@@ -18,11 +18,11 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
     if type(model_hyperparameters) != type(None):
 
         new_model_hyperparameters = {}
-        for k, v in model_hyperparameters.items:
+        for k, v in model_hyperparameters.items():
             new_model_hyperparameters['clf__' + k] = v
+        print(new_model_hyperparameters)
 
         search_configs = [dict(zip(new_model_hyperparameters, v)) for v in product(*new_model_hyperparameters.values())]
-
 
     grid_results = {}
 
@@ -70,6 +70,8 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
         if min_loss > v['loss']:
             min_loss = v['loss']
             best_parameter_configuration = k
+
+    print(best_parameter_configuration)
 
     best_pipeline = copy.deepcopy(pipeline)
     best_pipeline.set_params(**best_parameter_configuration)

@@ -15,14 +15,14 @@ from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate
 from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
 
-def forward_floating_selection(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)):
-	return forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=clf, min_accuracy = min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, log_file=log_file, floating=True, accuracy_scorer=accuracy_scorer)
+def forward_floating_selection(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True),model_hyperparameters=None):
+	return forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=clf, min_accuracy = min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, log_file=log_file, floating=True, accuracy_scorer=accuracy_scorer, model_hyperparameters=model_hyperparameters)
 
-def forward_selection(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)):
-	return forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=clf, min_accuracy = min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, log_file=log_file, floating=False, accuracy_scorer=accuracy_scorer)
+def forward_selection(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True),model_hyperparameters=None):
+	return forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=clf, min_accuracy = min_accuracy, min_fairness=min_fairness, min_robustness=min_robustness, max_number_features=max_number_features, max_search_time=max_search_time, log_file=log_file, floating=False, accuracy_scorer=accuracy_scorer, model_hyperparameters=model_hyperparameters)
 
 
-def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, floating=True, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)):
+def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, floating=True, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), model_hyperparameters=None):
 	min_loss = np.inf
 	start_time = time.time()
 
@@ -64,10 +64,13 @@ def forward_floating_selection_lib(X_train, X_validation, X_train_val, X_test, y
 		if np.sum(pipeline.named_steps['selection'].mask) == 0:
 			return {'loss': 4, 'status': STATUS_OK, 'model': pipeline, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
 
+		print('test')
 		grid_result = run_grid_search(pipeline, X_train, y_train, X_validation, y_validation,
 									  accuracy_scorer, sensitive_ids,
 									  min_fairness, min_accuracy, min_robustness, max_number_features,
-									  model_hyperparameters=None, start_time=start_time)
+									  model_hyperparameters=model_hyperparameters, start_time=start_time)
+		print(grid_result)
+		print('test2')
 
 		grid_result['updated_parameters'] = hps
 		return grid_result

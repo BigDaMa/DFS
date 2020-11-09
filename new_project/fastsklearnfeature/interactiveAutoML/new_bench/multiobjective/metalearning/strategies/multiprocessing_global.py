@@ -19,6 +19,8 @@ min_fairness=None
 min_robustness=None
 max_number_features=None #float 0.0-1.0
 
+model_hyperparameters = None
+
 
 my_dict = None
 

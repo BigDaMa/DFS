@@ -15,7 +15,7 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.WeightedRankingSelec
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
 import copy
 
-def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features: float = 1.0, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True)):
+def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy = 0.0, min_fairness = 0.0, min_robustness = 0.0, max_number_features: float = 1.0, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), model_hyperparameters=None):
 	min_loss = np.inf
 
 	start_time = time.time()
@@ -65,7 +65,7 @@ def weighted_ranking(X_train, X_validation, X_train_val, X_test, y_train, y_vali
 		stored_results[str(hps)] = run_grid_search(pipeline, X_train, y_train, X_validation, y_validation,
 												   accuracy_scorer, sensitive_ids,
 												   min_fairness, min_accuracy, min_robustness, max_number_features,
-												   model_hyperparameters=None, start_time=start_time)
+												   model_hyperparameters=model_hyperparameters, start_time=start_time)
 
 		stored_results[str(hps)]['updated_parameters'] = hps
 
