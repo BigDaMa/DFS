@@ -291,6 +291,8 @@ while True:
 			if most_uncertain_f['privacy_choice'][0]:
 				model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
 				mp_global.model_hyperparameters['epsilon'] = [most_uncertain_f['privacy_specified'][0]]
+		mp_global.model_hyperparameters = None
+
 		'''
 		elif most_uncertain_f['model_choice'][0] == 1:
 			model = GaussianNB()
@@ -366,7 +368,7 @@ while True:
 
 
 		#6#17
-		with ProcessPool(max_workers=1) as pool:
+		with ProcessPool(max_workers=17) as pool:
 			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 			iterator = future.result()
