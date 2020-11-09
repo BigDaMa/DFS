@@ -103,7 +103,7 @@ while True:
 	path = pathlib.Path('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter))
 	path.mkdir(parents=True, exist_ok=True)
 
-	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation()
+	X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id = get_fair_data1_validation(dataset_key='1590')
 	#X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, key, sensitive_attribute_id, is_regression = get_fair_data1_validation_openml()
 	is_regression = False
 
@@ -285,12 +285,13 @@ while True:
 
 		model = None
 		print(most_uncertain_f)
-		if most_uncertain_f['model_choice'][0] == 0:
+		if True:#most_uncertain_f['model_choice'][0] == 0:
 			model = LogisticRegression(class_weight='balanced')
 			mp_global.model_hyperparameters = {'C': [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]}
 			if most_uncertain_f['privacy_choice'][0]:
 				model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
 				mp_global.model_hyperparameters['epsilon'] = [most_uncertain_f['privacy_specified'][0]]
+		'''
 		elif most_uncertain_f['model_choice'][0] == 1:
 			model = GaussianNB()
 			if most_uncertain_f['privacy_choice'][0]:
@@ -303,6 +304,7 @@ while True:
 			model = RandomForestClassifier(n_estimators=100, class_weight='balanced')
 			if most_uncertain_f['privacy_choice'][0]:
 				model = PrivateRandomForest(n_estimators=100, epsilon=most_uncertain_f['privacy_specified'][0])
+		'''
 
 		print(model)
 
@@ -364,7 +366,7 @@ while True:
 
 
 		#6#17
-		with ProcessPool(max_workers=6) as pool:
+		with ProcessPool(max_workers=1) as pool:
 			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
 			iterator = future.result()
