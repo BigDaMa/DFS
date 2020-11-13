@@ -160,8 +160,8 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
 
         X_train, X_test, y_train, y_test, categorical_indicator, attribute_names = get_data(dataset_id, randomstate=my_random_seed)
 
-        if not isinstance(trial, FrozenTrial):
-            my_list_constraints_values = [search_time,
+
+    my_list_constraints_values = [search_time,
                                           evaluation_time,
                                           memory_limit, cv,
                                           number_of_cvs,
@@ -174,10 +174,10 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
                                           model_weight,
                                           number_trials]
 
-            metafeature_values = data2features(X_train, y_train, categorical_indicator)
-            features = space2features(space, my_list_constraints_values, metafeature_values)
-            features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
-            trial.set_user_attr('features', features)
+    metafeature_values = data2features(X_train, y_train, categorical_indicator)
+    features = space2features(space, my_list_constraints_values, metafeature_values)
+    features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
+    trial.set_user_attr('features', features)
 
     try:
         model_compare = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_compare.p', "rb"))
