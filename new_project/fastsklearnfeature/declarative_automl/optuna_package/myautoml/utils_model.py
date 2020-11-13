@@ -28,17 +28,7 @@ metafeature_names_new = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilit
      'PercentageOfInstancesWithMissingValues', 'PercentageOfMissingValues', 'RatioNominalToNumerical',
      'RatioNumericalToNominal', 'SymbolsMax', 'SymbolsMean', 'SymbolsMin', 'SymbolsSTD', 'SymbolsSum']
 
-my_list_constraints = ['global_search_time_constraint',
-                       'global_evaluation_time_constraint',
-                       'global_memory_constraint',
-                       'global_cv',
-                       'global_number_cv',
-                       'privacy',
-                       'hold_out_fraction',
-                       'sample_fraction',
-                       'training_time_constraint',
-                       'inference_time_constraint',
-                       'pipeline_size_constraint']
+
 
 
 mgen = SpaceGenerator()
@@ -61,7 +51,7 @@ class MyPool(mp.pool.Pool):
     Process = NoDaemonProcess
 
 
-def get_feature_names():
+def get_feature_names(my_list_constraints=None):
     feature_names = copy.deepcopy(my_list)
     feature_names.extend(copy.deepcopy(my_list_constraints))
     feature_names.extend(copy.deepcopy(metafeature_names_new))
@@ -141,12 +131,12 @@ def plot_most_important_features(rf_random, names_features, title='importance', 
 
 def space2features(space, my_list_constraints_values, metafeature_values):
     tuple_param = np.zeros((1, len(my_list)))
-    tuple_constraints = np.zeros((1, len(my_list_constraints)))
+    tuple_constraints = np.zeros((1, len(my_list_constraints_values)))
     t = 0
     for parameter_i in range(len(my_list)):
         tuple_param[t, parameter_i] = space.name2node[my_list[parameter_i]].status
 
-    for constraint_i in range(len(my_list_constraints)):
+    for constraint_i in range(len(my_list_constraints_values)):
         tuple_constraints[t, constraint_i] = my_list_constraints_values[constraint_i] #current_trial.params[my_list_constraints[constraint_i]]
 
     return np.hstack((tuple_param, tuple_constraints, metafeature_values))
@@ -176,7 +166,8 @@ def optimize_accuracy_under_constraints2(trial, metafeature_values_hold, search_
                                         hold_out_fraction=None,
                                         training_time_limit=None,
                                         inference_time_limit=None,
-                                        pipeline_size_limit=None
+                                        pipeline_size_limit=None,
+                                        comparison_weight=0
                                         ):
     try:
         gen = SpaceGenerator()
@@ -226,12 +217,24 @@ def optimize_accuracy_under_constraints2(trial, metafeature_values_hold, search_
                                       ifNull(inference_time_limit, constant_value=60),
                                       ifNull(pipeline_size_limit, constant_value=350000000)]
 
+        my_list_constraints = ['global_search_time_constraint',
+                               'global_evaluation_time_constraint',
+                               'global_memory_constraint',
+                               'global_cv',
+                               'global_number_cv',
+                               'privacy',
+                               'hold_out_fraction',
+                               'sample_fraction',
+                               'training_time_constraint',
+                               'inference_time_constraint',
+                               'pipeline_size_constraint']
+
         features = space2features(space, my_list_constraints_values, metafeature_values_hold)
-        feature_names, _ = get_feature_names()
+        feature_names, _ = get_feature_names(my_list_constraints)
         features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
         trial.set_user_attr('features', features)
 
-        return predict_range(model_compare, features) + predict_range(model_success, features)
+        return predict_range(model_success, features) + comparison_weight * predict_range(model_compare, features)
     except Exception as e:
         print(str(e) + 'except dataset _ accuracy: ' + '\n\n')
         return 0.0
@@ -354,7 +357,7 @@ def optimize_accuracy_under_constraints(trial, metafeature_values_hold, search_t
         print(str(e) + 'except dataset _ accuracy: ' + '\n\n')
         return 0.0
 
-def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None, my_scorer=None,
+def utils_run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None, my_scorer=None,
                search_time=None,
                memory_limit=None,
                privacy_limit=None,

@@ -14,12 +14,16 @@ X_meta = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/te
 y_meta = np.array(pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/felix_y_compare.p', "rb")))
 group_meta = np.array(pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/felix_group_compare.p', "rb")))
 
+X_meta = pickle.load(open('/home/felix/phd2/picture_progress/al_only/felix_X_compare.p', "rb"))
+y_meta = np.array(pickle.load(open('/home/felix/phd2/picture_progress/al_only/felix_y_compare.p', "rb")))
+group_meta = np.array(pickle.load(open('/home/felix/phd2/picture_progress/al_only/felix_group_compare.p', "rb")))
+
 print(X_meta.shape)
 
 
 
 gkf = GroupKFold(n_splits=20)
-cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [1000]}, cv=gkf, refit=True, scoring='r2', n_jobs=8)
+cross_val = GridSearchCV(RandomForestRegressor(), param_grid={'n_estimators': [2000]}, cv=gkf, refit=True, scoring='r2', n_jobs=8)
 cross_val.fit(X_meta, y_meta, groups=group_meta)
 model = cross_val.best_estimator_
 

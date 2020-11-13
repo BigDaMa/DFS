@@ -46,8 +46,12 @@ for test_holdout_dataset_id in test_holdout_dataset_ids:
     #model = pickle.load(open('/home/felix/phd2/my_meta_model/my_great_model.p', "rb")
 
     #uniform dataset sampling
-    model_compare = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/my_great_model_compare.p', "rb"))
-    model_success = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/my_great_model_success.p', "rb"))
+    #model_compare = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/my_great_model_compare.p', "rb"))
+    #model_success = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/my_great_model_success.p', "rb"))
+
+    model_compare = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_compare.p', "rb"))
+    model_success = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_success.p', "rb"))
+
 
     _, feature_names = get_feature_names()
 
