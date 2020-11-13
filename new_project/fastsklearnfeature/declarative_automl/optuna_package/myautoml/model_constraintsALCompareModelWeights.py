@@ -179,8 +179,12 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
             features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
             trial.set_user_attr('features', features)
 
-    model_compare = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_compare.p', "rb"))
-    model_success = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_success.p', "rb"))
+    try:
+        model_compare = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_compare.p', "rb"))
+        model_success = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_success.p', "rb"))
+    except:
+        model_compare = pickle.load(open('/home/neutatz/data/my_models/my_great_model_compare.p', "rb"))
+        model_success = pickle.load(open('/home/neutatz/data/my_models/my_great_model_success.p', "rb"))
 
     dynamic_params = []
     static_params = []
