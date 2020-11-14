@@ -177,7 +177,11 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
     metafeature_values = data2features(X_train, y_train, categorical_indicator)
     features = space2features(space, my_list_constraints_values, metafeature_values)
     features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
-    trial.set_user_attr('features', features)
+
+    try:
+        trial.set_user_attr('features', features)
+    except:
+        pass
 
     try:
         model_compare = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_compare.p', "rb"))
