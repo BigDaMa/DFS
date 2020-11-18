@@ -13,7 +13,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.feature_trans
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_data
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import data2features
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import MyPool
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_feature_names
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_feature_names_new
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import ifNull
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import generate_parameters
 from sklearn.model_selection import GroupKFold
@@ -50,7 +50,7 @@ my_list_constraints = ['global_search_time_constraint',
                        'number_trials']
 
 
-feature_names, feature_names_new = get_feature_names(my_list_constraints)
+feature_names, feature_names_new = get_feature_names_new(my_list_constraints)
 
 
 def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
@@ -292,9 +292,7 @@ print(X_meta.shape)
 
 
 pruned_accuray_results = []
-
 verbose = False
-
 cv_over_time = []
 
 topk = 20#20
