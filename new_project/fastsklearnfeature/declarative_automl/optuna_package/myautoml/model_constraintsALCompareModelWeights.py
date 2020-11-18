@@ -120,6 +120,12 @@ def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, cate
     features = merge_features(my_list_constraints_values, metafeature_values)
     features = FeatureTransformations().fit(features).transform(features, feature_names=feature_names)
 
+    print(len(features[0]))
+    print(len(feature_names_new))
+    print(feature_names_new)
+
+    assert len(feature_names_new) == features.shape[1], 'feature error'
+
     try:
         trial.set_user_attr('features', features)
     except:

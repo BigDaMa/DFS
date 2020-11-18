@@ -18,6 +18,10 @@ import matplotlib.pyplot as plt
 import pickle
 import operator
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.feature_transformation.FeatureTransformations import FeatureTransformations
+
+
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.feature_transformation.FeatureTransformationsNew import FeatureTransformations as FT
+
 import multiprocessing as mp
 
 metafeature_names_new = ['ClassEntropy', 'ClassProbabilityMax', 'ClassProbabilityMean', 'ClassProbabilityMin', 'ClassProbabilitySTD',
@@ -64,7 +68,7 @@ def get_feature_names_new(my_list_constraints=None):
     feature_names.extend(copy.deepcopy(my_list_constraints))
     feature_names.extend(copy.deepcopy(metafeature_names_new))
 
-    feature_names_new = FeatureTransformations().get_new_feature_names(feature_names)
+    feature_names_new = FT().get_new_feature_names(feature_names)
     return feature_names, feature_names_new
 
 def data2features(X_train, y_train, categorical_indicator):
