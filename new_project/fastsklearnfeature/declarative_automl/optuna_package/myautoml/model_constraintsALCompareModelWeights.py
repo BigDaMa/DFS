@@ -21,6 +21,7 @@ from sklearn.model_selection import GridSearchCV
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import utils_run_AutoML
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import optimize_accuracy_under_constraints2
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import merge_features
+from optuna.trial import FrozenTrial
 
 def predict_range(model, X):
     y_pred = model.predict(X)
@@ -55,7 +56,7 @@ feature_names, feature_names_new = get_feature_names_new(my_list_constraints)
 
 def run_AutoML(trial, X_train=None, X_test=None, y_train=None, y_test=None, categorical_indicator=None):
     search_time = None
-    if not 'space' in trial.user_attrs:
+    if not isinstance(trial, FrozenTrial):
         search_time, _, memory_limit, privacy_limit, training_time_limit, inference_time_limit, pipeline_size_limit, _, _, _, _, dataset_id = generate_parameters(trial, total_search_time, my_openml_datasets)
 
         model_weight = 0
