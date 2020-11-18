@@ -6,10 +6,12 @@ import openml
 #new_dct = pickle.load(open('/home/felix/phd2/picture_progress/all_test_datasets/all_results_step1.p', 'rb'))
 new_dct = pickle.load(open('/home/felix/phd2/picture_progress/all_test_datasets/all_results.p', 'rb'))
 
+#new_dct = pickle.load(open('/home/felix/phd2/picture_progress/all_test_datasets/all_results_only_success.p', 'rb'))
+
 for k, v in new_dct.items():
     print(k)
 
-    name = openml.datasets.get_dataset(dataset_id=k).name
+    name = openml.datasets.get_dataset(dataset_id=k, download_data=False).name
 
     static = v['static']
     dynamic = v['dynamic']
