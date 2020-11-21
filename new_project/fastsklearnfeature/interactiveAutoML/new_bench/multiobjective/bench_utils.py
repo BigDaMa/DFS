@@ -359,17 +359,9 @@ def get_fair_data1_validation(dataset_key=None, random_number=42):
 	map_dataset['42565'] = 'gender@{g1,g2}' #students
 
 
-	'''
 	map_dataset = {}
 	map_dataset['1240'] = 'sex@{Female,Male}'
 	map_dataset['42132'] = 'race@{BLACKLIVESMATTER,OTHER}'#traffic
-	'''
-	#map_dataset['1240'] = 'sex@{Female,Male}'
-	#map_dataset['42132'] = 'race@{BLACKLIVESMATTER,OTHER}'  # traffic
-
-	#map_dataset = {}
-	#map_dataset['1590'] = 'sex@{Female,Male}'
-
 
 	number_instances = []
 	number_attributes = []
