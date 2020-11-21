@@ -25,6 +25,7 @@ class DP_Random_Forest:
                  # the number of trees to build. Since we divide the data among the trees, ensure: num_trees << len(train)
                  epsilon=0.1,
                  # the total privacy budget. The whole budget will be used in each tree (and thus each leaf), due to using disjoint data.
+                 max_depth=None
                  ):
         ''' Some initialization '''
         self._categs = categs
@@ -32,7 +33,11 @@ class DP_Random_Forest:
                   x + 1 not in categs]  # the indexes of the numerical (i.e. continuous) attributes
         self._attribute_domains = self.get_attr_domains(train, numers, categs)
         attribute_indexes = [int(k) for k, v in self._attribute_domains.items()]
-        self._max_depth = self.calc_tree_depth(len(numers), len(categs))
+
+        if type(max_depth) == type(None):
+            self._max_depth = self.calc_tree_depth(len(numers), len(categs))
+        else:
+            self._max_depth = max_depth
         self._num_trees = num_trees
 
         self._trees = []

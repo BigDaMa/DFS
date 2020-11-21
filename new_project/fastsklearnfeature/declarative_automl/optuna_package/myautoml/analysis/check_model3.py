@@ -38,18 +38,6 @@ for test_holdout_dataset_id in test_holdout_dataset_ids:
     X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
     metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
 
-    #try:
-    #AL dataset sampling
-    #model_compare = pickle.load(open('/home/felix/phd2/picture_progress/new_compare/my_great_model_compare.p', "rb"))
-    #model_success = pickle.load(open('/home/felix/phd2/picture_progress/new_success/my_great_model_success_rate.p', "rb"))
-    #except:
-        #model = pickle.load(open('/tmp/my_great_model.p', "rb"))
-    #model = pickle.load(open('/home/felix/phd2/my_meta_model/my_great_model.p', "rb")
-
-    #uniform dataset sampling
-    #model_compare = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/my_great_model_compare.p', "rb"))
-    #model_success = pickle.load(open('/home/felix/phd2/picture_progress/uniform_sampling/test_model/my_great_model_success.p', "rb"))
-
     model_compare = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_compare.p', "rb"))
     model_success = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_success.p', "rb"))
     model_weights = pickle.load(open('/home/felix/phd2/picture_progress/weights/my_great_model_weights.p', "rb"))
@@ -89,8 +77,6 @@ for test_holdout_dataset_id in test_holdout_dataset_ids:
                                                                                     model_weights=model_weights,
                                                                                     memory_limit=memory_budget,
                                                                                     privacy_limit=privacy,
-                                                                                    # evaluation_time=int(0.1*search_time_frozen),
-                                                                                    # hold_out_fraction=0.33
                                                                                     ), n_trials=500, n_jobs=4)
 
             print(study_prune.best_trial.params)
@@ -109,8 +95,6 @@ for test_holdout_dataset_id in test_holdout_dataset_ids:
                                                                                    memory_limit=memory_budget,
                                                                                    privacy_limit=privacy,
                                                                                    comparison_weight=best_model_weight
-                                                                                   #evaluation_time=int(0.1*search_time_frozen),
-                                                                                   #hold_out_fraction=0.33
                                                                                    ), n_trials=best_number_trials, n_jobs=4)
 
             space = study_prune.best_trial.user_attrs['space']

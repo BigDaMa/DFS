@@ -7,9 +7,10 @@ import numpy as np
 
 class PrivateRandomForest(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
 
-    def __init__(self, n_estimators, epsilon):
+    def __init__(self, n_estimators, epsilon, max_depth=None):
         self.n_estimators = n_estimators
         self.epsilon = epsilon
+        self.max_depth = max_depth
 
     def fit(self, X, y, sample_weight=None):
 
@@ -30,7 +31,7 @@ class PrivateRandomForest(ClassifierMixin, BaseEstimator, metaclass=ABCMeta):
 
         all_data = np.hstack((new_y,X))
 
-        self.model = DP_Random_Forest(all_data, epsilon=self.epsilon, num_trees=self.n_estimators, categs=cats)
+        self.model = DP_Random_Forest(all_data, epsilon=self.epsilon, num_trees=self.n_estimators, categs=cats, max_depth=self.max_depth)
         return self
 
     def predict(self, X):

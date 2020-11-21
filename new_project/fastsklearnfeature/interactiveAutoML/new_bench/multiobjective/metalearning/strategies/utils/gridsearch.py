@@ -64,12 +64,12 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
                                     'cv_robust': validation_robust,
                                     'cv_number_features': validation_number_features}
 
-    # get minimum loss hyperparameter configuration
-    min_loss = np.inf
+    # here, we optimize model parameters for accuracy
+    max_acc = -1
     best_parameter_configuration = {}
     for k, v in grid_results.items():
-        if min_loss > v['loss']:
-            min_loss = v['loss']
+        if max_acc < v['cv_acc']:
+            max_acc = v['cv_acc']
             best_parameter_configuration = k
 
     print(best_parameter_configuration)

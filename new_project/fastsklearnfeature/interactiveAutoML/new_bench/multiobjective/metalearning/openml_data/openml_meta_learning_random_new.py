@@ -54,7 +54,6 @@ from sklearn.ensemble import RandomForestClassifier
 
 from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
-import os
 from sklearn.metrics import f1_score
 from sklearn.metrics import r2_score
 import pathlib
@@ -221,12 +220,6 @@ while True:
 
 
 	space = {
-			 'model':hp.choice('model_choice',
-							[
-								'Logistic Regression',
-								'Gaussian Naive Bayes',
-								'Decision Tree' #, 'Random Forest'
-							]),
 			 'k': hp.choice('k_choice',
 							[
 								(1.0),
@@ -267,6 +260,7 @@ while True:
 		#print(most_uncertain_f)
 
 
+
 		min_accuracy = most_uncertain_f['accuracy_specified'][0]
 		min_fairness = 0.0
 		if most_uncertain_f['fairness_choice'][0]:
@@ -283,120 +277,126 @@ while True:
 		# Execute each search strategy with a given time limit (in parallel)
 		# maybe run multiple times to smooth stochasticity
 
-		model = None
-		print(most_uncertain_f)
-		if most_uncertain_f['model_choice'][0] == 0:
-			model = LogisticRegression(class_weight='balanced')
-			mp_global.model_hyperparameters = {'C': [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]}
-			if most_uncertain_f['privacy_choice'][0]:
-				model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
-				mp_global.model_hyperparameters['epsilon'] = [most_uncertain_f['privacy_specified'][0]]
-		elif most_uncertain_f['model_choice'][0] == 1:
-			model = GaussianNB()
-			if most_uncertain_f['privacy_choice'][0]:
-				model = models.GaussianNB(epsilon=most_uncertain_f['privacy_specified'][0])
-		elif most_uncertain_f['model_choice'][0] == 2:
-			model = DecisionTreeClassifier(class_weight='balanced')
-			if most_uncertain_f['privacy_choice'][0]:
-				model = PrivateRandomForest(n_estimators=1, epsilon=most_uncertain_f['privacy_specified'][0])
-		elif most_uncertain_f['model_choice'][0] == 3:
-			model = RandomForestClassifier(n_estimators=100, class_weight='balanced')
-			if most_uncertain_f['privacy_choice'][0]:
-				model = PrivateRandomForest(n_estimators=100, epsilon=most_uncertain_f['privacy_specified'][0])
+		for model_choice in [0, 1, 2]:
+			model = None
+			print(most_uncertain_f)
+			if model_choice == 0:
+				model = LogisticRegression(class_weight='balanced')
+				mp_global.model_hyperparameters = {'C': [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]}
+				if most_uncertain_f['privacy_choice'][0]:
+					model = models.LogisticRegression(epsilon=most_uncertain_f['privacy_specified'][0], class_weight='balanced')
+					mp_global.model_hyperparameters['epsilon'] = [most_uncertain_f['privacy_specified'][0]]
+			elif model_choice == 1:
+				model = GaussianNB()
+				mp_global.model_hyperparameters = {'var_smoothing': [1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6]}
+				if most_uncertain_f['privacy_choice'][0]:
+					model = models.GaussianNB(epsilon=most_uncertain_f['privacy_specified'][0])
+					mp_global.model_hyperparameters['epsilon'] = [most_uncertain_f['privacy_specified'][0]]
+			elif model_choice == 2:
+				model = DecisionTreeClassifier(class_weight='balanced')
+				mp_global.model_hyperparameters = {'max_depth': [1, 2, 3, 4, 5, 6, 7]}
+				if most_uncertain_f['privacy_choice'][0]:
+					model = PrivateRandomForest(n_estimators=1, epsilon=most_uncertain_f['privacy_specified'][0])
+					mp_global.model_hyperparameters['epsilon'] = [most_uncertain_f['privacy_specified'][0]]
+			elif model_choice == 3:
+				model = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+				if most_uncertain_f['privacy_choice'][0]:
+					model = PrivateRandomForest(n_estimators=100, epsilon=most_uncertain_f['privacy_specified'][0])
 
-		print(model)
+			print(model)
 
-		mp_global.clf = model
-		#define rankings
-		rankings = [variance,
-					chi2_score_wo,
-					fcbf,
-					my_fisher_score,
-					mutual_info_classif,
-					my_mcfs]
-		#rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
-		#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
-		#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
-		rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
+			mp_global.clf = model
+			#define rankings
+			rankings = [variance,
+						chi2_score_wo,
+						fcbf,
+						my_fisher_score,
+						mutual_info_classif,
+						my_mcfs]
+			#rankings.append(partial(model_score, estimator=ExtraTreesClassifier(n_estimators=1000))) #accuracy ranking
+			#rankings.append(partial(robustness_score, model=model, scorer=auc_scorer)) #robustness ranking
+			#rankings.append(partial(fairness_score, estimator=ExtraTreesClassifier(n_estimators=1000), sensitive_ids=sensitive_ids)) #fairness ranking
+			rankings.append(partial(model_score, estimator=ReliefF(n_neighbors=10)))  # relieff
 
-		mp_global.min_accuracy = min_accuracy
-		mp_global.min_fairness = min_fairness
-		mp_global.min_robustness = min_robustness
-		mp_global.max_number_features = max_number_features
-		mp_global.max_search_time = max_search_time
+			mp_global.min_accuracy = min_accuracy
+			mp_global.min_fairness = min_fairness
+			mp_global.min_robustness = min_robustness
+			mp_global.max_number_features = max_number_features
+			mp_global.max_search_time = max_search_time
 
-		mp_global.configurations = []
-		#add single rankings
-		strategy_id = 1
-		for r in range(len(rankings)):
-			for run in range(number_of_runs):
-				configuration = {}
-				configuration['ranking_functions'] = copy.deepcopy([rankings[r]])
-				configuration['run_id'] = copy.deepcopy(run)
-				configuration['main_strategy'] = copy.deepcopy(weighted_ranking)
-				configuration['strategy_id'] = copy.deepcopy(strategy_id)
-				mp_global.configurations.append(configuration)
-			strategy_id +=1
-
-		main_strategies = [TPE,
-						   simulated_annealing,
-						   evolution,
-						   exhaustive,
-						   forward_selection,
-						   backward_selection,
-						   forward_floating_selection,
-						   backward_floating_selection,
-						   recursive_feature_elimination,
-						   fullfeatures]
-
-		#run main strategies
-
-		for strategy in main_strategies:
-			for run in range(number_of_runs):
+			mp_global.configurations = []
+			#add single rankings
+			strategy_id = 1
+			for r in range(len(rankings)):
+				for run in range(number_of_runs):
 					configuration = {}
-					configuration['ranking_functions'] = []
+					configuration['ranking_functions'] = copy.deepcopy([rankings[r]])
 					configuration['run_id'] = copy.deepcopy(run)
-					configuration['main_strategy'] = copy.deepcopy(strategy)
+					configuration['main_strategy'] = copy.deepcopy(weighted_ranking)
 					configuration['strategy_id'] = copy.deepcopy(strategy_id)
 					mp_global.configurations.append(configuration)
-			strategy_id += 1
+				strategy_id +=1
+
+			main_strategies = [TPE,
+							   simulated_annealing,
+							   evolution,
+							   exhaustive,
+							   forward_selection,
+							   backward_selection,
+							   forward_floating_selection,
+							   backward_floating_selection,
+							   recursive_feature_elimination,
+							   fullfeatures]
+
+			#run main strategies
+
+			for strategy in main_strategies:
+				for run in range(number_of_runs):
+						configuration = {}
+						configuration['ranking_functions'] = []
+						configuration['run_id'] = copy.deepcopy(run)
+						configuration['main_strategy'] = copy.deepcopy(strategy)
+						configuration['strategy_id'] = copy.deepcopy(strategy_id)
+						mp_global.configurations.append(configuration)
+				strategy_id += 1
 
 
 
-		#6#17
-		with ProcessPool(max_workers=6) as pool:
-			future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
+			#6#17
+			with ProcessPool(max_workers=6) as pool:
+				future = pool.map(my_function, range(len(mp_global.configurations)), timeout=max_search_time)
 
-			iterator = future.result()
-			while True:
-				try:
-					result = next(iterator)
-				except StopIteration:
-					break
-				except TimeoutError as error:
-					print("function took longer than %d seconds" % error.args[1])
-				except ProcessExpired as error:
-					print("%s. Exit code: %d" % (error, error.exitcode))
-				except Exception as error:
-					print("function raised %s" % error)
-					print(error.traceback)  # Python's traceback of remote process
-		'''
-		for iii in range(len(mp_global.configurations)):
-			my_function(iii)
-		'''
+				iterator = future.result()
+				while True:
+					try:
+						result = next(iterator)
+					except StopIteration:
+						break
+					except TimeoutError as error:
+						print("function took longer than %d seconds" % error.args[1])
+					except ProcessExpired as error:
+						print("%s. Exit code: %d" % (error, error.exitcode))
+					except Exception as error:
+						print("function raised %s" % error)
+						print(error.traceback)  # Python's traceback of remote process
+			'''
+			for iii in range(len(mp_global.configurations)):
+				my_function(iii)
+			'''
 
 
-		# pickle everything and store it
-		one_big_object = {}
-		one_big_object['features'] = trials.trials[-1]['result']['features']
-		one_big_object['dataset_id'] = key
-		one_big_object['constraint_set_list'] = trials.trials[-1]['result']['constraints']
+			# pickle everything and store it
+			one_big_object = {}
+			one_big_object['features'] = trials.trials[-1]['result']['features']
+			one_big_object['dataset_id'] = key
+			one_big_object['constraint_set_list'] = trials.trials[-1]['result']['constraints']
+			one_big_object['model'] = model_choice
 
-		with open('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/run_info.pickle',
-				  'wb') as f_log:
-			pickle.dump(one_big_object, f_log)
+			with open('/tmp/experiment' + str(current_run_time_id) + '/run' + str(run_counter) + '/run_info.pickle',
+					  'wb') as f_log:
+				pickle.dump(one_big_object, f_log)
 
-		run_counter += 1
+			run_counter += 1
 
 		trials = Trials()
 		i = 1

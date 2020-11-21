@@ -15,7 +15,7 @@ from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model i
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import data2features
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import plot_most_important_features
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import optimize_accuracy_under_constraints2
-from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import run_AutoML
+from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import utils_run_AutoML
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_feature_names
 from anytree import RenderTree
 
@@ -28,10 +28,23 @@ privacy = None
 X_train_hold, X_test_hold, y_train_hold, y_test_hold, categorical_indicator_hold, attribute_names_hold = get_data(test_holdout_dataset_id, randomstate=42)
 metafeature_values_hold = data2features(X_train_hold, y_train_hold, categorical_indicator_hold)
 
-model_compare = pickle.load(open('/home/felix/phd2/picture_progress/new_compare/my_great_model_compare.p', "rb"))
-model_success = pickle.load(open('/home/felix/phd2/picture_progress/new_success/my_great_model_success_rate.p', "rb"))
+model_compare = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_compare.p', "rb"))
+model_success = pickle.load(open('/home/felix/phd2/picture_progress/al_only/my_great_model_success.p', "rb"))
+model_weights = pickle.load(open('/home/felix/phd2/picture_progress/weights/my_great_model_weights.p', "rb"))
 
-_, feature_names = get_feature_names()
+my_list_constraints = ['global_search_time_constraint',
+                       'global_evaluation_time_constraint',
+                       'global_memory_constraint',
+                       'global_cv',
+                       'global_number_cv',
+                       'privacy',
+                       'hold_out_fraction',
+                       'sample_fraction',
+                       'training_time_constraint',
+                       'inference_time_constraint',
+                       'pipeline_size_constraint']
+
+_, feature_names = get_feature_names(my_list_constraints)
 
 #plot_most_important_features(model, feature_names, k=len(feature_names))
 
@@ -42,7 +55,8 @@ minutes_to_search = 5
 memory_budget = 8
 
 #for minutes_to_search in range(1, 6):
-for privacy in [0.001, 0.01, 0.1, 1.0, 10.0]:
+#for privacy in [0.001, 0.01, 0.1, 1.0, 10.0]:
+for training_time in [0.001, 0.01, 0.1, 1.0, 10.0]:
 
     current_dynamic = []
     current_static = []
@@ -58,9 +72,9 @@ for privacy in [0.001, 0.01, 0.1, 1.0, 10.0]:
                                                                                model_compare=model_compare,
                                                                                model_success=model_success,
                                                                                memory_limit=memory_budget,
-                                                                               privacy_limit=privacy,
-                                                                               #evaluation_time=int(0.1*search_time_frozen),
-                                                                               #hold_out_fraction=0.33
+                                                                               #privacy_limit=privacy,
+                                                                               comparison_weight=0.0,
+                                                                               training_time_limit=training_time
                                                                                ), n_trials=500, n_jobs=4)
 
         space = study_prune.best_trial.user_attrs['space']
@@ -71,7 +85,7 @@ for privacy in [0.001, 0.01, 0.1, 1.0, 10.0]:
             if node.status == True:
                 print("%s%s" % (pre, node.name))
 
-        result, search = run_AutoML(study_prune.best_trial,
+        result, search = utils_run_AutoML(study_prune.best_trial,
                                                      X_train=X_train_hold,
                                                      X_test=X_test_hold,
                                                      y_train=y_train_hold,
