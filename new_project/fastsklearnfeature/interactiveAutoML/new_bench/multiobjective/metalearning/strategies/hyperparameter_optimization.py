@@ -15,6 +15,7 @@ from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.
 from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import MaskSelection
 import hyperopt.anneal
 import copy
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import is_utility_defined
 
 def map_hyper2vals(hyper):
 	new_vals = {}
@@ -155,7 +156,7 @@ def hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_tr
 		my_result['test_robust'] = test_robust
 		my_result['final_time'] = time.time() - start_time
 
-		if cv_fair >= min_fairness and validation_acc >= min_accuracy and validation_robust >= min_robustness and cv_number_features <= max_number_features:
+		if cv_fair >= min_fairness and validation_acc >= min_accuracy and validation_robust >= min_robustness and cv_number_features <= max_number_features and not is_utility_defined(min_fairness, min_accuracy, min_robustness, max_number_features):
 			my_result['Finished'] = True
 			my_result['Validation_Satisfied'] = True
 

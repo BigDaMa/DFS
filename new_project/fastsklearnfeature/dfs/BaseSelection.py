@@ -141,7 +141,7 @@ class BaseSelection(object):
 		except:
 			pass
 		if is_successfull_validation_and_test(exp_results):
-			mask = exp_results[-1]['model'].named_steps['selection']._get_support_mask()
+			mask = exp_results[-1]['selected_features']._get_support_mask()
 			indices = np.nonzero(mask)
 			return np.array(self.feature_names)[indices]
 		else:

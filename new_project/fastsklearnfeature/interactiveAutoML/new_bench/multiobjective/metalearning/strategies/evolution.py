@@ -23,6 +23,7 @@ import pickle
 import copy
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
 import copy
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import is_utility_defined
 
 def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation, y_train_val, y_test, names, sensitive_ids, ranking_functions= [], clf=None, min_accuracy=0.0, min_fairness=0.0, min_robustness=0.0, max_number_features=None, max_search_time=np.inf, log_file=None, accuracy_scorer=make_scorer(roc_auc_score, greater_is_better=True, needs_threshold=True), model_hyperparameters=None):
 
@@ -93,7 +94,7 @@ def evolution(X_train, X_validation, X_train_val, X_test, y_train, y_validation,
 		my_result['test_robust'] = test_robust
 		my_result['final_time'] = time.time() - start_time
 
-		if validation_fair >= min_fairness and validation_acc >= min_accuracy and validation_robust >= min_robustness:
+		if validation_fair >= min_fairness and validation_acc >= min_accuracy and validation_robust >= min_robustness  and not is_utility_defined(min_fairness, min_accuracy, min_robustness, max_number_features):
 			my_result['Finished'] = True
 			my_result['Validation_Satisfied'] = True
 

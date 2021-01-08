@@ -14,6 +14,7 @@ from fastsklearnfeature.interactiveAutoML.feature_selection.MaskSelection import
 from sklearn.feature_selection.from_model import _get_feature_importances
 from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
 from eli5.permutation_importance import get_score_importances
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import is_utility_defined
 
 def my_feature_importance(my_pipeline, accuracy_scorer, X, y):
 
@@ -110,7 +111,7 @@ def recursive_feature_elimination(X_train, X_validation, X_train_val, X_test, y_
 		my_result['final_time'] = time.time() - start_time
 
 
-		if cv_fair >= min_fairness and cv_acc >= min_accuracy and cv_robust >= min_robustness and cv_number_features <= max_number_features:
+		if cv_fair >= min_fairness and cv_acc >= min_accuracy and cv_robust >= min_robustness and cv_number_features <= max_number_features and not is_utility_defined(min_fairness, min_accuracy, min_robustness, max_number_features):
 			my_result['Finished'] = True
 			my_result['Validation_Satisfied'] = True
 
