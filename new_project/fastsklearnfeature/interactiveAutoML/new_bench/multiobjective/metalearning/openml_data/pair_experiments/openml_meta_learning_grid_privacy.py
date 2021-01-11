@@ -120,8 +120,8 @@ u_acc = 0.70
 
 
 results_heatmap = {}
-for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
-	for privacy in [10.0, 7.0, 3.0, 1.0, 0.7, 0.3, 0.1, 0.07]:
+for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68]:
+	for privacy in [10.0, 7.0, 3.0, 1.0, 0.7, 0.3, 0.1, 0.07, 0.03]:
 
 		success_per_strategy = np.zeros(18)
 		time_per_strategy = np.zeros(18)
@@ -137,6 +137,8 @@ for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
 
 			model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
 			mp_global.clf = model
+			mp_global.model_hyperparameters = {'C': [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]}
+			mp_global.model_hyperparameters['epsilon'] = [privacy]
 
 			#define rankings
 			rankings = [variance,
@@ -214,7 +216,8 @@ for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
 											   max_number_features=mp_global.max_number_features,
 											   max_search_time=mp_global.max_search_time,
 											   log_file=log_file,
-											   accuracy_scorer=mp_global.accuracy_scorer)
+											   accuracy_scorer=mp_global.accuracy_scorer,
+											   model_hyperparameters=mp_global.model_hyperparameters)
 
 
 				result['strategy_id'] = conf['strategy_id']

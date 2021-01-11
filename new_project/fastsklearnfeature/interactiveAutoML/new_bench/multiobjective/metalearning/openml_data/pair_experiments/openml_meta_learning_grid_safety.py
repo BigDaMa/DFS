@@ -121,7 +121,7 @@ l_safety = 0.5
 u_safety = 1.0
 
 results_heatmap = {}
-for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
+for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68]:
 	for min_robustness in [0.5,  0.55, 0.6,  0.65, 0.7,  0.75, 0.8,  0.85, 0.9,  0.95, 1.0]:
 
 		success_per_strategy = np.zeros(18)
@@ -140,6 +140,7 @@ for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
 			if type(privacy) != type(None):
 				model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
 			mp_global.clf = model
+			mp_global.model_hyperparameters = {'C': [0.001, 0.01, 0.1, 1.0, 10, 100, 1000]}
 
 			#define rankings
 			rankings = [variance,
@@ -217,7 +218,8 @@ for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77]:
 											   max_number_features=mp_global.max_number_features,
 											   max_search_time=mp_global.max_search_time,
 											   log_file=log_file,
-											   accuracy_scorer=mp_global.accuracy_scorer)
+											   accuracy_scorer=mp_global.accuracy_scorer,
+											   model_hyperparameters=mp_global.model_hyperparameters)
 
 
 				result['strategy_id'] = conf['strategy_id']
