@@ -126,7 +126,7 @@ print(list(np.arange(l_acc, u_acc, (u_acc - l_acc) / 10.0)))
 
 results_heatmap = {}
 for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68]:
-	for min_fairness in [0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85]:
+	for min_fairness in [0.82, 0.83, 0.84, 0.85]:#[0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85]:
 
 		success_per_strategy = np.zeros(18)
 		time_per_strategy = np.zeros(18)
@@ -134,7 +134,7 @@ for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68]:
 
 			min_robustness = 0.0
 			max_number_features = 1.0
-			max_search_time = 20 * 60
+			max_search_time = 60 * 60
 			privacy = None
 
 			# Execute each search strategy with a given time limit (in parallel)
@@ -190,7 +190,7 @@ for min_accuracy in [0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68]:
 
 			#run main strategies
 			for strategy in main_strategies:
-				for run in[0]:
+				for run in [0]:
 						configuration = {}
 						configuration['ranking_functions'] = rankings
 						configuration['run_id'] = copy.deepcopy(run)
