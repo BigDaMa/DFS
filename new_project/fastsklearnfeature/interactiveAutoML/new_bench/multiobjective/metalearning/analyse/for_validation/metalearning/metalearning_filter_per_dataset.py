@@ -16,7 +16,7 @@ import warnings
 warnings.filterwarnings("ignore")
 #import openml
 from collections.abc import Iterable
-
+import numpy as np
 
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
@@ -60,7 +60,8 @@ my_random_state = np.random.RandomState(seed=42)
 
 #experiment_folders = glob.glob("/home/felix/phd/versions_dfs/new_experiments/*/")
 #experiment_folders = glob.glob("/home/felix/phd2/experiments_restric/*/")
-experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
+#experiment_folders = glob.glob("/home/felix/phd2/new_experiments_maybe_final/*/")
+experiment_folders = glob.glob("/home/felix/phd2/new_experiments/*/")
 
 
 #experiment_folders = glob.glob("/home/neutatz/data/dfs_experiments/new_experiments_maybe_final/*/")
@@ -101,9 +102,12 @@ def is_successfull_validation_and_test(exp_results):
 def is_successfull_validation(exp_results):
 	return len(exp_results) > 0 and 'Validation_Satisfied' in exp_results[-1]  # constraints were satisfied on validation set
 
+mapid2model = {}
+mapid2model[0] = 'Logistic Regression'
+mapid2model[1] = 'Gaussian Naive Bayes'
+mapid2model[2] = 'Decision Tree'
 
-
-number_ml_scenarios = 1500
+number_ml_scenarios = 10000
 
 run_count = 0
 for efolder in experiment_folders:
@@ -112,50 +116,52 @@ for efolder in experiment_folders:
 		try:
 			info_dict = pickle.load(open(rfolder + 'run_info.pickle', "rb"))
 
-			#if info_dict['dataset_id'] == '40536' or info_dict['dataset_id'] == '1461':
-				#continue
+			if 'model' in info_dict:
 
-			run_strategies_success_test = {}
-			run_strategies_times = {}
-			run_strategies_success_validation = {}
+				#if info_dict['dataset_id'] == '40536' or info_dict['dataset_id'] == '1461':
+					#continue
 
-			validation_satisfied_by_any_strategy = False
+				run_strategies_success_test = {}
+				run_strategies_times = {}
+				run_strategies_success_validation = {}
 
-			min_time = np.inf
-			best_strategy = 0
-			for s in range(1, len(mappnames) + 1):
-				exp_results = []
-				try:
-					exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
-				except:
-					pass
-				if is_successfull_validation_and_test(exp_results):
-					runtime = exp_results[-1]['final_time']
-					if runtime < min_time:
-						min_time = runtime
-						best_strategy = s
+				validation_satisfied_by_any_strategy = False
 
-					run_strategies_success_test[s] = True
-					run_strategies_times[s] = runtime
-				else:
-					run_strategies_success_test[s] = False
+				min_time = np.inf
+				best_strategy = 0
+				for s in range(1, len(mappnames) + 1):
+					exp_results = []
+					try:
+						exp_results = load_pickle(rfolder + 'strategy' + str(s) + '.pickle')
+					except:
+						pass
+					if is_successfull_validation_and_test(exp_results):
+						runtime = exp_results[-1]['final_time']
+						if runtime < min_time:
+							min_time = runtime
+							best_strategy = s
 
-				run_strategies_success_validation[s] = is_successfull_validation(exp_results)
-				if run_strategies_success_validation[s]:
-					validation_satisfied_by_any_strategy = True
+						run_strategies_success_test[s] = True
+						run_strategies_times[s] = runtime
+					else:
+						run_strategies_success_test[s] = False
 
-			dataset['success_value'].append(run_strategies_success_test)
-			dataset['success_value_validation'].append(run_strategies_success_validation)
-			dataset['best_strategy'].append(best_strategy)
-			dataset['times_value'].append(run_strategies_times)
-			dataset['validation_satisfied'].append(validation_satisfied_by_any_strategy)
+					run_strategies_success_validation[s] = is_successfull_validation(exp_results)
+					if run_strategies_success_validation[s]:
+						validation_satisfied_by_any_strategy = True
 
-			dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
-			dataset['features'].append(info_dict['features'])
-			dataset['dataset_id'].append(info_dict['dataset_id'])
-			dataset['model'].append(info_dict['constraint_set_list']['model'])
+				dataset['success_value'].append(run_strategies_success_test)
+				dataset['success_value_validation'].append(run_strategies_success_validation)
+				dataset['best_strategy'].append(best_strategy)
+				dataset['times_value'].append(run_strategies_times)
+				dataset['validation_satisfied'].append(validation_satisfied_by_any_strategy)
 
-			run_count += 1
+				dataset['max_search_time'].append(info_dict['constraint_set_list']['search_time'])
+				dataset['features'].append(info_dict['features'])
+				dataset['dataset_id'].append(info_dict['dataset_id'])
+				dataset['model'].append(mapid2model[info_dict['model']])
+
+				run_count += 1
 		except FileNotFoundError:
 			pass
 		if run_count == number_ml_scenarios:
@@ -572,6 +578,12 @@ fastest_strategy_across_datasets = {}
 fastest_strategy_across_datasets_metalearning = []
 
 
+relatives_coverages_optimizer = []
+
+relative_coverage_strategies= {}
+for my_strategy in range(strategy_success.shape[1]):
+	relative_coverage_strategies[my_strategy] = []
+
 for train_ids, test_ids in outer_cv_all:
 
 
@@ -683,6 +695,7 @@ for train_ids, test_ids in outer_cv_all:
 
 
 
+
 		predictions = np.zeros(len(predictions_probabilities), dtype=int)
 		for row_it in range(len(predictions_probabilities)):
 			winner = np.argwhere(predictions_probabilities[row_it,:] == np.max(predictions_probabilities[row_it,:]))
@@ -691,7 +704,8 @@ for train_ids, test_ids in outer_cv_all:
 				print(winner)
 				#raise Exception('more than one')
 
-				rannked_list = [14, 12, 11, 10, 2, 3, 8, 5, 9, 4, 1, 7, 6, 16, 13, 15, 17]
+				#rannked_list = [14, 12, 11, 10, 2, 3, 8, 5, 9, 4, 1, 7, 6, 16, 13, 15, 17]
+				rannked_list =  [3, 2, 4, 14, 5, 12, 8, 1, 11, 9, 7, 10, 16, 6, 15, 13, 17]
 
 				rank_i = 0
 				while isinstance(winner, Iterable):
@@ -713,6 +727,13 @@ for train_ids, test_ids in outer_cv_all:
 		#print('mean time:  ' + str(np.mean(runtimes_test_fold)) + ' std: ' + str(np.std(runtimes_test_fold)))
 
 		succcess_test_fold1 = get_success_for_fold_predictions(predictions, test_ids)
+		print(succcess_test_fold1)
+		rel_coverage = np.sum(succcess_test_fold1) / float(np.count_nonzero(np.array(dataset['best_strategy'])[success_ids[test_ids]]))
+		if not np.isnan(rel_coverage):
+			relatives_coverages_optimizer.append(rel_coverage)
+			print('relative coverage:' + str(rel_coverage))
+		else:
+			relatives_coverages_optimizer.append(0.0)
 		succcess_test_fold1_test = []
 		for p_i in range(len(predictions)):
 			succcess_test_fold1_test.append(strategy_success[test_ids[p_i], predictions[p_i]-1])
@@ -720,6 +741,13 @@ for train_ids, test_ids in outer_cv_all:
 
 		for my_strategy in range(strategy_success.shape[1]):
 			store_all_strategies_results[my_strategy].extend(strategy_success[test_ids, my_strategy])
+
+			rel_coverage = np.sum(strategy_success[test_ids, my_strategy]) / float(np.count_nonzero(np.array(dataset['best_strategy'])[success_ids[test_ids]]))
+			if not np.isnan(rel_coverage):
+				relative_coverage_strategies[my_strategy].append(rel_coverage)
+				print(relative_coverage_strategies)
+			else:
+				relative_coverage_strategies[my_strategy].append(0.0)
 
 
 
@@ -782,7 +810,10 @@ for train_ids, test_ids in outer_cv_all:
 
 
 
-
+print("relative coverage: " + str(np.mean(relatives_coverages_optimizer)))
+for my_strategy in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
+	print(str(mappnames[my_strategy + 1]) + ': ' + str(np.mean(relative_coverage_strategies[my_strategy])))
+print('\n\n')
 
 
 print('\n final all mean time:  ' + str(np.mean(all_runtimes_in_cv_folds)) + ' std: ' + str(np.std(all_runtimes_in_cv_folds)))
