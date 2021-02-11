@@ -132,7 +132,7 @@ class DataLoader(object):
 		data_path = './google_drive_data'
 		if not os.path.isdir(data_path):
 			print("Downloading Datasets ...")
-			with urllib.request.urlopen('https://drive.google.com/u/0/uc?id=1Pg_n8lUGxkBmyiKIuc3LPPQm-wpWBq5u&export=download') as response, open('DFS_datasets.zip', 'wb') as out_file:
+			with urllib.request.urlopen('https://drive.google.com/u/0/uc?id=19Qj3T9Yt_hQ4bM0Ac9D2MS7x507sTJRU&export=download') as response, open('DFS_datasets.zip', 'wb') as out_file:
 				shutil.copyfileobj(response, out_file)
 
 			with zipfile.ZipFile('DFS_datasets.zip') as zf:
@@ -146,7 +146,7 @@ class DataLoader(object):
 			os.remove('DFS_models.zip')
 
 		value = self.map_dataset[key]
-		with open(data_path + "/downloaded_arff/" + str(key) + ".arff") as f:
+		with open(data_path + "/dfs_datasets/" + str(key) + ".arff") as f:
 			df = a2p.load(f)
 
 			number_instances.append(df.shape[0])
