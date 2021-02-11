@@ -1,7 +1,5 @@
 # Declarative Feature Selection
-There is a huge body of research on feature selection strategies, which try to find representations that yield high model accuracy, low search time, or a compressed representation. Due to the lack of an independent benchmark, data scientists face a choice problem that is even more aggravated  with the rise of novel metrics, such as fairness, privacy, safety against adversarial examples, and restrictions on training/inference time.
-In this paper, we benchmark and evaluate a representative series of feature selection algorithms in the context of declarative feature selection where the user specifies a set of constraints for the desired feature set and the feature selection strategy has to find one satisfying feature set.
-From our extensive experimental results across 16 feature selection strategies, 20 datasets, and 6 constraint types, we derive concrete suggestions on when to use which strategy and explore whether a meta-learning-driven optimizer can accurately predict the right strategy for a machine learning task at hand.
+Responsible usage of Machine Learning (ML) systems in practice requires to enforce not only high prediction quality, but also to account for other constraints, such as fairness, privacy, or execution time. A simple way to address multiple user-specified constraints on ML systems is feature selection. Yet, applying feature selection to enforce user-specified constraints is challenging. Optimizing feature selection strategies with respect to multiple metrics is difficult to implement and has been underrepresented in previous experimental studies. Here, we propose Declarative Feature Selection (DFS) to simplify the design and validation of ML systems satisfying diverse user-specified constraints. We benchmark and evaluate a representative series of feature selection algorithms. From our extensive experimental results across 16 feature selection strategies, 19 datasets, and 3 classification models, we derive concrete suggestions on when to use which strategy and show that a meta-learning-driven optimizer can accurately predict the right strategy for an ML task at hand. These results demonstrate that feature selection can help to build ML systems that meet combinations of user-specified constraints, independent of the ML methods used. We believe that our empirical results and the proposed declarative feature selection will enable scientists and practitioners to better automate the design and validation of robust and trustworthy ML systems.
 
 ## Using our system
 To run the experiments, first, you need to set the paths in a configuration file with the name of your machine. Examples can be found here: ~/new_project/fastsklearnfeature/configuration/resources
@@ -39,10 +37,8 @@ python -m pip install .
 ## Additional Evaluations
 In addition to the charts provided in the paper, we provide additional evaluations:
 
-1) [Dataset-specific Results](../master/additional_charts/Dataset-specific%20DFS%20Results.pdf): We report the coverage and the fraction of ML scenarios that a strategy finished the fastest across all 16 feature selection strategies and all 20 datasets.
-2) [Scaling Experiments for Instances and Features across all Strategies](../master/additional_charts/scaling_experiments)
-3) [Pareto-Optimal Results for the Test Set](../master/additional_charts/radar_charts_test_scores): We provide for all 20 datasets all pareto-optimal solution that declarative feature selection found in evaluating 1200 different constraint sets.
-Here, are the pareto-optimal solutions for the Adult dataset:
+[Pareto-Optimal Results for the Test Set](../master/additional_charts/radar_charts_test_scores): We provide for all 19 datasets all pareto-optimal solution that declarative feature selection found in our benchmark.
+Here is an example for such an Pareto front:
 <img src="https://user-images.githubusercontent.com/5217389/82898629-f0423d00-9f59-11ea-9205-bb45367ac487.png" align="left" width="300" >
 
 
