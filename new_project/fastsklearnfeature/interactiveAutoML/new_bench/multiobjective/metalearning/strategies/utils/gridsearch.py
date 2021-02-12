@@ -38,6 +38,8 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
             new_pipeline.set_params(**configuration)
 
         print("before fit: ")
+        print(X_train)
+        print(pd.DataFrame(y_train))
         new_pipeline.fit(X_train, pd.DataFrame(y_train))
 
         print("after fit: ")
