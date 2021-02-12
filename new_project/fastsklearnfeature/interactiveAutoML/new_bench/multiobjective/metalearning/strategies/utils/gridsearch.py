@@ -31,10 +31,16 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
     grid_results = {}
 
     for configuration in search_configs:
+        print("start: ")
+
         new_pipeline = copy.deepcopy(pipeline)
         if len(configuration) > 0:
             new_pipeline.set_params(**configuration)
+
+        print("before fit: ")
         new_pipeline.fit(X_train, pd.DataFrame(y_train))
+
+        print("after fit: ")
 
         validation_number_features = float(np.sum(new_pipeline.named_steps['selection']._get_support_mask())) / float(X_train.shape[1])
         validation_acc = accuracy_scorer(new_pipeline, X_validation, pd.DataFrame(y_validation))
