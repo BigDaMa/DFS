@@ -41,7 +41,9 @@ setup(
                       "plotly",
                       "immutabledict",
                       "eli5",
-                      "anytree"
+                      "anytree",
+                      "nbformat",
+                      "scipy==1.4.1"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )

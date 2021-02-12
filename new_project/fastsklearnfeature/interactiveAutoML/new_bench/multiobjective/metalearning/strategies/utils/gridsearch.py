@@ -14,8 +14,6 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
     if type(sensitive_ids) != type(None):
         fair_validation = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_validation[:, sensitive_ids[0]])
 
-    print('modelhyprp: ' + str(model_hyperparameters))
-
     search_configs = [{}]
     if type(model_hyperparameters) != type(None):
 
@@ -26,29 +24,18 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
 
         search_configs = [dict(zip(new_model_hyperparameters, v)) for v in product(*new_model_hyperparameters.values())]
 
-    print('before: ' + str(search_configs))
-
     grid_results = {}
 
     for configuration in search_configs:
-        print("start: ")
-
         new_pipeline = copy.deepcopy(pipeline)
         if len(configuration) > 0:
             new_pipeline.set_params(**configuration)
-
-        print("before fit: ")
-        from sklearn.linear_model import LogisticRegression
-        new_pipeline = LogisticRegression()
-        print('hallo')
         new_pipeline.fit(X_train, pd.DataFrame(y_train))
-
-        print("after fit: ")
 
         validation_number_features = float(np.sum(new_pipeline.named_steps['selection']._get_support_mask())) / float(X_train.shape[1])
         validation_acc = accuracy_scorer(new_pipeline, X_validation, pd.DataFrame(y_validation))
 
-        print("accuracy: " + str(validation_acc))
+        #print("accuracy: " + str(validation_acc))
 
         validation_fair = 0.0
         if type(sensitive_ids) != type(None):
@@ -96,8 +83,6 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
         if max_acc < v['cv_acc']:
             max_acc = v['cv_acc']
             best_parameter_configuration = k
-
-    print('after loop')
 
     #print(best_parameter_configuration)
 
