@@ -14,6 +14,8 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
     if type(sensitive_ids) != type(None):
         fair_validation = make_scorer(true_positive_rate_score, greater_is_better=True, sensitive_data=X_validation[:, sensitive_ids[0]])
 
+    print('modelhyprp: ' + str(model_hyperparameters))
+
     search_configs = [{}]
     if type(model_hyperparameters) != type(None):
 
@@ -24,7 +26,7 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
 
         search_configs = [dict(zip(new_model_hyperparameters, v)) for v in product(*new_model_hyperparameters.values())]
 
-    print('before loop')
+    print('before: ' + str(search_configs))
 
     grid_results = {}
 
