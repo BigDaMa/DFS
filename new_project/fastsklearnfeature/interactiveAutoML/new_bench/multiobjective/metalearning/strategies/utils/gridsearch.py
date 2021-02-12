@@ -39,7 +39,7 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
         validation_number_features = float(np.sum(new_pipeline.named_steps['selection']._get_support_mask())) / float(X_train.shape[1])
         validation_acc = accuracy_scorer(new_pipeline, X_validation, pd.DataFrame(y_validation))
 
-        #print("accuracy: " + str(validation_acc))
+        print("accuracy: " + str(validation_acc))
 
         validation_fair = 0.0
         if type(sensitive_ids) != type(None):
