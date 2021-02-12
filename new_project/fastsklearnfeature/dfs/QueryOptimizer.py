@@ -39,6 +39,10 @@ from eli5 import show_prediction
 from IPython.display import display
 import copy
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+
 class QueryOptimizer(BaseSelection):
 	def __init__(self):
 
@@ -179,6 +183,10 @@ class QueryOptimizer(BaseSelection):
 		# metadata features
 		feature_list.append(X_train.shape[0])  # number rows
 		feature_list.append(X_train.shape[1])  # number columns
+
+		feature_list.append(isinstance(model, DecisionTreeClassifier))
+		feature_list.append(isinstance(model, GaussianNB))
+		feature_list.append(isinstance(model, LogisticRegression))
 
 		self.features = np.array(feature_list).reshape(1, -1)
 
