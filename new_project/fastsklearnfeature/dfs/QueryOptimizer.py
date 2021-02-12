@@ -236,7 +236,8 @@ class QueryOptimizer(BaseSelection):
 										 min_safety,
 										 min_privacy,
 										 max_complexity,
-										 max_search_time)
+										 max_search_time,
+										 classifier)
 
 
 		labels = []
