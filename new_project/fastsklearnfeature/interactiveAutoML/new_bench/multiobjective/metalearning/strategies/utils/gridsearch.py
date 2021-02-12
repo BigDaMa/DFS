@@ -24,6 +24,8 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
 
         search_configs = [dict(zip(new_model_hyperparameters, v)) for v in product(*new_model_hyperparameters.values())]
 
+    print('before loop')
+
     grid_results = {}
 
     for configuration in search_configs:
@@ -83,6 +85,8 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
         if max_acc < v['cv_acc']:
             max_acc = v['cv_acc']
             best_parameter_configuration = k
+
+    print('after loop')
 
     #print(best_parameter_configuration)
 
