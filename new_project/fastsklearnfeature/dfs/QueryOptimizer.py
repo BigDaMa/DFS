@@ -270,7 +270,10 @@ class QueryOptimizer(BaseSelection):
 						'safety_distance_to_landmark',
 						'landmark_computation_time',
 						'rows',
-						'columns']
+						'columns',
+						'decision_tree',
+						'naive_bayes',
+						'logistic_regression']
 
 
 		display(show_prediction(self.best_model, self.features[0], feature_names=names_features, show_feature_values=True))
