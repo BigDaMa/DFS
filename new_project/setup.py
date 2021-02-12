@@ -43,7 +43,8 @@ setup(
                       "eli5",
                       "anytree",
                       "nbformat",
-                      "scipy==1.4.1"
+                      "scipy==1.4.1",
+                      "ipykernel"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
