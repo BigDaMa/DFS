@@ -87,12 +87,8 @@ def hyperparameter_optimization(X_train, X_validation, X_train_val, X_test, y_tr
 			stored_results[str(hps)] = {'loss': 4, 'status': STATUS_OK, 'model': pipeline, 'cv_fair': 0.0, 'cv_acc': 0.0, 'cv_robust': 0.0, 'cv_number_features': 1.0}
 			return stored_results[str(hps)]
 
-		print('before run_grid_search')
-
 		stored_results[str(hps)] = run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accuracy_scorer, sensitive_ids,
 						min_fairness, min_accuracy, min_robustness, max_number_features, model_hyperparameters=model_hyperparameters, start_time=start_time, avoid_robustness=avoid_robustness)
-
-		print('after run_grid_search')
 
 		stored_results[str(hps)]['updated_parameters'] = hps
 
