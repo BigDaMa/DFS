@@ -19,6 +19,7 @@ import zipfile
 import os
 import requests
 
+
 def download_file_from_google_drive(id, destination):
     def get_confirm_token(response):
         for key, value in response.cookies.items():
@@ -132,15 +133,14 @@ class DataLoader(object):
 		data_path = './google_drive_data'
 		if not os.path.isdir(data_path):
 			print("Downloading Datasets ...")
-			with urllib.request.urlopen('https://drive.google.com/u/0/uc?id=19Qj3T9Yt_hQ4bM0Ac9D2MS7x507sTJRU&export=download') as response, open('DFS_datasets.zip', 'wb') as out_file:
-				shutil.copyfileobj(response, out_file)
+			download_file_from_google_drive("19Qj3T9Yt_hQ4bM0Ac9D2MS7x507sTJRU", 'DFS_datasets.zip')
 
 			with zipfile.ZipFile('DFS_datasets.zip') as zf:
 				zf.extractall('google_drive_data')
 			os.remove('DFS_datasets.zip')
 
 			print("Downloading Query Optimizer Models ...")
-			download_file_from_google_drive("10_NwKY9IONU46biKW6Q8J2aCvohBkDB1", 'DFS_models.zip')
+			download_file_from_google_drive("1lxbcs9vS6U8t-5II2qpx0OIv08EON7NL", 'DFS_models.zip')
 			with zipfile.ZipFile('DFS_models.zip') as zf:
 				zf.extractall('google_drive_models')
 			os.remove('DFS_models.zip')
