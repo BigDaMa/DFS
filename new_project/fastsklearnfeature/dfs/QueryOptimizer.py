@@ -80,7 +80,8 @@ class QueryOptimizer(BaseSelection):
 			  						min_safety,
 			  						privacy,
 			  						max_complexity,
-			  						max_search_time):
+			  						max_search_time,
+									classifier):
 
 		start_time = time.time()
 
@@ -130,11 +131,13 @@ class QueryOptimizer(BaseSelection):
 
 
 		cv_k = 1.0
-		model = LogisticRegression(class_weight='balanced')
+
+		model = classifier
 		if type(privacy) == type(None):
 			privacy = X_train_tiny.shape[0]
 		else:
-			model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
+			if isinstance(model, LogisticRegression):
+				model = models.LogisticRegression(epsilon=privacy, class_weight='balanced')
 
 		robust_scorer = make_scorer(robust_score, greater_is_better=True, X=X_train_tiny, y=y_train_tiny, model=model,
 									feature_selector=None, scorer=auc_scorer)
@@ -358,7 +361,8 @@ class QueryOptimizer(BaseSelection):
 									min_safety,
 									min_privacy,
 									max_complexity,
-									max_search_time)
+									max_search_time,
+								    classifier)
 		return super().query(
 			  X_train,
 			  X_validation,
