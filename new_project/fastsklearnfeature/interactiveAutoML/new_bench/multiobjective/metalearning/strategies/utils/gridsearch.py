@@ -20,7 +20,7 @@ def run_grid_search(pipeline, X_train, y_train, X_validation, y_validation, accu
         new_model_hyperparameters = {}
         for k, v in model_hyperparameters.items():
             new_model_hyperparameters['clf__' + k] = v
-        print(new_model_hyperparameters)
+        #print(new_model_hyperparameters)
 
         search_configs = [dict(zip(new_model_hyperparameters, v)) for v in product(*new_model_hyperparameters.values())]
 
