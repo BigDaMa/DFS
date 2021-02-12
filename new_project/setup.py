@@ -22,7 +22,7 @@ setup(
     include_package_data=True,
     install_requires=["numpy",
                       "pandas",
-                      "scikit-learn==0.21.0",
+                      "scikit-learn==0.22.1",
                       "xgboost",
                       "matplotlib",
                       "numpy_indexed",
@@ -40,7 +40,8 @@ setup(
                       "pymoo",
                       "plotly",
                       "immutabledict",
-                      "eli5"
+                      "eli5",
+                      "anytree"
                       ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
