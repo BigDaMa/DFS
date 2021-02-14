@@ -164,22 +164,41 @@ class QueryOptimizer(BaseSelection):
 
 		cv_time = time.time() - small_start_time
 
+
+		#cases if utility is defined
+		min_fairness_new = min_fairness
+		if min_fairness_new > 1.0:
+			min_fairness_new = 1.0
+
+		min_accuracy_new = min_accuracy
+		if min_accuracy_new > 1.0:
+			min_accuracy_new = 1.0
+
+		min_safety_new = min_safety
+		if min_accuracy_new > 1.0:
+			min_safety_new = 1.0
+
+		max_complexity_new = max_complexity
+		if max_complexity_new < 0.0:
+			max_complexity_new = 0.0
+
+
 		# construct feature vector
 		feature_list = []
 		# user-specified constraints
-		feature_list.append(min_accuracy)
-		feature_list.append(min_fairness)
-		feature_list.append(max_complexity)
-		feature_list.append(max_complexity * X_train.shape[1])
-		feature_list.append(min_safety)
+		feature_list.append(min_accuracy_new)
+		feature_list.append(min_fairness_new)
+		feature_list.append(max_complexity_new)
+		feature_list.append(max_complexity_new * X_train.shape[1])
+		feature_list.append(min_safety_new)
 		feature_list.append(privacy)
 		feature_list.append(max_search_time)
 		# differences to sample performance
-		feature_list.append(cv_acc - min_accuracy)
-		feature_list.append(cv_fair - min_fairness)
-		feature_list.append(cv_k - max_complexity)
-		feature_list.append((cv_k - max_complexity) * X_train.shape[1])
-		feature_list.append(cv_robust - min_safety)
+		feature_list.append(cv_acc - min_accuracy_new)
+		feature_list.append(cv_fair - min_fairness_new)
+		feature_list.append(cv_k - max_complexity_new)
+		feature_list.append((cv_k - max_complexity_new) * X_train.shape[1])
+		feature_list.append(cv_robust - min_safety_new)
 		feature_list.append(cv_time)
 		# privacy constraint is always satisfied => difference always zero => constant => unnecessary
 
