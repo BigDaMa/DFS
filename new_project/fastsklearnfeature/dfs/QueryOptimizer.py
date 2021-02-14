@@ -292,7 +292,7 @@ class QueryOptimizer(BaseSelection):
 			#modify the feature vector incrementally
 			min_thresholds = []
 			success_probabilities = []
-			for step in range(10):
+			for step in range(5):
 				new_features = copy.deepcopy(self.features)
 				new_features[0,0] = new_features[0,0] - step * 0.01
 				new_features[0,7] = new_features[0,7] + step * 0.01
