@@ -9,6 +9,13 @@ from concurrent.futures import TimeoutError
 from pebble import ProcessPool, ProcessExpired
 import fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.multiprocessing_global as mp_global
 import copy
+import pandas as pd
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.metalearning.strategies.utils.gridsearch import run_grid_search
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import make_scorer
+from fastsklearnfeature.interactiveAutoML.new_bench.multiobjective.robust_measure import robust_score_test
+from fastsklearnfeature.interactiveAutoML.fair_measure import true_positive_rate_score
+from sklearn.metrics import f1_score
 
 def load_pickle(fname):
 	data = []
@@ -176,6 +183,94 @@ class BaseSelection(object):
 		plt.ylabel('Distance to specified constraints')
 		plt.title('Search Progress')
 		plt.show()
+
+
+
+
+
+	def transfer_to_other_model(self, model,
+			  X_train,
+			  X_validation,
+			  X_test,
+			  y_train,
+			  y_validation,
+			  y_test,
+			  sensitive_ids=None,
+			  hyperparameters=None):
+		exp_results = self.read_file()
+
+		X_train_val = np.vstack((X_train, X_validation))
+		y_train_val = np.append(y_train, y_validation)
+
+		min_loss = np.inf
+		best_run = None
+		for min_r in range(len(exp_results)):
+			if 'loss' in exp_results[min_r] and exp_results[min_r]['loss'] < min_loss:
+				min_loss = exp_results[min_r]['loss']
+				best_run = min_r
+
+		feature_selection = exp_results[best_run]['selected_features']
+
+		start_time = time.time()
+
+		pipeline = Pipeline([
+			('selection', feature_selection),
+			('clf', model)
+		])
+
+		accuracy_scorer = make_scorer(f1_score)
+		grid_result = run_grid_search(pipeline, X_train, y_train, X_validation, y_validation,
+									  accuracy_scorer, sensitive_ids,
+									  1.0, 1.0, 1.0, 0.0,
+									  model_hyperparameters=hyperparameters,
+									  start_time=start_time)
+
+		model = grid_result['model']
+		model.fit(X_train_val, pd.DataFrame(y_train_val))
+
+		test_acc = accuracy_scorer(model, X_test, pd.DataFrame(y_test))
+
+		fair_test = None
+		if type(sensitive_ids) != type(None):
+			fair_test = make_scorer(true_positive_rate_score, greater_is_better=True,
+									sensitive_data=X_test[:, sensitive_ids[0]])
+
+		test_fair = 0.0
+		if type(sensitive_ids) != type(None):
+			test_fair = 1.0 - fair_test(model, X_test, pd.DataFrame(y_test))
+		test_robust = 1.0 - robust_score_test(eps=0.1, X_test=X_test, y_test=y_test,
+											  model=model.named_steps['clf'],
+											  feature_selector=model.named_steps['selection'],
+											  scorer=accuracy_scorer)
+
+		test_number_features = exp_results[best_run]['cv_number_features']
+
+		categories = ['Accuracy', 'Fairness', 'Simplicity', 'Safety']
+
+
+
+		fig = go.Figure()
+
+		fig.add_trace(go.Scatterpolar(
+			r=[test_acc, test_fair, 1.0 - test_number_features, test_robust],
+			theta=categories,
+			fill='toself',
+			name='Best Result on Test'
+		))
+
+		fig.update_layout(
+			title='Best Result on Test',
+			polar=dict(
+				radialaxis=dict(
+					visible=True,
+					range=[0, 1]
+				)),
+			showlegend=False
+		)
+
+		return fig
+
+
 
 	def get_test_radar_chart(self):
 		exp_results = self.read_file()
