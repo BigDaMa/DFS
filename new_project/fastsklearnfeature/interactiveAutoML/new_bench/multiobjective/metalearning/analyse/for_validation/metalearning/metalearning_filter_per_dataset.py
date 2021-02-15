@@ -17,6 +17,13 @@ warnings.filterwarnings("ignore")
 #import openml
 from collections.abc import Iterable
 import numpy as np
+import copy
+
+
+ranked_by_coverage_decreasing = [3, 14, 12, 2, 4, 11, 9, 5, 10, 8, 1, 7, 6, 16, 15, 13, 17]
+ranked_by_coverage_increasing = copy.deepcopy(ranked_by_coverage_decreasing)
+ranked_by_coverage_increasing.reverse()
+
 
 mappnames = {1:'TPE(Variance)',
 			 2: 'TPE($\chi^2$)',
@@ -107,7 +114,7 @@ mapid2model[0] = 'Logistic Regression'
 mapid2model[1] = 'Gaussian Naive Bayes'
 mapid2model[2] = 'Decision Tree'
 
-number_ml_scenarios = 10000
+number_ml_scenarios = 10500
 
 run_count = 0
 for efolder in experiment_folders:
@@ -118,8 +125,8 @@ for efolder in experiment_folders:
 
 			if 'model' in info_dict:
 
-				#if info_dict['dataset_id'] == '40536' or info_dict['dataset_id'] == '1461':
-					#continue
+				if info_dict['dataset_id'] == '40536' or info_dict['dataset_id'] == '1461':
+					continue
 
 				run_strategies_success_test = {}
 				run_strategies_times = {}
@@ -221,7 +228,8 @@ print("training size: " + str(len(success_ids)))
 X_data = np.matrix(X_train)[success_ids]
 y_data = np.array(y_train)[success_ids]
 groups = np.array(dataset['dataset_id'])[success_ids]
-outer_cv_all = list(GroupKFold(n_splits=21).split(X_data, None, groups=groups))
+#outer_cv_all = list(GroupKFold(n_splits=21).split(X_data, None, groups=groups))
+outer_cv_all = list(GroupKFold(n_splits=19).split(X_data, None, groups=groups))
 
 
 strategy_search_times = np.zeros((X_data.shape[0], len(mappnames)))
@@ -536,14 +544,14 @@ strategy_folds_recall = {} # strategies x datasets
 
 
 #save models
-'''
+
 for my_strategy in range(strategy_success.shape[1]):
-	rf_random = RandomForestClassifier(n_estimators=4000, class_weight='balanced')
-	rf_random.fit(X_data, strategy_success[:, my_strategy])
+	rf_random = RandomForestClassifier(n_estimators=100, class_weight='balanced')
+	rf_random.fit(X_data[real_success_ids], strategy_success[real_success_ids][:, my_strategy])
 
 	with open('/tmp/model_strategy' + str(my_strategy) + '.pickle', 'wb+') as f_log:
 		pickle.dump(rf_random, f_log, protocol=pickle.HIGHEST_PROTOCOL)
-'''
+
 print("\nmodels done :)\n\n")
 
 
@@ -579,10 +587,13 @@ fastest_strategy_across_datasets_metalearning = []
 
 
 relatives_coverages_optimizer = []
+relatives_speed_optimizer = []
 
 relative_coverage_strategies= {}
+relative_speed_strategies= {}
 for my_strategy in range(strategy_success.shape[1]):
 	relative_coverage_strategies[my_strategy] = []
+	relative_speed_strategies[my_strategy] = []
 
 for train_ids, test_ids in outer_cv_all:
 
@@ -614,6 +625,23 @@ for train_ids, test_ids in outer_cv_all:
 
 	if len(test_ids) > 0:
 		test_data_id = np.unique(groups[test_ids])[0]
+
+
+		##calculate weights per dataset
+
+		my_counts_data_dict = {}
+		all_train_N = len(train_ids)
+		for sw in range(all_train_N):
+			if not groups[train_ids][sw] in my_counts_data_dict:
+				my_counts_data_dict[groups[train_ids][sw]] = 0
+			my_counts_data_dict[groups[train_ids][sw]] += 1
+
+		sample_weight = []
+		for sw in range(all_train_N):
+			sample_weight.append(all_train_N - my_counts_data_dict[groups[train_ids][sw]])
+		print(sample_weight)
+
+
 
 		#my_string_csv += openml.datasets.get_dataset(dataset_id=test_data_id).name + ';'
 		my_string_csv += test_data_id + ';'
@@ -705,7 +733,8 @@ for train_ids, test_ids in outer_cv_all:
 				#raise Exception('more than one')
 
 				#rannked_list = [14, 12, 11, 10, 2, 3, 8, 5, 9, 4, 1, 7, 6, 16, 13, 15, 17]
-				rannked_list =  [3, 2, 4, 14, 5, 12, 8, 1, 11, 9, 7, 10, 16, 6, 15, 13, 17]
+				#rannked_list = [3, 2, 4, 14, 5, 12, 8, 1, 11, 9, 7, 10, 16, 6, 15, 13, 17]
+				rannked_list =  ranked_by_coverage_decreasing
 
 				rank_i = 0
 				while isinstance(winner, Iterable):
@@ -728,16 +757,15 @@ for train_ids, test_ids in outer_cv_all:
 
 		succcess_test_fold1 = get_success_for_fold_predictions(predictions, test_ids)
 		print(succcess_test_fold1)
+
+
+
+
 		rel_coverage = np.sum(succcess_test_fold1) / float(np.count_nonzero(np.array(dataset['best_strategy'])[success_ids[test_ids]]))
 		if not np.isnan(rel_coverage):
 			relatives_coverages_optimizer.append(rel_coverage)
-			print('relative coverage:' + str(rel_coverage))
 		else:
 			relatives_coverages_optimizer.append(0.0)
-		succcess_test_fold1_test = []
-		for p_i in range(len(predictions)):
-			succcess_test_fold1_test.append(strategy_success[test_ids[p_i], predictions[p_i]-1])
-			assert succcess_test_fold1[p_i] == succcess_test_fold1_test[p_i], 'ojoh'
 
 		for my_strategy in range(strategy_success.shape[1]):
 			store_all_strategies_results[my_strategy].extend(strategy_success[test_ids, my_strategy])
@@ -748,6 +776,20 @@ for train_ids, test_ids in outer_cv_all:
 				print(relative_coverage_strategies)
 			else:
 				relative_coverage_strategies[my_strategy].append(0.0)
+
+		relatives_speed_optimizer.append(np.sum(np.array(dataset['best_strategy'])[test_ids] == predictions) / float(np.count_nonzero(np.array(dataset['best_strategy'])[success_ids[test_ids]])))
+
+		for my_strategy in range(strategy_success.shape[1]):
+			rel_speed = np.sum(np.array(dataset['best_strategy'])[test_ids] == my_strategy + 1) / float(np.count_nonzero(np.array(dataset['best_strategy'])[success_ids[test_ids]]))
+			relative_speed_strategies[my_strategy].append(rel_speed)
+
+
+
+
+		succcess_test_fold1_test = []
+		for p_i in range(len(predictions)):
+			succcess_test_fold1_test.append(strategy_success[test_ids[p_i], predictions[p_i] - 1])
+			assert succcess_test_fold1[p_i] == succcess_test_fold1_test[p_i], 'ojoh'
 
 
 
@@ -771,69 +813,36 @@ for train_ids, test_ids in outer_cv_all:
 		success_validation = get_success_for_fold_predictions_validation(predictions, test_ids)
 
 
-		successful_times = []
-		for run_i in range(len(succcess_test_fold1)):
-			if succcess_test_fold1[run_i]:
-				successful_times.append(runtimes_test_fold[run_i])
-
-		fastest_fold_here = []
-		for run_i in range(len(succcess_test_fold1)):
-			fastest_fold_here.append(np.array(dataset['best_strategy'])[test_ids][run_i] == predictions[run_i])
-
-		#new fastest
-		check_test_count = 0
-		for tt_item in test_ids:
-			check_test_count += tt_item in real_success_ids
-
-		if check_test_count > 0:
-
-			fastest_strategy_across_datasets_metalearning.append(float(np.sum(np.array(fastest_fold_here))) / float(check_test_count))
-
-			for my_strategy in range(1, strategy_success.shape[1] + 1):
-				current_strategy_fastest_sum = float(np.sum(np.array(dataset['best_strategy'])[test_ids] == my_strategy))
-				current_fastest_fraction = current_strategy_fastest_sum / float(check_test_count)
-
-				if not my_strategy in fastest_strategy_across_datasets:
-					fastest_strategy_across_datasets[my_strategy] = []
-				fastest_strategy_across_datasets[my_strategy].append(current_fastest_fraction)
 
 
-		## calculate fastest of satisfiable scenarios => append per strategy
 
-		print("Fastest: " + str(np.sum(fastest_fold_here) / float(len(fastest_fold_here))))
-
-		all_successful_times.extend(successful_times)
+		#all_successful_times.extend(successful_times)
 		all_runtimes_in_cv_folds.extend(runtimes_test_fold)
 		all_success_in_cv_folds.extend(succcess_test_fold1)
-		all_fastest_strategies.extend(fastest_fold_here)
+		#all_fastest_strategies.extend(fastest_fold_here)
 		all_success_in_cv_folds_validation.extend(success_validation)
 
 
+def toS(value):
+	return "{:.2f}".format(value)
 
-print("relative coverage: " + str(np.mean(relatives_coverages_optimizer)))
-for my_strategy in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
-	print(str(mappnames[my_strategy + 1]) + ': ' + str(np.mean(relative_coverage_strategies[my_strategy])))
+
+
+latex_table = ''
+for my_strategy in np.array(ranked_by_coverage_increasing) - 1:
+	latex_table += str(mappnames[my_strategy + 1]) + " & $" + toS(np.mean(relative_speed_strategies[my_strategy])) + ' \pm ' +  toS(np.std(relative_speed_strategies[my_strategy])) + '$ '
+	latex_table += " & $" + toS(np.mean(relative_coverage_strategies[my_strategy])) + ' \pm ' + toS(np.std(relative_coverage_strategies[my_strategy])) + '$ \\\\ \n'
+
+latex_table += "Optimizer" + " & $" + toS(np.mean(relatives_speed_optimizer)) + ' \pm ' +  toS(np.std(relatives_speed_optimizer)) + '$ '
+latex_table += " & $" + toS(np.mean(relatives_coverages_optimizer)) + ' \pm ' + toS(np.std(relatives_coverages_optimizer)) + '$ \\\\ \n'
+
+print(latex_table)
 print('\n\n')
 
 
-print('\n final all mean time:  ' + str(np.mean(all_runtimes_in_cv_folds)) + ' std: ' + str(np.std(all_runtimes_in_cv_folds)))
 
 
-print('\n final test coverage:  ' + str(np.sum(all_success_in_cv_folds) / float(len(all_success_in_cv_folds))))
-print('\n final validation coverage:  ' + str(np.sum(all_success_in_cv_folds_validation) / float(len(all_success_in_cv_folds_validation))))
-print("\n final Fastest: " + str(np.sum(all_fastest_strategies) / float(len(all_fastest_strategies))))
-print('\n final successful mean time: ' + str(np.mean(all_successful_times)) + ' std: ' + str(np.std(all_successful_times)))
-
-for my_strategy in range(strategy_success.shape[1]):
-	print(mappnames[my_strategy + 1] + ' coverage: ' + str(np.sum(store_all_strategies_results[my_strategy]) / float(len(store_all_strategies_results[my_strategy]))))
-
-
-for my_strategy in range(1, strategy_success.shape[1] + 1):
-	print(mappnames[my_strategy] + ' relative fastest: ' + str(np.average(fastest_strategy_across_datasets[my_strategy])) + " +- " + str(np.std(fastest_strategy_across_datasets[my_strategy])))
-print('meta learning' + ' relative fastest: ' + str(np.average(fastest_strategy_across_datasets_metalearning)) + " +- " + str(np.std(fastest_strategy_across_datasets_metalearning)))
-
-
-for my_strategy in np.array([17, 11, 12, 13, 14, 15, 16, 4, 7, 5, 3, 6, 1, 2, 8, 9, 10]) - 1:
+for my_strategy in np.array(ranked_by_coverage_increasing) - 1:
 	print(str(mappnames[my_strategy + 1]) + ' & $' + str(
 		"{:.2f}".format(np.mean(strategy_folds_precision[my_strategy]))) + ' \\pm ' + str(
 		"{:.2f}".format(np.std(strategy_folds_precision[my_strategy]))) + '$ & $' + str(
