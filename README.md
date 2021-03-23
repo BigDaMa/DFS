@@ -37,10 +37,13 @@ python -m pip install .
 ## Additional Evaluations
 In addition to the charts provided in the paper, we provide additional evaluations:
 
+[Additional results for Reusability](../master/additional_charts/transferability): We provide additional results for reusing features that were discovered for Logistic Regression (LR) for other models, such as SVM, Naive Bayes, and decision trees.
+
 [Pareto-Optimal Results for the Test Set](../master/additional_charts/radar_charts_test_scores): We provide for all 19 datasets all pareto-optimal solution that declarative feature selection found in our benchmark.
 Here is an example for such an Pareto front:
 
 <img src="https://user-images.githubusercontent.com/5217389/82898629-f0423d00-9f59-11ea-9205-bb45367ac487.png" align="left" width="300" >
+
 
 
 
