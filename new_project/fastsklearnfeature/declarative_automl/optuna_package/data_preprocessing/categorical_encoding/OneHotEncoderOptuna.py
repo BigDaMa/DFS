@@ -5,7 +5,6 @@ class OneHotEncoderOptuna(OneHotEncoder):
     def init_hyperparameters(self, trial, X, y):
         self.name = id_name('OneHotEncoder_')
 
-        self.sparse = False
         self.handle_unknown = 'ignore'
 
         self.sparse = trial.suggest_categorical(self.name + 'sparse', [True, False])

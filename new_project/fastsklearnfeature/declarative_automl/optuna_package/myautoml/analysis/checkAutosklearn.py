@@ -3,6 +3,7 @@ from sklearn.metrics import f1_score
 import pickle
 from fastsklearnfeature.declarative_automl.optuna_package.myautoml.utils_model import get_data
 import autosklearn.classification
+from autosklearn.experimental.askl2 import AutoSklearn2Classifier
 
 test_holdout_dataset_ids = [1134, 1495, 41147, 316, 1085, 1046, 1111, 55, 1116, 448, 1458, 162, 1101, 1561, 1061, 1506, 1235, 4135, 151, 51, 41138, 40645, 1510, 1158, 312, 38, 52, 1216, 41007, 1130]
 
@@ -27,7 +28,7 @@ for test_holdout_dataset_id in test_holdout_dataset_ids:
     dynamic_approach = []
     static_approach = []
 
-    for minutes_to_search in range(1, 6):
+    for minutes_to_search in [10, 30, 60]:#range(1, 6):
 
         current_dynamic = []
         current_static = []
@@ -48,8 +49,9 @@ for test_holdout_dataset_id in test_holdout_dataset_ids:
                                                                              ml_memory_limit=memory_budget*1000,
                                                                              metric=scorer,
                                                                              n_jobs=1,
-                                                                             ensemble_size=1,
-                                                                             initial_configurations_via_metalearning=0)
+                                                                             #ensemble_size=1,
+                                                                             #initial_configurations_via_metalearning=0
+                                                                             )
                 autosklearn_model.fit(X_train_hold.copy(), y_train_hold.copy(), feat_type=feat_type)
                 autosklearn_model.refit(X_train_hold.copy(), y_train_hold.copy())
 
@@ -73,4 +75,4 @@ for test_holdout_dataset_id in test_holdout_dataset_ids:
         results_dict[test_holdout_dataset_id] = {}
         results_dict[test_holdout_dataset_id]['dynamic'] = dynamic_approach
 
-        pickle.dump(results_dict, open('/home/felix/phd2/picture_progress/all_test_datasets/all_results_auto_sklearn.p', 'wb+'))
+        pickle.dump(results_dict, open('/home/felix/phd2/picture_progress/all_test_datasets/all_results_auto_sklearn_more_time.p', 'wb+'))

@@ -186,12 +186,14 @@ def optimize_accuracy_under_constraints2(trial, metafeature_values_hold, search_
                                         training_time_limit=None,
                                         inference_time_limit=None,
                                         pipeline_size_limit=None,
-                                        comparison_weight=0
+                                        comparison_weight=0,
+                                        tune_space=False
                                         ):
     try:
         gen = SpaceGenerator()
         space = gen.generate_params()
-        space.sample_parameters(trial)
+        if tune_space:
+            space.sample_parameters(trial)
 
         trial.set_user_attr('space', copy.deepcopy(space))
 
