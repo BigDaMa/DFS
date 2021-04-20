@@ -1,6 +1,20 @@
 # Declarative Feature Selection
 Responsible usage of Machine Learning (ML) systems in practice requires to enforce not only high prediction quality, but also to account for other constraints, such as fairness, privacy, or execution time. A simple way to address multiple user-specified constraints on ML systems is feature selection. Yet, applying feature selection to enforce user-specified constraints is challenging. Optimizing feature selection strategies with respect to multiple metrics is difficult to implement and has been underrepresented in previous experimental studies. Here, we propose Declarative Feature Selection (DFS) to simplify the design and validation of ML systems satisfying diverse user-specified constraints. We benchmark and evaluate a representative series of feature selection algorithms. From our extensive experimental results across 16 feature selection strategies, 19 datasets, and 3 classification models, we derive concrete suggestions on when to use which strategy and show that a meta-learning-driven optimizer can accurately predict the right strategy for an ML task at hand. These results demonstrate that feature selection can help to build ML systems that meet combinations of user-specified constraints, independent of the ML methods used. We believe that our empirical results and the proposed declarative feature selection will enable scientists and practitioners to better automate the design and validation of robust and trustworthy ML systems.
 
+## Paper
+For further details, please refer to the [paper](https://www.researchgate.net/publication/350344954_Enforcing_Constraints_for_Machine_Learning_Systems_via_Declarative_Feature_Selection_An_Experimental_Study) - and of course if any of this code was helpful for your research, please consider citing it:
+```
+@inproceedings{Neutatz21,
+  author    = {Felix Neutatz and
+               Felix Biessmann and
+               Ziawasch Abedjan},
+  title     = {Enforcing Constraints for Machine Learning Systems via Declarative Feature Selection: An Experimental Study},
+  booktitle = {SIGMOD},
+  year      = {2021}
+}
+```
+
+
 ## Using our system
 To run the experiments, first, you need to set the paths in a configuration file with the name of your machine. Examples can be found here: ~/new_project/fastsklearnfeature/configuration/resources
 
